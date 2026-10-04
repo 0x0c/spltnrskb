@@ -1,52 +1,67 @@
-| 分類 | 部品 | 仕様・型番の例 | 左 | 右 | 合計 | 備考 |
-| --- | --- | --- | --- | --- | --- | --- |
-| MCU | マイコン ATmega32U4-AU | Microchip ATmega32U4-AU, TQFP-44 | 1 | 1 | 2 |  |
-| コネクタ | USB-C レセプタクル | HRO TYPE-C-31-M-12（16 ピン、USB 2.0） | 1 | 1 | 2 |  |
-| コネクタ | TRRS ジャック 3.5 mm | PJ-320D（4 極、表面実装） | 1 | 1 | 2 |  |
-| 保護 | USB ESD 保護 | STMicroelectronics USBLC6-2SC6, SOT-23-6 | 1 | 1 | 2 |  |
-| クロック | 水晶振動子 16 MHz | 3225 4 パッド、負荷容量 12〜20 pF | 1 | 1 | 2 |  |
-| 保護 | ポリスイッチ 500 mA | 1206（例: Bourns MF-NSMF050-2） | 1 | 1 | 2 |  |
-| 保護 | ショットキーダイオード | B5819W（40 V 1 A）, SOD-123 | 1 | 1 | 2 |  |
-| マトリクス | スイッチングダイオード | 1N4148W, SOD-123 | 44 | 48 | 92 |  |
-| 受動部品 | コンデンサ 22 pF | 0805 C0G 50 V | 2 | 2 | 4 |  |
-| 受動部品 | コンデンサ 0.1 µF | 0805 X7R 50 V | 5 | 5 | 10 |  |
-| 受動部品 | コンデンサ 1 µF | 0805 X7R 25 V（UCAP 用） | 2 | 2 | 4 |  |
-| 受動部品 | コンデンサ 10 µF | 0805 X5R 10 V 以上 | 1 | 1 | 2 |  |
-| 受動部品 | 抵抗 10 kΩ | 0805 1% | 3 | 3 | 6 |  |
-| 受動部品 | 抵抗 22 Ω | 0805 1%（USB D+/D−） | 2 | 2 | 4 |  |
-| 受動部品 | 抵抗 5.1 kΩ | 0805 1%（USB-C CC） | 2 | 2 | 4 |  |
-| 表示 | OLED モジュール 0.91 インチ | 128×32、SSD1306、I2C、ピン順 GND/VCC/SCL/SDA（基板から約 2 mm 浮かせて半田付け） | 1 | 1 | 2 |  |
-| 入力 | 磁気角度センサー（サムホイール用） | ams OSRAM AS5600-ASOM、SOIC-8、I2C 0x36 | 1 | 1 | 2 |  |
-| 受動部品 | 抵抗 4.7 kΩ | 0805 1%（I2C プルアップ） | 2 | 2 | 4 |  |
-| スイッチ | タクトスイッチ（リセット） | C&K PTS810 SJM 250 SMTR LFS | 1 | 1 | 2 |  |
-| キースイッチ | MX 互換キースイッチ | 3 ピン / 5 ピンどちらでも可 | 44 | 48 | 92 |  |
-| キースイッチ | ホットスワップソケット | Kailh CPG151101S11（MX 用） | 44 | 48 | 92 |  |
-| キースイッチ | スタビライザ 2 u（PCB マウント） | ネジ止め式推奨 | 1 | 2 | 3 | 左 Shift、右 Backspace、右 Enter |
-| 入力 | サムホイール | 直径 29.2 mm × 厚さ 4.1 mm（case/print/<side>-wheel.stl） | 1 | 1 | 2 | 3D プリントか、アルミ削り出しで外注 |
-| 入力 | ネオジム磁石（径方向着磁） | 直径 6 mm × 厚さ 1.5 mm、ホイール上面のポケットに接着 | 1 | 1 | 2 | 必ず径方向（diametric）着磁のもの |
-| キーキャップ | キーキャップ 1 u |  |  |  | 81 |  |
-| キーキャップ | キーキャップ 1.25 u |  |  |  | 5 |  |
-| キーキャップ | キーキャップ 1.5 u |  |  |  | 2 |  |
-| キーキャップ | キーキャップ 1.75 u |  |  |  | 1 |  |
-| キーキャップ | キーキャップ 2 u |  |  |  | 1 |  |
-| キーキャップ | キーキャップ 2.25 u |  |  |  | 2 |  |
-| アクリル版 | M2 スペーサー 7 mm（メス-メス） | 六角 対辺 3.5〜4 mm、真鍮またはナイロン | 8 | 8 | 16 | 基板と底板の間 |
-| アクリル版 | M2 × 4 mm なべネジ | 基板の上からスペーサーへ | 8 | 8 | 16 |  |
-| 筐体共通 | ゴム足 | 直径 8〜10 mm、高さ 3 mm 以上 | 4 | 4 | 8 | 底面に出るネジ先・ナットより高いもの |
-| アクリル版 | アクリル板 1.5 mm（プレート） | 左 204×137.3 mm / 右 204×137.3 mm | 1 | 1 | 2 | FR4 1.6 mm やアルミ 1.5 mm でも可 |
-| アクリル版 | アクリル板 3 mm（枠） | 同上の外形、片側 4 枚（frame1〜4） | 4 | 4 | 8 | frame1〜3 は差込口の切り欠きあり、frame4 は切り欠きなし |
-| アクリル版 | アクリル板 3 mm（底板） | 同上の外形 | 1 | 1 | 2 |  |
-| アクリル版 | M2 × 20 mm なべネジ | 外周（プレート〜底板を貫通、16.5 mm + ナット） | 12 | 12 | 24 |  |
-| アクリル版 | M2 ナット | 外周ネジ用 | 12 | 12 | 24 |  |
-| アクリル版 | M2 × 5 mm なべネジ | 底板の下からスペーサーへ | 8 | 8 | 16 |  |
-| OLED カバー | 透明アクリル板 2 mm | <side>-oled-cover（DXF/SVG） | 1 | 1 | 2 | プレートの上に直接載せる。両方の筐体で共通 |
-| アクリル版 | M2 × 22 mm なべネジ | OLED カバー〜底板を貫通（18.5 mm + ナット） | 2 | 2 | 4 |  |
-| アクリル版 | M2 ナット（OLED カバー用） |  | 2 | 2 | 4 |  |
-| 3D プリント版 | M2 ヒートセットインサート | 外径 3.2 mm × 長さ 3 mm（壁上面の穴 φ3.2 × 4 mm） | 14 | 14 | 28 | 外周と OLED カバーの両方 |
-| 3D プリント版 | M2 × 6 mm なべネジ | OLED カバーとプレートをインサートへ固定 | 2 | 2 | 4 |  |
-| アクリル版 | M3 × 8 mm なべネジ | サムホイールの軸（底板の下から差し込む） | 1 | 1 | 2 | 3D プリント版はトレイの軸を使う |
-| 3D プリント版 | M2 × 5 mm なべネジ | プレートをインサートへ固定 | 12 | 12 | 24 |  |
-| 3D プリント版 | M2 × 6 mm タッピングネジ | 基板をボス（下穴 φ1.6）へ固定 | 8 | 8 | 16 |  |
-| ケーブル | TRRS ケーブル（4 極、オス-オス） | 3.5 mm |  |  |  | 1 本 |
-| ケーブル | USB-C ケーブル | USB 2.0 以上 |  |  |  | 1 本 |
-| 基板 | プリント基板（2 層、1.6 mm） | fab/<side>/nrsk-<side>-gerber.zip | 1 | 1 | 2 |  |
+> 単価・在庫は 2026-10-04 時点の参考値。リンク先はすべて開いて型番と仕様を確認済み。
+
+| 分類 | 部品 | 仕様 | 左 | 右 | 合計 | メーカー型番・商品名 | 購入先 | 単価（参考） | URL | 備考 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| MCU | マイコン ATmega32U4-AU | Microchip ATmega32U4-AU, TQFP-44 | 1 | 1 | 2 | Microchip ATMEGA32U4-AU | LCSC C44854 | US$6.94 | [リンク](https://www.lcsc.com/product-detail/C44854.html) |  |
+| コネクタ | USB-C レセプタクル | HRO TYPE-C-31-M-12（16 ピン、USB 2.0） | 1 | 1 | 2 | Korean Hroparts TYPE-C-31-M-12 | LCSC C165948 | US$0.17 | [リンク](https://www.lcsc.com/product-detail/C165948.html) |  |
+| コネクタ | TRRS ジャック 3.5 mm | PJ-320D（4 極、表面実装） | 1 | 1 | 2 | SHOU HAN PJ-320D | LCSC C431535 | US$0.05 | [リンク](https://www.lcsc.com/product-detail/C431535.html) | フットプリントは Qingpu WQP-PJ320D 基準。本体長 12.1 mm の互換品なので、発注前にパッド位置を照合 |
+| コネクタ | 　└ 代替 |  |  |  |  | Korean Hroparts PJ-320D-4A | LCSC C95562 | US$0.11 | [リンク](https://www.lcsc.com/product-detail/C95562.html) | 代替（本体長 14.1 mm）。同じくパッド位置を照合 |
+| 保護 | USB ESD 保護 | STMicroelectronics USBLC6-2SC6, SOT-23-6 | 1 | 1 | 2 | STMicroelectronics USBLC6-2SC6 | LCSC C7519 | US$0.18 | [リンク](https://www.lcsc.com/product-detail/C7519.html) |  |
+| クロック | 水晶振動子 16 MHz | 3225 4 パッド、負荷容量 20 pF（22 pF のコンデンサと組み合わせる） | 1 | 1 | 2 | TXC 7M16000025（CL 20 pF） | LCSC C6409346 | US$0.16 | [リンク](https://www.lcsc.com/product-detail/C6409346.html) | 負荷容量 20 pF なので 22 pF のコンデンサと合う。JLC 定番の YXC X322516MLB4SI は 9 pF で不適 |
+| クロック | 　└ 代替 |  |  |  |  | JGHC S3216000201060（CL 20 pF） | LCSC C426974 | US$0.05 | [リンク](https://www.lcsc.com/product-detail/C426974.html) | 安価な代替。在庫少 |
+| 保護 | ポリスイッチ 500 mA | 1206（例: Bourns MF-NSMF050-2） | 1 | 1 | 2 | Bourns MF-NSMF050-2 | LCSC C75464 | US$0.04 | [リンク](https://www.lcsc.com/product-detail/C75464.html) |  |
+| 保護 | ショットキーダイオード | B5819W（40 V 1 A）, SOD-123 | 1 | 1 | 2 | JSCJ B5819W SL | LCSC C8598 | US$0.03 | [リンク](https://www.lcsc.com/product-detail/C8598.html) |  |
+| マトリクス | スイッチングダイオード | 1N4148W, SOD-123 | 44 | 48 | 92 | 1N4148W（SOD-123） | LCSC C81598 | US$0.012 | [リンク](https://www.lcsc.com/product-detail/C81598.html) |  |
+| 受動部品 | コンデンサ 22 pF | 0805 C0G 50 V | 2 | 2 | 4 | Samsung CL21C220JBANNNC | LCSC C1804 | US$0.012 | [リンク](https://www.lcsc.com/product-detail/C1804.html) |  |
+| 受動部品 | コンデンサ 0.1 µF | 0805 X7R 50 V | 5 | 5 | 10 | YAGEO CC0805KRX7R9BB104 | LCSC C49678 | US$0.019 | [リンク](https://www.lcsc.com/product-detail/C49678.html) |  |
+| 受動部品 | コンデンサ 1 µF | 0805 X7R 25 V（UCAP 用） | 2 | 2 | 4 | Samsung CL21B105KBFNNNE（50 V） | LCSC C28323 | US$0.04 | [リンク](https://www.lcsc.com/product-detail/C28323.html) |  |
+| 受動部品 | コンデンサ 10 µF | 0805 X5R 10 V 以上 | 1 | 1 | 2 | Samsung CL21A106KAYNNNE（X5R 25 V） | LCSC C15850 | US$0.066 | [リンク](https://www.lcsc.com/product-detail/C15850.html) |  |
+| 受動部品 | 抵抗 10 kΩ | 0805 1% | 3 | 3 | 6 | UNI-ROYAL 0805W8F1002T5E | LCSC C17414 | US$0.0034 | [リンク](https://www.lcsc.com/product-detail/C17414.html) |  |
+| 受動部品 | 抵抗 22 Ω | 0805 1%（USB D+/D−） | 2 | 2 | 4 | UNI-ROYAL 0805W8F220JT5E | LCSC C17561 | US$0.0046 | [リンク](https://www.lcsc.com/product-detail/C17561.html) |  |
+| 受動部品 | 抵抗 5.1 kΩ | 0805 1%（USB-C CC） | 2 | 2 | 4 | UNI-ROYAL 0805W8F5101T5E | LCSC C27834 | US$0.0056 | [リンク](https://www.lcsc.com/product-detail/C27834.html) |  |
+| 表示 | OLED モジュール 0.91 インチ | 128×32、SSD1306、I2C、ピン順 GND/VCC/SCL/SDA（基板から約 2 mm 浮かせて半田付け） | 1 | 1 | 2 | OLED モジュール（0.91 インチ 128×32、SSD1306、ピンソケット付き） | 遊舎工房 | ¥825 | [リンク](https://shop.yushakobo.jp/products/oled) | 商品ページにピン順の記載なし。GND/VCC/SCL/SDA であることを現物のシルクで確認 |
+| 入力 | 磁気角度センサー（サムホイール用） | ams OSRAM AS5600-ASOM、SOIC-8、I2C 0x36 | 1 | 1 | 2 | ams OSRAM AS5600-ASOM | LCSC C79815 | US$1.77 | [リンク](https://www.lcsc.com/product-detail/C79815.html) |  |
+| 受動部品 | 抵抗 4.7 kΩ | 0805 1%（I2C プルアップ） | 2 | 2 | 4 | UNI-ROYAL 0805W8F4701T5E | LCSC C17673 | US$0.0051 | [リンク](https://www.lcsc.com/product-detail/C17673.html) |  |
+| スイッチ | タクトスイッチ（リセット） | C&K PTS810 SJM 250 SMTR LFS | 1 | 1 | 2 | C&K PTS810SJM250SMTRLFS | LCSC C116501 | US$0.58 | [リンク](https://www.lcsc.com/product-detail/C116501.html) |  |
+| キースイッチ | MX 互換キースイッチ | 3 ピン / 5 ピンどちらでも可 | 44 | 48 | 92 | Kailh Box V2 Red（リニア、5 ピン） | 遊舎工房 | ¥2,117 / 35 個 | [リンク](https://shop.yushakobo.jp/products/4264) | 92 個要るので 3 パック。確認時の在庫は 6 パックと少ない。遊舎工房の他の MX 互換スイッチでも可 |
+| キースイッチ | 　└ 代替 |  |  |  |  | Kailh Super Speed Silver（リニア、3 ピン） | 遊舎工房 | ¥1,540 / 35 個 | [リンク](https://shop.yushakobo.jp/products/4280) | 在庫少 |
+| キースイッチ | ホットスワップソケット | Kailh CPG151101S11（MX 用） | 44 | 48 | 92 | Kailh CPG151101S11-16（スイッチソケット MX 型） | 遊舎工房 | ¥187 / 10 個 | [リンク](https://shop.yushakobo.jp/products/a01ps) | 「MX 型」を選ぶ（Choc 型と取り違えない）。10 パック |
+| キースイッチ | スタビライザ 2 u（PCB マウント） | ネジ止め式推奨 | 1 | 2 | 3 | GDK-02 Pre-lubed PCB Mount Stabilizer | 遊舎工房 | ¥770 / セット | [リンク](https://shop.yushakobo.jp/products/11952) | 左 Shift、右 Backspace、右 Enter；1 セットで 2 u が 4 個分。1 セットで足りる |
+| 入力 | サムホイール | 直径 29.2 mm × 厚さ 4.1 mm（case/print/<side>-wheel.stl） | 1 | 1 | 2 | case/print/<side>-wheel.stl | 自作（3D プリント） |  |  | 3D プリントか、アルミ削り出しで外注 |
+| 入力 | ネオジム磁石（径方向着磁） | 直径 6 mm × 厚さ 1.5 mm、ホイール上面のポケットに接着 | 1 | 1 | 2 | Radial Magnets 9042（φ6 × 2.5 mm、Diametric） | DigiKey | ¥105 | [リンク](https://www.digikey.jp/ja/products/detail/radial-magnets-inc/9042/5640338) | 必ず径方向（diametric）着磁のもの；厚さ 2.5 mm で、現在のポケット（深さ 1.6 mm）には入らない。国内で φ6 × 1.5 mm の径方向着磁品は在庫が見つからなかった |
+| キーキャップ | キーキャップ 1 u |  |  |  | 81 | DSA 無刻印キーキャップ 1 u（PBT、22 色） | 遊舎工房 | ¥55 | [リンク](https://shop.yushakobo.jp/products/dsa-blank-keycaps) |  |
+| キーキャップ | キーキャップ 1.25 u |  |  |  | 5 | Signature Plastics DSA 1.25 u | spkeyboards.com（米国） | US$3.50 | [リンク](https://spkeyboards.com/products/dsa-1-25-space) | 国内で DSA 1.25 u が見つからなかったため海外通販。輸入時に関税・消費税 |
+| キーキャップ | キーキャップ 1.5 u |  |  |  | 2 | DSA 無刻印キーキャップ 1.5 u（白・黒・灰・緑・赤） | 遊舎工房 | ¥220 | [リンク](https://shop.yushakobo.jp/products/10731) |  |
+| キーキャップ | キーキャップ 1.75 u |  |  |  | 1 | Signature Plastics DSA 1.75 u | spkeyboards.com（米国） | US$3.50 | [リンク](https://spkeyboards.com/collections/individual-keys/products/sp-dsa-1-75-space) |  |
+| キーキャップ | キーキャップ 2 u |  |  |  | 1 | DSA 無刻印キーキャップ 2 u（白・黒） | 遊舎工房 | ¥220 | [リンク](https://shop.yushakobo.jp/products/11443) |  |
+| キーキャップ | キーキャップ 2.25 u |  |  |  | 2 | Signature Plastics DSA 2.25 u（スタビ対応） | spkeyboards.com（米国） | US$4.00 | [リンク](https://spkeyboards.com/products/sp-dsa-2-25-space-single-keycap) |  |
+| アクリル版 | M2 スペーサー 7 mm（メス-メス） | 六角 対辺 3.5〜4 mm、真鍮またはナイロン | 8 | 8 | 16 | 廣杉計器 ASB-2007E（黄銅、両メネジ） | MonotaRO | ¥1,978 / 50 個 | [リンク](https://www.monotaro.com/p/1111/2937/) | 基板と底板の間 |
+| アクリル版 | 　└ 代替 |  |  |  |  | 黄銅スペーサー（六角）M2 7 mm | 遊舎工房 | ¥385 / 10 個 | [リンク](https://shop.yushakobo.jp/products/a0800r2?variant=37665434042529) | 少量向け |
+| アクリル版 | M2 × 4 mm なべネジ | 基板の上からスペーサーへ | 8 | 8 | 16 | なべ小ねじ M2 × 4 | 遊舎工房 | ¥220 / 50 本 | [リンク](https://shop.yushakobo.jp/products/a0800n2?variant=37665432961185) |  |
+| アクリル版 | 　└ 代替 |  |  |  |  | 大阪魂 ナベ頭小ねじ M2 × 4（ステンレス） | MonotaRO | ¥1,099 / 160 本 | [リンク](https://www.monotaro.com/p/0550/6907/) |  |
+| 筐体共通 | ゴム足 | 直径 8〜10 mm、高さ 3 mm 以上 | 4 | 4 | 8 | 3M クッションゴム 丸形 CS-02（φ9.5 × 3.8 mm） | MonotaRO | ¥483 / 18 個 | [リンク](https://www.monotaro.com/p/4525/7232/) | 底面に出るネジ先・ナットより高いもの |
+| 筐体共通 | 　└ 代替 |  |  |  |  | 栃木屋 クリアバンポン TM-180-303（φ11.2 × 5.1 mm） | MonotaRO | ¥48 / 個 | [リンク](https://www.monotaro.com/p/4262/7707/) |  |
+| アクリル版 | アクリル板 1.5 mm（プレート） | 左 180.2×137.3 mm / 右 204×137.3 mm | 1 | 1 | 2 | アクリル板 DXF 切削（図面で WEB オーダー） | はざいや（菅原工芸） | 見積 | [リンク](https://www.hazaiya.co.jp/estimate-drawing) | FR4 1.6 mm やアルミ 1.5 mm でも可；laser/*.dxf をアップロード。対応板厚はログイン後に確認。切断線どうしの間隔 3 mm 未満は不可 |
+| アクリル版 | アクリル板 3 mm（枠） | 同上の外形、片側 4 枚（frame1〜4） | 4 | 4 | 8 | アクリル板 DXF 切削（図面で WEB オーダー） | はざいや（菅原工芸） | 見積 | [リンク](https://www.hazaiya.co.jp/estimate-drawing) | frame1〜3 は差込口の切り欠きあり、frame4 は切り欠きなし；laser/*.dxf をアップロード。対応板厚はログイン後に確認。切断線どうしの間隔 3 mm 未満は不可 |
+| アクリル版 | アクリル板 3 mm（底板） | 同上の外形 | 1 | 1 | 2 | アクリル板 DXF 切削（図面で WEB オーダー） | はざいや（菅原工芸） | 見積 | [リンク](https://www.hazaiya.co.jp/estimate-drawing) | laser/*.dxf をアップロード。対応板厚はログイン後に確認。切断線どうしの間隔 3 mm 未満は不可 |
+| アクリル版 | M2 × 20 mm なべネジ | 外周（プレート〜底板を貫通、16.5 mm + ナット） | 11 | 12 | 23 | OHSATO ナベ頭小ねじ M2 × 20（ステンレス） | MonotaRO | ¥329 / 50 本 | [リンク](https://www.monotaro.com/p/1714/1900/) |  |
+| アクリル版 | M2 ナット | 外周ネジ用 | 11 | 12 | 23 | 大阪魂 六角ナット 1 種 M2（SUS304） | MonotaRO | ¥164 / 20 個 | [リンク](https://www.monotaro.com/p/2876/3624/) |  |
+| アクリル版 | 　└ 代替 |  |  |  |  | 廣杉計器 UNT-02 | MonotaRO | ¥1,428 / 50 個 | [リンク](https://www.monotaro.com/p/1148/5784/) |  |
+| アクリル版 | M2 × 5 mm なべネジ | 底板の下からスペーサーへ | 8 | 8 | 16 | なべ小ねじ M2 × 5 | 遊舎工房 | ¥220 / 50 本 | [リンク](https://shop.yushakobo.jp/products/a0800n2?variant=37665432993953) |  |
+| アクリル版 | 　└ 代替 |  |  |  |  | 大阪魂 ナベ頭小ねじ M2 × 5（ステンレス） | MonotaRO | ¥1,099 / 160 本 | [リンク](https://www.monotaro.com/p/0550/6916/) |  |
+| OLED カバー | 透明アクリル板 2 mm | <side>-oled-cover（DXF/SVG） | 1 | 1 | 2 | アクリル板 DXF 切削（図面で WEB オーダー） | はざいや（菅原工芸） | 見積 | [リンク](https://www.hazaiya.co.jp/estimate-drawing) | プレートの上に直接載せる。両方の筐体で共通；laser/*.dxf をアップロード。対応板厚はログイン後に確認。切断線どうしの間隔 3 mm 未満は不可 |
+| アクリル版 | M2 × 22 mm なべネジ | OLED カバー〜底板を貫通（18.5 mm + ナット） | 2 | 2 | 4 | 大阪魂 ナベコ 2X22 | MonotaRO | ¥734 / 147 本 | [リンク](https://www.monotaro.com/p/1423/1257/) | 22 mm は規格外の長さで小袋なし。材質の記載なし |
+| アクリル版 | M2 ナット（OLED カバー用） |  | 2 | 2 | 4 | 大阪魂 六角ナット 1 種 M2（SUS304） | MonotaRO | ¥164 / 20 個 | [リンク](https://www.monotaro.com/p/2876/3624/) | 外周用と同じ袋で足りる |
+| 3D プリント版 | M2 ヒートセットインサート | 外径 3.2 mm × 長さ 3 mm（壁上面の穴 φ3.2 × 4 mm） | 13 | 14 | 27 | 廣杉計器 HSB-203030 ビットインサート（M2 × 3、外径 3〜3.3） | MonotaRO | ¥2,198 / 50 個 | [リンク](https://www.monotaro.com/p/1138/6698/) | 外周と OLED カバーの両方；熱圧入用かはページに記載なし。下穴は現物に合わせて調整 |
+| 3D プリント版 | 　└ 代替 |  |  |  |  | Prusa Heat Set Inserts M2 short | Prusa Research | US$11.99 / 100 個 | [リンク](https://www.prusa3d.com/ja/product/heat-set-inserts-m2-short-100-pcs/) | 3D プリント用。寸法の記載なし |
+| 3D プリント版 | M2 × 6 mm なべネジ | OLED カバーとプレートをインサートへ固定 | 2 | 2 | 4 | OHSATO ナベ頭小ねじ M2 × 6（ステンレス） | MonotaRO | ¥241 / 50 本 | [リンク](https://www.monotaro.com/p/1714/1848/) |  |
+| アクリル版 | M3 × 8 mm なべネジ | サムホイールの軸（底板の下から差し込む） | 1 | 1 | 2 | OHSATO ナベ頭小ねじ M3 × 8（ステンレス） | MonotaRO | ¥175 / 50 本 | [リンク](https://www.monotaro.com/p/1714/1988/) | 3D プリント版はトレイの軸を使う |
+| 3D プリント版 | M2 × 5 mm なべネジ | プレートをインサートへ固定 | 11 | 12 | 23 | なべ小ねじ M2 × 5 | 遊舎工房 | ¥220 / 50 本 | [リンク](https://shop.yushakobo.jp/products/a0800n2?variant=37665432993953) |  |
+| 3D プリント版 | 　└ 代替 |  |  |  |  | 大阪魂 ナベ頭小ねじ M2 × 5（ステンレス） | MonotaRO | ¥1,099 / 160 本 | [リンク](https://www.monotaro.com/p/0550/6916/) |  |
+| 3D プリント版 | M2 × 6 mm タッピングネジ | 基板をボス（下穴 φ1.6）へ固定 | 8 | 8 | 16 | 大阪魂 ナベタッピンねじ 2 種 B-0 M2 × 6（ステンレス） | MonotaRO | ¥593 / 50 本 | [リンク](https://www.monotaro.com/p/4171/8022/) |  |
+| 3D プリント版 | 　└ 代替 |  |  |  |  | エスコ EA949AL-103 | MonotaRO | ¥435 / 40 本 | [リンク](https://www.monotaro.com/p/5065/8362/) |  |
+| ケーブル | TRRS ケーブル（4 極、オス-オス） | 3.5 mm |  |  |  | TRRS ケーブル 0.3 m | 遊舎工房 | ¥330 | [リンク](https://shop.yushakobo.jp/products/8023) | 1 本 |
+| ケーブル | 　└ 代替 |  |  |  |  | TRRS ケーブル 0.8 m（メタル） | 遊舎工房 | ¥1,100 | [リンク](https://shop.yushakobo.jp/products/8111) |  |
+| ケーブル | USB-C ケーブル | USB 2.0 以上 |  |  |  | USB Type-C to C 1.0 m | 遊舎工房 | ¥440 | [リンク](https://shop.yushakobo.jp/products/11426) | 1 本 |
+| ケーブル | 　└ 代替 |  |  |  |  | USB Type-A to C 1.0 m | 遊舎工房 | ¥330 | [リンク](https://shop.yushakobo.jp/products/8283) |  |
+| 基板 | プリント基板（2 層、1.6 mm） | fab/<side>/nrsk-<side>-gerber.zip | 1 | 1 | 2 | Gerber から発注（実装サービスも可） | JLCPCB | 見積 | [リンク](https://cart.jlcpcb.com/quote) |  |

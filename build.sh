@@ -13,9 +13,13 @@ python3 gen/footprints.py
 for s in $SIDES; do
   python3 gen/make_sch.py "$s"
   for i in $(seq 1 25); do
-    "$KPY" gen/make_pcb.py "$s" >/dev/null 2>&1
-    "$KPY" gen/route.py "$s" >/dev/null 2>&1
-    u=$("$KC" pcb drc -o "$NRSK_WORK/u.rpt" "$s/nrsk-$s.kicad_pcb" 2>/dev/null | grep -oE "Found [0-9]+ unconnected" | grep -oE "[0-9]+")
+    if ! "$KPY" gen/make_pcb.py "$s" > "$NRSK_WORK/make_pcb.log" 2>&1; then
+      echo "$s: make_pcb failed:"; grep -E "Error|Traceback|line [0-9]+" "$NRSK_WORK/make_pcb.log" | tail -3; continue
+    fi
+    if ! "$KPY" gen/route.py "$s" > "$NRSK_WORK/route.log" 2>&1; then
+      echo "$s: routing try $i failed:"; grep -E "Error|Exception|Traceback|line [0-9]+" "$NRSK_WORK/route.log" | grep -v GetWidth | tail -3; continue
+    fi
+    u=$("$KC" pcb drc -o "$NRSK_WORK/u.rpt" "$s/nrsk-$s.kicad_pcb" 2>/dev/null | grep -oE "Found [0-9]+ unconnected" | grep -oE "[0-9]+" || echo "?")
     echo "$s: routing try $i -> $u unconnected"
     [ "$u" = "0" ] && break
   done
@@ -40,3 +44,4 @@ python3 gen/make_qmk.py
 VENV="$PWD/.venv/bin/python"
 if [ -x "$VENV" ]; then "$VENV" gen/make_case.py && "$VENV" gen/case_preview.py && "$VENV" gen/case_section.py && "$VENV" gen/case_viewer.py; fi
 python3 gen/make_bom.py >/dev/null
+./gen/doc_images.sh

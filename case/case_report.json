@@ -1,16 +1,16 @@
 {
  "left": {
   "case_mm": [
-   204.0,
+   180.2,
    137.3
   ],
   "height_print": 15.6,
   "height_acrylic": 16.5,
-  "screws": 14,
+  "screws": 13,
   "cover_screws": 2,
   "pcb_holes": 8,
-  "tray_volume_cm3": 114.5,
-  "plate_genus": 61,
+  "tray_volume_cm3": 103.4,
+  "plate_genus": 60,
   "tray_status": "Error.NoError"
  },
  "right": {

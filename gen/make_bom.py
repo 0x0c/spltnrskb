@@ -2,6 +2,7 @@
 
 Electronics quantities come from the per-side KiCad BOMs (fab/<side>/nrsk-<side>-bom.csv),
 enclosure quantities from case/case_report.json and <side>/case_data.json.
+Purchasable part numbers, shops and URLs come from gen/bom_sources.json (alternates become extra rows).
 """
 import csv
 import json
@@ -18,7 +19,7 @@ ELEC = {
     ('USB-C', 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'): ('コネクタ', 'USB-C レセプタクル', 'HRO TYPE-C-31-M-12（16 ピン、USB 2.0）'),
     ('PJ-320D', 'Connector_Audio:Jack_3.5mm_PJ320D_Horizontal'): ('コネクタ', 'TRRS ジャック 3.5 mm', 'PJ-320D（4 極、表面実装）'),
     ('USBLC6-2SC6', 'Package_TO_SOT_SMD:SOT-23-6'): ('保護', 'USB ESD 保護', 'STMicroelectronics USBLC6-2SC6, SOT-23-6'),
-    ('16MHz', 'Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm_HandSoldering'): ('クロック', '水晶振動子 16 MHz', '3225 4 パッド、負荷容量 12〜20 pF'),
+    ('16MHz', 'Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm_HandSoldering'): ('クロック', '水晶振動子 16 MHz', '3225 4 パッド、負荷容量 20 pF（22 pF のコンデンサと組み合わせる）'),
     ('500mA', 'Fuse:Fuse_1206_3216Metric'): ('保護', 'ポリスイッチ 500 mA', '1206（例: Bourns MF-NSMF050-2）'),
     ('B5819W', 'Diode_SMD:D_SOD-123'): ('保護', 'ショットキーダイオード', 'B5819W（40 V 1 A）, SOD-123'),
     ('1N4148W', 'Diode_SMD:D_SOD-123'): ('マトリクス', 'スイッチングダイオード', '1N4148W, SOD-123'),
@@ -110,18 +111,37 @@ def main():
     add('ケーブル', 'USB-C ケーブル', 'USB 2.0 以上', '', '', '1 本')
     add('基板', 'プリント基板（2 層、1.6 mm）', 'fab/<side>/nrsk-<side>-gerber.zip', 1, 1, '')
 
+    sources = json.load(open(os.path.join(HERE, 'bom_sources.json'), encoding='utf-8'))
+    rows = []
+    for cat, part, spec, l, r, tot, note in out:
+        src = sources.get(part) or [{}]
+        for i, s in enumerate(src):
+            n = '；'.join(x for x in (note if i == 0 else '', s.get('note', '')) if x)
+            if not s:
+                n = '；'.join(x for x in (note, '購入先未調査') if x)
+            if i == 0:
+                rows.append((cat, part, spec, l, r, tot, s.get('mpn', ''), s.get('shop', ''), s.get('price', ''),
+                             s.get('url', ''), n))
+            else:
+                rows.append((cat, f'　└ 代替', '', '', '', '', s.get('mpn', ''), s.get('shop', ''), s.get('price', ''),
+                             s.get('url', ''), n))
+
     os.makedirs(os.path.join(ROOT, 'bom'), exist_ok=True)
-    head = ['分類', '部品', '仕様・型番の例', '左', '右', '合計', '備考']
+    head = ['分類', '部品', '仕様', '左', '右', '合計', 'メーカー型番・商品名', '購入先', '単価（参考）', 'URL', '備考']
     with open(os.path.join(ROOT, 'bom', 'nrsk-bom.csv'), 'w', encoding='utf-8-sig', newline='') as f:
         wr = csv.writer(f)
         wr.writerow(head)
-        wr.writerows(out)
-    md = '| ' + ' | '.join(head) + ' |\n|' + ' --- |' * len(head) + '\n'
-    for r in out:
-        md += '| ' + ' | '.join(str(c) for c in r) + ' |\n'
+        wr.writerows(rows)
+    md = ('> 単価・在庫は %s 時点の参考値。リンク先はすべて開いて型番と仕様を確認済み。\n\n'
+          % sources['_checked'])
+    md += '| ' + ' | '.join(head) + ' |\n|' + ' --- |' * len(head) + '\n'
+    for r in rows:
+        cells = [str(c) for c in r]
+        if cells[9]:
+            cells[9] = f'[リンク]({cells[9]})'
+        md += '| ' + ' | '.join(c.replace('|', '／') for c in cells) + ' |\n'
     open(os.path.join(ROOT, 'bom', 'nrsk-bom.md'), 'w').write(md)
     print(md)
-
 
 if __name__ == '__main__':
     main()

@@ -25,23 +25,14 @@ LENS_T = 1.0
 POD_WALL = 1.6            # pod rim around the module
 MODULE = (12.0, 38.0)     # vertical 0.91" module (w, h)
 # module centre for the raised variants (board-local mm), chosen clear of keycaps, over the wall
-# both boards share one outline, so the left half mirrors the right across the board centre
-MIRROR_SUM = -3.0 + 183.975        # outline x0 + x1
-
-
-def mirror(x):
-    return MIRROR_SUM - x
-
-
-RAISED_CENTRE = {'right': (-0.2, 15.7)}
-RAISED_CENTRE['left'] = (mirror(RAISED_CENTRE['right'][0]), RAISED_CENTRE['right'][1])
+RAISED_CENTRE = {'left': (160.6, 53.5), 'right': (-0.2, 15.7)}
 
 # tilted variants: module lies on a plane facing the typist, rising toward the back of the board.
 #   cx     : module centre x (board-local)      yf : board y of the module's front edge
 #   w, L   : module size across / along the slope   deg : tilt   zf : lens top at the front edge
 TILTED = {
-    'tilt-v': dict(w=12.0, L=38.0, deg=17.0, zf=1.5, cx={'left': mirror(-0.6), 'right': -0.6}, yf={'left': 33.0, 'right': 33.0}),
-    'tilt-h': dict(w=38.0, L=12.0, deg=50.0, zf=4.0, cx={'left': mirror(33.0), 'right': 33.0}, yf={'left': -1.7, 'right': -1.7}),
+    'tilt-v': dict(w=12.0, L=38.0, deg=17.0, zf=1.5, cx={'left': 160.9, 'right': -0.6}, yf={'left': 37.0, 'right': 33.0}),
+    'tilt-h': dict(w=38.0, L=12.0, deg=50.0, zf=4.0, cx={'left': 128.0, 'right': 33.0}, yf={'left': -1.7, 'right': -1.7}),
 }
 
 
