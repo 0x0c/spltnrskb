@@ -74,9 +74,44 @@ def mx_hotswap(w):
     return name, s
 
 
+# 0.91" 128x32 SSD1306 I2C module (38 x 12 mm), soldered ~2 mm above the PCB.
+OLED_W, OLED_H = 38.0, 12.0
+OLED_PIN_FROM_EDGE = 1.6      # header row centre to the module's short edge
+OLED_GLASS = (30.0, 11.5)     # glass panel, toward the end away from the header
+
+
+def oled_module():
+    """Origin = module centre, long axis along X, header at -X end (pins 1..4 = GND VCC SCL SDA along +Y)."""
+    name = 'OLED_0.91in_128x32_I2C'
+    s = (f'(footprint "{name}"\n  (version 20241229)\n  (generator "nrsk-gen")\n  (layer "F.Cu")\n'
+         '  (descr "0.91 inch 128x32 OLED module (SSD1306, I2C), 38 x 12 mm, 4-pin 2.54 mm header '
+         '(GND VCC SCL SDA); mount ~2 mm above the PCB without the header spacer")\n'
+         '  (tags "OLED SSD1306 I2C 0.91 128x32")\n  (attr through_hole)\n')
+    s += prop('Reference', 'REF**', (0, -7.5), 'F.SilkS')
+    s += prop('Value', name, (0, 0), 'F.Fab')
+    s += prop('Footprint', '', (0, 0), 'F.Fab', hide=True)
+    s += prop('Datasheet', '', (0, 0), 'F.Fab', hide=True)
+    s += prop('Description', '', (0, 0), 'F.Fab', hide=True)
+    hw, hh = OLED_W / 2, OLED_H / 2
+    s += rect(-hw, -hh, hw, hh, 'F.SilkS')
+    s += rect(-hw - 0.25, -hh - 0.25, hw + 0.25, hh + 0.25, 'F.CrtYd', 0.05)
+    gx = hw - OLED_GLASS[0] / 2 - 1.0
+    s += rect(gx - OLED_GLASS[0] / 2, -OLED_GLASS[1] / 2, gx + OLED_GLASS[0] / 2, OLED_GLASS[1] / 2, 'F.Fab', 0.1)
+    s += text('OLED', gx, 0, 'F.Fab', 1.5)
+    px = -hw + OLED_PIN_FROM_EDGE
+    for i, lbl in enumerate(('GND', 'VCC', 'SCL', 'SDA')):
+        y = (i - 1.5) * 2.54
+        shape = 'rect' if i == 0 else 'circle'
+        s += (f'  (pad "{i + 1}" thru_hole {shape} (at {px:.2f} {y:.2f}) (size 1.7 1.7) (drill 1.0) '
+              f'(layers "*.Cu" "*.Mask") (uuid "{uid()}"))\n')
+        s += text(lbl, px + 3.2, y, 'F.SilkS', 0.8)
+    s += ')\n'
+    return name, s
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
-    items = [mx_hotswap(w) for w in WIDTHS]
+    items = [mx_hotswap(w) for w in WIDTHS] + [oled_module()]
     for name, s in items:
         open(os.path.join(OUT, name + '.kicad_mod'), 'w').write(s)
     print('wrote', [n for n, _ in items])

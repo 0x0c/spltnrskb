@@ -15,3 +15,7 @@ _autosave-*
 fab/*/gerber/
 
 .DS_Store
+
+# large duplicates of committed images
+docs/img/render-grid.png
+docs/img/oled-study/sheet.png

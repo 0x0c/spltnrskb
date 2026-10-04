@@ -14,7 +14,9 @@
         "bootmagic": true,
         "extrakey": true,
         "mousekey": false,
-        "nkro": true
+        "nkro": true,
+        "oled": true,
+        "wpm": true
     },
     "diode_direction": "COL2ROW",
     "matrix_pins": {
@@ -45,6 +47,13 @@
         },
         "handedness": {
             "pin": "D3"
+        },
+        "transport": {
+            "sync": {
+                "layer_state": true,
+                "led_state": true,
+                "wpm": true
+            }
         }
     },
     "layouts": {

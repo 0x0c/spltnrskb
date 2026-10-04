@@ -33,3 +33,38 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_TRNS , KC_TRNS , KC_TRNS , KC_TRNS , KC_TRNS , KC_HOME , KC_PGDN , KC_END
     )
 };
+
+
+#ifdef OLED_ENABLE
+// 0.91" 128x32 OLED mounted vertically on both halves
+oled_rotation_t oled_init_user(oled_rotation_t rotation) {
+    return OLED_ROTATION_270;
+}
+
+static void render_status(void) {
+    oled_write_ln_P(PSTR("nrsk"), false);
+    oled_write_ln_P(PSTR(""), false);
+    oled_write_P(PSTR("LAYR"), false);
+    oled_write_char('0' + get_highest_layer(layer_state), false);
+    oled_write_ln_P(PSTR(""), false);
+    oled_write_ln_P(PSTR(""), false);
+    led_t led = host_keyboard_led_state();
+    oled_write_ln_P(PSTR("CAPS"), led.caps_lock);
+}
+
+static void render_wpm(void) {
+    oled_write_ln_P(PSTR("nrsk"), false);
+    oled_write_ln_P(PSTR(""), false);
+    oled_write_ln_P(PSTR("WPM"), false);
+    oled_write(get_u8_str(get_current_wpm(), ' '), false);
+}
+
+bool oled_task_user(void) {
+    if (is_keyboard_master()) {
+        render_status();
+    } else {
+        render_wpm();
+    }
+    return false;
+}
+#endif

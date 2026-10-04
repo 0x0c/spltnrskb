@@ -36,8 +36,11 @@ def arg(name, default):
 
 
 SAMPLES = int(arg('--samples', '160'))
-SHOTS = arg('--shots', 'hero,detail').split(',')
+SHOTS = arg('--shots', 'hero,detail,oled').split(',')
 RES = int(arg('--res', '1800'))
+OLED_H = arg('--oled-height', None)          # None = built design (cover on the plate); else variant height
+OUT_SUFFIX = arg('--suffix', '')
+VARIANTS = os.path.join(ROOT, 'case', 'preview', 'oled-variants')
 
 
 # --- materials -----------------------------------------------------------------------
@@ -74,6 +77,22 @@ def materials():
     MAT['cable'] = principled('cable', srgb('#f23f00'), 0.55)
     MAT['metal'] = principled('metal', srgb('#d7d9dc'), 0.22, metal=1.0)
     MAT['floor'] = principled('backdrop', srgb('#f7f7f7'), 0.9)
+    MAT['oled pcb'] = principled('oled pcb', srgb('#1b2a4a'), 0.5)
+    MAT['oled glass'] = principled('oled glass', srgb('#050607'), 0.08, coat=1.0)
+    clear = principled('clear acrylic', (1, 1, 1), 0.0)
+    b = clear.node_tree.nodes['Principled BSDF']
+    b.inputs['Transmission Weight'].default_value = 1.0
+    b.inputs['IOR'].default_value = 1.49
+    MAT['acrylic'] = clear
+    glow = bpy.data.materials.new('oled pixels')
+    glow.use_nodes = True
+    nt = glow.node_tree
+    nt.nodes.remove(nt.nodes['Principled BSDF'])
+    em = nt.nodes.new('ShaderNodeEmission')
+    em.inputs['Color'].default_value = (0.75, 0.9, 1.0, 1)
+    em.inputs['Strength'].default_value = 25.0
+    nt.links.new(em.outputs[0], nt.nodes['Material Output'].inputs[0])
+    MAT['pixels'] = glow
 
 
 # --- geometry helpers -------------------------------------------------------------------
@@ -132,6 +151,56 @@ def keycap(k, side):
     return [cap, sw]
 
 
+def oled(data, side, module=None, glass_top=None):
+    """0.91 inch module: blue PCB, black glass, glowing status text.
+    module = (x0, y0, x1, y1) board-local; glass_top = z of the glass top (default: built design)."""
+    if module is None:
+        bx0, by0, bx1, by1 = data['oled']['box']
+        module = (bx0 + 0.25, by0 + 0.25, bx1 - 0.25, by1 - 0.25)
+    x0, y0, x1, y1 = module
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    z = FLOOR + STANDOFF + PCB_T + 2.0 if glass_top is None else glass_top - 2.6
+    pcb = box_mesh('oled pcb', x1 - x0, y1 - y0, 1.2, mat=MAT['oled pcb'])
+    pcb.location = (cx * MM, -cy * MM, z * MM)
+    horizontal = (x1 - x0) > (y1 - y0)
+    pins_at_bottom = side == 'left'                 # header end; the glass sits toward the other end
+    if horizontal:
+        gx, gy = cx + 3.0, cy
+        glass = box_mesh('oled glass', 30.0, 11.4, 1.4, bevel=0.2, mat=MAT['oled glass'])
+        glass.location = (gx * MM, -gy * MM, (z + 1.2) * MM)
+    else:
+        gy = cy - 3.0 if pins_at_bottom else cy + 3.0
+        glass = box_mesh('oled glass', 11.4, 30.0, 1.4, bevel=0.2, mat=MAT['oled glass'])
+        glass.location = (cx * MM, -gy * MM, (z + 1.2) * MM)
+    out = [pcb, glass]
+    if horizontal:
+        lines = ['nrsk  LAYER 0', 'CAPS'] if side == 'left' else ['nrsk  WPM 72', '']
+        for i, line in enumerate(lines):
+            if not line:
+                continue
+            cu = bpy.data.curves.new(f'oled text {i}', 'FONT')
+            cu.body = line
+            cu.size = 3.0 * MM
+            t = link(bpy.data.objects.new(f'oled text {i}', cu))
+            t.data.materials.append(MAT['pixels'])
+            t.location = ((gx - 12.5) * MM, -(gy - 1.0 + i * 4.2) * MM, (z + 2.62) * MM)
+            out.append(t)
+        return out
+    for i, line in enumerate(lines := (['nrsk', '', 'LAYR0', '', 'CAPS'] if side == 'left' else ['nrsk', '', 'WPM', ' 72'])):
+        if not line:
+            continue
+        cu = bpy.data.curves.new(f'oled text {i}', 'FONT')
+        cu.body = line
+        cu.size = 2.6 * MM
+        cu.align_x = 'LEFT'
+        t = link(bpy.data.objects.new(f'oled text {i}', cu))
+        t.data.materials.append(MAT['pixels'])
+        # text runs across the 12 mm width, lines stack down the 30 mm glass (display rotated 270)
+        t.location = ((cx - 4.6) * MM, -(gy - 12.5 + i * 3.6) * MM, (z + 2.62) * MM)
+        out.append(t)
+    return out
+
+
 def knurled_plug(name, length=16.0, radius=3.6):
     bpy.ops.mesh.primitive_cylinder_add(vertices=48, radius=radius * MM, depth=length * MM)
     body = bpy.context.active_object
@@ -165,6 +234,54 @@ def build_half(side, world):
     objs.append(plate)
     for k in data['keys']:
         objs += keycap(k, side)
+    if OLED_H is None:
+        objs += oled(data, side)
+        cover = import_stl(os.path.join(ROOT, 'case', 'preview', f'{side}-oled-cover.stl'), MAT['acrylic'], f'{side} cover')
+        cover.location.z = Z_PLATE_TOP * MM
+        objs.append(cover)
+        data['oled_module'] = None
+    if OLED_H is not None and OLED_H not in ('0', '0.0'):
+        # the display moved away from the plate window: close the window (plate without it)
+        fill = import_stl(os.path.join(VARIANTS, f'{side}-lens-0.stl'), MAT['case'], f'{side} window fill')
+        fill.location.z = Z_PLATE_TOP * MM
+        objs.append(fill)
+    if OLED_H is None:
+        pass
+    elif OLED_H.startswith('tilt'):
+        v = json.load(open(os.path.join(VARIANTS, 'variants.json')))
+        f = v[side]['tilted'][OLED_H]
+        for kind, mat in (('pod', MAT['case']), ('lens', MAT['acrylic'])):
+            o = import_stl(os.path.join(VARIANTS, f'{side}-{kind}-{OLED_H}.stl'), mat, f'{side} {kind}')
+            o.location.z = Z_PLATE_TOP * MM
+            objs.append(o)
+        # module built flat in a local frame (front edge at y=0, sloping up toward the back), then tilted
+        w, L = f['w'], f['L']
+        parts = oled(data, side, (-w / 2, -L, w / 2, 0.0), -v['lens_t'])
+        bpy.context.view_layer.update()
+        frame = (Matrix.Translation((f['cx'] * MM, -f['yf'] * MM, (Z_PLATE_TOP + f['zf']) * MM))
+                 @ Matrix.Rotation(math.radians(f['deg']), 4, 'X'))
+        for o in parts:
+            o.matrix_world = frame @ o.matrix_world
+        objs += parts
+        depth = L * math.cos(math.radians(f['deg']))
+        data['oled_module'] = (f['cx'] - w / 2, f['yf'] - depth, f['cx'] + w / 2, f['yf'])
+    else:
+        v = json.load(open(os.path.join(VARIANTS, 'variants.json')))
+        h = float(OLED_H)
+        tag = f'{h:g}'
+        if h > 0:
+            module = v[side]['raised_module']
+            pod = import_stl(os.path.join(VARIANTS, f'{side}-pod-{tag}.stl'), MAT['case'], f'{side} pod')
+            pod.location.z = Z_PLATE_TOP * MM
+            objs.append(pod)
+        else:
+            bx0, by0, bx1, by1 = v[side]['flush_module']
+            module = (bx0 + 0.25, by0 + 0.25, bx1 - 0.25, by1 - 0.25)
+        objs += oled(data, side, module, Z_PLATE_TOP + h - v['lens_t'])
+        lens = import_stl(os.path.join(VARIANTS, f'{side}-lens-{tag}.stl'), MAT['acrylic'], f'{side} lens')
+        lens.location.z = Z_PLATE_TOP * MM
+        objs.append(lens)
+        data['oled_module'] = module
     bpy.context.view_layer.update()
     for o in objs:
         o.matrix_world = world @ o.matrix_world
@@ -232,6 +349,10 @@ def studio():
         sc.cycles.device = 'CPU'
     sc.cycles.samples = SAMPLES
     sc.cycles.use_denoising = True
+    sc.cycles.denoiser = 'OPENIMAGEDENOISE'
+    sc.cycles.use_adaptive_sampling = True
+    sc.cycles.adaptive_threshold = 0.005
+    sc.render.film_transparent = False
     sc.view_settings.view_transform = 'AgX'
     sc.view_settings.look = 'AgX - Punchy'
     sc.view_settings.exposure = -0.7
@@ -300,6 +421,8 @@ def main():
         W[side] = (Matrix.Translation(place) @ Matrix.Rotation(math.radians(-sgn * SPLAY), 4, 'Z')
                    @ Matrix.Translation(Vector((-cx * MM, cy * MM, 0))))
     data = {s: build_half(s, W[s]) for s in ('left', 'right')}
+    ob = data['left']['oled_module'] or data['left']['oled']['box']
+    oled_c = board_point(W['left'], (ob[0] + ob[2]) / 2, (ob[1] + ob[3]) / 2, Z_PLATE_TOP)
 
     # cables ------------------------------------------------------------------------------
     z_conn = FLOOR + STANDOFF - 1.7          # back-side connectors: axis just below the PCB
@@ -347,7 +470,7 @@ def main():
                      fstop=5.6, res=(RES, int(RES * 2 / 3))),
         # close, low view of the left half's inner corner with the cables (like the first photo)
         'detail': dict(loc=(0.06, -0.30, 0.17), target=(-0.075, 0.005, 0.005), lens=55, focus=(-0.04, -0.02, 0.015),
-                       fstop=2.8, res=(int(RES * 2 / 3), RES)),
+                       fstop=5.6, res=(int(RES * 2 / 3), RES)),
     }
     if '--debug' in args:
         for o in bpy.data.objects:
@@ -360,11 +483,17 @@ def main():
         n = sum(1 for o in bpy.data.objects if o.name.startswith('keycap'))
         print('keycaps', n)
         return
+    c = oled_c
+    shots['oled'] = dict(loc=tuple(c + Vector((0.07, -0.13, 0.12))), target=tuple(c + Vector((-0.012, 0.0, 0.0))),
+                         lens=90, focus=tuple(c), fstop=8.0, res=(RES, int(RES * 2 / 3)))
+    # what a seated typist sees: from the front, ~45 cm away and ~30 cm above the desk
+    shots['user'] = dict(loc=tuple(c + Vector((-0.10, -0.40, 0.30))), target=tuple(c + Vector((-0.03, -0.02, 0.0))),
+                         lens=50, focus=tuple(c), fstop=8.0, res=(RES, int(RES * 2 / 3)))
     for name in SHOTS:
         s = shots[name]
         sc.camera = camera(name, s['loc'], s['target'], s['lens'], s['focus'], s['fstop'])
         sc.render.resolution_x, sc.render.resolution_y = s['res']
-        sc.render.filepath = os.path.join(out_dir, f'render-{name}.png')
+        sc.render.filepath = os.path.join(out_dir, f'render-{name}{OUT_SUFFIX}.png')
         bpy.ops.render.render(write_still=True)
         print('rendered', sc.render.filepath)
 

@@ -25,6 +25,7 @@ FP = {
     'c': 'Capacitor_SMD:C_0805_2012Metric',
     'fuse': 'Fuse:Fuse_1206_3216Metric',
     'reset': 'Button_Switch_SMD:SW_SPST_PTS810',
+    'oled': 'nrsk:OLED_0.91in_128x32_I2C',
 }
 
 # ATmega32U4 TQFP-44 pin -> port name
@@ -232,6 +233,7 @@ def build(side):
             mcu[str(pin)] = 'HWB'
         else:
             mcu[str(pin)] = None
+    mcu.update({'18': 'SCL', '19': 'SDA'})
     mcu.update({'2': 'VCC', '14': 'VCC', '24': 'VCC', '3': 'D-', '4': 'D+', '5': 'GND', '15': 'GND',
                 '6': 'UCAP', '7': 'VBUS', '13': 'RST', '16': 'XTAL2', '17': 'XTAL1', '42': None})
     sh.symbol('MCU_Microchip_ATmega:ATmega32U4-A', 'U1', 'ATmega32U4-AU', MX, MY, 0, FP['mcu'], mcu)
@@ -286,6 +288,14 @@ def build(side):
     sh.text('Split link: TRRS 3.5 mm (QMK soft serial)', JX - 12.7, JY - 15.24)
     sh.symbol('Connector_Audio:AudioJack4', 'J1', 'PJ-320D', JX, JY, 0, FP['trrs'],
               {'T': 'DATA', 'R1': None, 'R2': 'VCC', 'S': 'GND'})
+
+    # OLED (0.91" SSD1306, I2C on PD0/PD1)
+    OX, OY = 342.9, 215.9
+    sh.text('OLED 0.91" 128x32 (I2C, SSD1306)', OX - 12.7, OY - 15.24)
+    sh.symbol('Connector_Generic:Conn_01x04', 'J3', 'OLED 128x32', OX, OY, 0, FP['oled'],
+              {'1': 'GND', '2': 'VCC', '3': 'SCL', '4': 'SDA'})
+    two_pin(sh, 'Device:R', 'R8', '4.7k', OX + 25.4, OY - 2.54, FP['r'], 'VCC', 'SCL')
+    two_pin(sh, 'Device:R', 'R9', '4.7k', OX + 35.56, OY - 2.54, FP['r'], 'VCC', 'SDA')
 
     path = os.path.join(HERE, '..', side, project + '.kicad_sch')
     os.makedirs(os.path.dirname(path), exist_ok=True)

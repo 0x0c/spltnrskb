@@ -47,6 +47,11 @@ INSERT_D = 3.2       # M2 heat-set insert in the wall top
 INSERT_DEPTH = 4.0
 RESET_D = 3.0
 SWITCH_CUT = 14.0
+# OLED: window in the switch plate, closed by a clear acrylic cover lying directly on the plate
+OLED_WINDOW_CLEAR = 0.15     # added to the module courtyard (courtyard = module + 0.25)
+COVER_T = 2.0                # cover top = plate top + 2.0, below the keycap skirts (plate top + 5.6)
+COVER_MARGIN = 3.0
+SWITCH_TOP_KEEPOUT = 8.4     # half size of an MX top housing (15.6 mm) + 0.6 mm
 STAB_CUT = (7.0, 15.4, 0.5)   # w, h, centre y offset (down) of each stabilizer housing cut-out
 STAB_X = 11.938
 
@@ -82,6 +87,9 @@ class Half:
         self.inner_right = self.d['inner_side'] == 'right'
         self.slots = self._slots()
         self.screws = self._screws()
+        self.window_box, self.cover_screws = self._oled()
+        # cover screws replace perimeter screws that would sit too close to them
+        self.screws = [p for p in self.screws if all(math.dist(p, c) > 9 for c in self.cover_screws)] + self.cover_screws
 
     # connector openings through the inner wall -----------------------------------
     def _slots(self):
@@ -108,6 +116,41 @@ class Half:
                     x1 = self.pcb[0]
             cs = cs + rect(x0, s['y'] - s['half'], x1, s['y'] + s['half'])
         return cs
+
+    # OLED window and cover ---------------------------------------------------------------
+    def _oled(self):
+        bx0, by0, bx1, by1 = self.d['oled']['box']
+        g = OLED_WINDOW_CLEAR
+        win = (bx0 - g, by0 - g, bx1 + g, by1 + g)
+        x0, _, x1, _, _ = self.pcb
+        wall_x = x1 + CLEAR + WALL / 2 if self.inner_right else x0 - CLEAR - WALL / 2
+        # two screws on the wall centre line beside the window, clear of the plug openings
+        ok = [y for y in [win[1] + i * 0.5 for i in range(int((win[3] - win[1]) / 0.5) + 1)]
+              if all(abs(y - s['y']) > s['half'] + 3.5 for s in self.slots)]
+        assert len(ok) >= 2, 'no room for OLED cover screws'
+        return win, [(wall_x, min(ok) + 3.0 if min(ok) + 3.0 < max(ok) - 3.0 else min(ok)),
+                     (wall_x, max(ok) - 3.0 if max(ok) - 3.0 > min(ok) + 3.0 else max(ok))]
+
+    def window_cs(self):
+        return rect(*self.window_box)
+
+    def switch_tops(self):
+        cs = CrossSection()
+        h = SWITCH_TOP_KEEPOUT
+        for k in self.d['keys']:
+            cs = cs + rect(k['cx'] - h, k['cy'] - h, k['cx'] + h, k['cy'] + h)
+        return cs
+
+    def cover(self):
+        wx0, wy0, wx1, wy1 = self.window_box
+        m = COVER_MARGIN
+        sx = [p[0] for p in self.cover_screws]
+        sy = [p[1] for p in self.cover_screws]
+        x0, x1 = min(wx0 - m, min(sx) - 3.5), max(wx1 + m, max(sx) + 3.5)
+        y0, y1 = min(wy0 - m, min(sy) - 3.5), max(wy1 + m, max(sy) + 3.5)
+        cs = (rect(x0, y0, x1, y1) - self.switch_tops()) ^ self.outer.offset(-1.0, JoinType.Round)
+        cs = cs.offset(-1.0, JoinType.Round).offset(1.0, JoinType.Round)    # round the corners
+        return cs - self.holes(self.cover_screws, SCREW_D)
 
     # perimeter screws on the wall centre line --------------------------------------
     def _screws(self):
@@ -152,7 +195,7 @@ class Half:
                 for sx in (-1, 1):
                     cx = k['cx'] + sx * STAB_X
                     cut = cut + rect(cx - w / 2, k['cy'] + dy - hh / 2, cx + w / 2, k['cy'] + dy + hh / 2)
-        return self.outer - cut - self.holes(self.screws, SCREW_D)
+        return self.outer - cut - self.window_cs() - self.holes(self.screws, SCREW_D)
 
     def frame(self, layer):
         cs = self.outer - self.inner - self.holes(self.screws, SCREW_D)
@@ -242,7 +285,7 @@ def main(sides):
         hf = Half(side)
         for sub in ('laser', 'print', 'preview'):
             os.makedirs(os.path.join(OUT, sub), exist_ok=True)
-        layers = {'plate': hf.plate(), 'bottom': hf.bottom()}
+        layers = {'plate': hf.plate(), 'bottom': hf.bottom(), 'oled-cover': hf.cover()}
         for i in range(N_FRAMES):
             layers[f'frame{i + 1}'] = hf.frame(i)
         for name, cs in layers.items():
@@ -251,6 +294,7 @@ def main(sides):
         tray, plate = hf.tray(), hf.plate3d()
         write_stl(os.path.join(OUT, 'print', f'{side}-tray.stl'), tray)
         write_stl(os.path.join(OUT, 'print', f'{side}-plate.stl'), plate)
+        write_stl(os.path.join(OUT, 'preview', f'{side}-oled-cover.stl'), Manifold.extrude(hf.cover(), COVER_T))
         # assembly preview (print variant): tray + PCB + plate in place
         z_pcb = FLOOR + STANDOFF
         write_stl(os.path.join(OUT, 'preview', f'{side}-pcb.stl'), hf.pcb3d().translate((0, 0, z_pcb)))
@@ -260,7 +304,7 @@ def main(sides):
         report[side] = dict(case_mm=[round(ox1 - ox0, 1), round(oy1 - oy0, 1)],
                             height_print=round(FLOOR + STANDOFF + PCB_T + PLATE_GAP + PLATE_T, 2),
                             height_acrylic=BOTTOM_T + N_FRAMES * FRAME_T + PLATE_T,
-                            screws=len(hf.screws), pcb_holes=len(hf.d['holes']),
+                            screws=len(hf.screws), cover_screws=len(hf.cover_screws), pcb_holes=len(hf.d['holes']),
                             tray_volume_cm3=round(tray.volume() / 1000, 1),
                             plate_genus=plate.genus(), tray_status=str(tray.status()))
         check(hf, layers)
@@ -285,6 +329,17 @@ def check(hf, layers):
 
     def area(poly):
         return abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]))) / 2
+    # OLED: window clear of switch cut-outs, cover clear of switch tops and fully supported by the plate
+    win = hf.window_cs()
+    keys = CrossSection()
+    for k in hf.d['keys']:
+        h = SWITCH_CUT / 2 + 1.0
+        keys = keys + rect(k['cx'] - h, k['cy'] - h, k['cx'] + h, k['cy'] + h)
+    assert (win ^ keys).area() < 0.01, 'OLED window too close to a switch'
+    assert (layers['oled-cover'] ^ hf.switch_tops()).area() < 0.01, 'cover hits a switch'
+    assert (win - layers['oled-cover']).area() < 0.01, 'cover does not close the window'
+    assert all(not (s['y'] - s['half'] < y < s['y'] + s['half']) for s in hf.slots for _, y in hf.cover_screws)
+
     # the switch plate and the top frame must keep an unbroken outer edge (no connector notches)
     for name in ('plate', f'frame{N_FRAMES}'):
         outer_area = max(area(p) for p in polygons(layers[name]))

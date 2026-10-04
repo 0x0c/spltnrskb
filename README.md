@@ -15,7 +15,8 @@ v2 では Pro Micro などのマイコンボードをやめ、ATmega32U4 と USB
 | スイッチ | Cherry MX 互換、Kailh MX ホットスワップソケット（裏面） |
 | 基板 | 2 層、左 163.2 × 120.3 mm、右 187.0 × 120.3 mm（キー外周から 3 mm の余白）、四隅は半径 4 mm の角丸、M2 取付穴 × 8（片側あたり） |
 | 筐体 | 左 180.2 × 137.3 mm、右 204.0 × 137.3 mm、高さ 15.6 mm（3D プリント版）／ 16.5 mm（アクリル版）、いずれもプレート上面まで |
-| 外観 | スイッチプレートは切り欠きなし（USB-C と TRRS は基板の裏面に実装し、プラグは基板の下を通る） |
+| 外観 | スイッチプレートは外周の切り欠きなし（USB-C と TRRS は基板の裏面に実装し、プラグは基板の下を通る） |
+| 表示 | 0.91 インチ OLED（128×32）を左右に 1 枚ずつ、透明アクリルのカバー付き。高さは増えない |
 
 ![左基板](docs/img/left-top.png)
 ![右基板](docs/img/right-top.png)
@@ -25,6 +26,7 @@ v2 では Pro Micro などのマイコンボードをやめ、ATmega32U4 と USB
 
 ![完成イメージ](docs/img/render-hero.png)
 ![完成イメージ（寄り）](docs/img/render-detail.png)
+![OLED](docs/img/render-oled.png)
 
 ## 回路
 
@@ -68,6 +70,23 @@ TRRS の配線は Tip = DATA、Ring2 = VCC、Sleeve = GND で、Ring1 は未接�
 - 2 u 以上のキー（左 Shift 2.25 u、右 Backspace 2 u、右 Enter 2.25 u）には PCB マウント型スタビライザの穴があります。
 - 配線ルールは信号線 0.2 mm、電源線 0.4 mm、クリアランス 0.2 mm、ビア 0.6/0.3 mm です。最小配線幅は 0.15 mm で、USB-C の細いピンに入る部分だけで使っています。JLCPCB などの標準仕様（最小 0.127 mm）で製造できます。
 - マイコン周りの部品番号はシルクに収まらないため、Fab 層に入れています。半田付けには `fab/<side>/nrsk-<side>-assembly-back.pdf`（裏面の実装図、左右反転済み）を使ってください。
+
+## OLED
+
+左右に 0.91 インチの OLED モジュール（128×32、SSD1306、I2C）を 1 枚ずつ付けています。
+
+- 配線: マイコンの PD0（SCL）と PD1（SDA）に接続し、4.7 kΩ でプルアップしています。モジュールのピン順は GND / VCC / SCL / SDA です。VCC と GND が逆のモジュールもあるので、購入前に確認してください。
+- 配置: キーのない内側の切り欠きに縦向きで置いています。左は 3〜4 段目の右端、右は 1〜2 段目の左端です。
+- 取り付け: ピンヘッダの黒い樹脂スペーサーを外し、モジュールを基板から約 2 mm 浮かせて半田付けします。ガラス面がプレート上面より約 0.4 mm 低く収まります。
+- 筐体: プレートに OLED が通る窓を開け、その上に 2 mm の透明アクリルカバー（`case/laser/<side>-oled-cover`）を直接載せます。カバーはスイッチ上部を避けた形で、壁に M2 ネジ 2 本で留めます。カバー上面はキーキャップの下端より低いので、キーボードの高さは変わりません。
+- 表示: QMK の `oled_task_user` で、USB をつないだ側にレイヤーと Caps Lock、もう一方に WPM を表示します（`firmware/qmk/keyboards/nrsk/keymaps/default/keymap.c`）。
+
+### OLED の高さ・角度の比較
+
+キーキャップに隠れにくい OLED の付け方を、高さ 0〜13 mm の 4 案（A〜D）と傾斜 2 案（E・F）で比べました。
+座った目線と寄りのレンダリングを、取り付け方式ごとに [docs/img/render-grid.jpg](docs/img/render-grid.jpg) にまとめています。
+台座の形状は `gen/oled_variants.py`、レンダリングは `gen/render_all.sh`（Blender、15 カットで約 15 分）で作り直せます。
+B〜F は OLED を基板の外側（壁の上）へ移すため、基板のコネクタから配線でつなぐ前提です。
 
 ## 筐体
 
@@ -124,10 +143,11 @@ TRRS の配線は Tip = DATA、Ring2 = VCC、Sleeve = GND で、Ring1 は未接�
 left/, right/        KiCad プロジェクト（.kicad_pro / .kicad_sch / .kicad_pcb）、ERC と DRC のレポート
 lib/nrsk.pretty      自作フットプリント（ホットスワップ MX、1u〜2.25u）
 fab/<side>/          ガーバーとドリルの zip、BOM（CSV）、回路図（PDF）、裏面の実装図（PDF）
-case/laser/          アクリル用 DXF と SVG（<side>-plate / frame1〜4 / bottom）
+case/laser/          アクリル用 DXF と SVG（<side>-plate / frame1〜4 / bottom / oled-cover）
 case/print/          3D プリント用 STL（<side>-tray / plate）
 case/preview/        3D ビューア、重ね合わせ図、断面図
 docs/img/render-*    完成イメージ（gen/render_blender.py を Blender で実行して生成）
+docs/img/oled-study/ OLED の高さ・角度の比較レンダリング
 bom/                 左右合計の BOM（CSV / Markdown）
 firmware/qmk/        QMK のキーボード定義（keyboard.json）と既定のキーマップ
 gen/                 生成スクリプト（KLE の解析、回路図・基板の生成、部品の自動配置、自動配線、QMK 定義）

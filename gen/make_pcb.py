@@ -22,8 +22,10 @@ CORNER_R = 4.0
 SIDES = {
     # connectors on the BACK so plugs pass under the PCB and the switch plate needs no cut-outs;
     # values are the y of each connector on the inner edge and the MCU centre
-    'left': dict(key_shift=0.0, width=8.25 * U + MARGIN, inner=+1, usb_y=19.0, trrs_y=44.5, mcu=(152.8, 66.0)),
-    'right': dict(key_shift=9.75 * U, width=9.5 * U + MARGIN, inner=-1, usb_y=81.0, trrs_y=109.0, mcu=(6.0, 94.0)),
+    'left': dict(key_shift=0.0, width=8.25 * U + MARGIN, inner=+1, usb_y=19.0, trrs_y=44.5, mcu=(152.8, 66.0),
+                 oled=(153.9, 57.15, 90)),
+    'right': dict(key_shift=9.75 * U, width=9.5 * U + MARGIN, inner=-1, usb_y=81.0, trrs_y=109.0, mcu=(6.0, 94.0),
+                  oled=(3.3, 19.05, 270)),
 }
 
 # Support parts: (ref, list of (footprint ref, pad) the part should sit close to)
@@ -36,6 +38,7 @@ SUPPORT = [
     ('F1', [('J2', 'A4')]), ('D99', [('F1', '1'), ('U1', '14')]),
     ('C3', [('U1', '6')]), ('C4', [('U1', '2')]), ('C5', [('U1', '14')]), ('C6', [('U1', '24')]),
     ('C7', [('U1', '44')]), ('C8', [('U1', '34')]),
+    ('R8', [('U1', '18')]), ('R9', [('U1', '19')]),
     ('R6', [('U1', '13')]), ('RSW1', [('U1', '13')]), ('R7', [('U1', '33')]), ('R1', [('U1', '21')]),
 ]
 
@@ -297,6 +300,7 @@ def write_case_data(side, board, fps, keys, holes, w, h, shift):
             trrs=dict(center=local(fps['J1'].GetPosition()), box=local_box(fps['J1']), plug=[9.0, 9.0]),
         ),
         reset=local(fps['RSW1'].GetPosition()),
+        oled=dict(box=local_box(fps['J3'])),
     )
     import json
     json.dump(data, open(os.path.join(ROOT, side, 'case_data.json'), 'w'), indent=1, ensure_ascii=False)
@@ -386,6 +390,7 @@ def build(side):
     edge_x = w if cfg['inner'] > 0 else -MARGIN
     place_connector(fps['J2'], edge_x, cfg['usb_y'], cfg['inner'], 'usb')
     place_connector(fps['J1'], edge_x, cfg['trrs_y'], cfg['inner'], 'trrs')
+    place('J3', *cfg['oled'])          # OLED module on the front, in a key-free notch
     u1 = place('U1', *cfg['mcu'], 0, back=True)
     a6 = pad(fps['J2'], 'A6')
     best = min((0, 90, 180, 270), key=lambda r: (u1.SetOrientationDegrees(r), dist(pad(u1, '4'), a6))[1])

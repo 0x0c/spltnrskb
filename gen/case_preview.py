@@ -25,6 +25,7 @@ def main(side):
         (hf.frame(1), '#2a7', 0.25, 'rgba(40,170,110,0.15)'),
         (pcb, '#06c', 0.3, 'rgba(0,100,200,0.10)'),
         (hf.plate(), '#d22', 0.2, 'none'),
+        (hf.cover(), '#09c', 0.3, 'rgba(0,150,220,0.15)'),
     ]
     body = ''
     for cs, col, sw, fill in items:

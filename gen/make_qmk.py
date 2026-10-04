@@ -30,6 +30,43 @@ def keycode(name, side):
     return 'KC_NO'   # unlabeled keys: assign as you like
 
 
+OLED_C = r'''
+#ifdef OLED_ENABLE
+// 0.91" 128x32 OLED mounted vertically on both halves
+oled_rotation_t oled_init_user(oled_rotation_t rotation) {
+    return OLED_ROTATION_270;
+}
+
+static void render_status(void) {
+    oled_write_ln_P(PSTR("nrsk"), false);
+    oled_write_ln_P(PSTR(""), false);
+    oled_write_P(PSTR("LAYR"), false);
+    oled_write_char('0' + get_highest_layer(layer_state), false);
+    oled_write_ln_P(PSTR(""), false);
+    oled_write_ln_P(PSTR(""), false);
+    led_t led = host_keyboard_led_state();
+    oled_write_ln_P(PSTR("CAPS"), led.caps_lock);
+}
+
+static void render_wpm(void) {
+    oled_write_ln_P(PSTR("nrsk"), false);
+    oled_write_ln_P(PSTR(""), false);
+    oled_write_ln_P(PSTR("WPM"), false);
+    oled_write(get_u8_str(get_current_wpm(), ' '), false);
+}
+
+bool oled_task_user(void) {
+    if (is_keyboard_master()) {
+        render_status();
+    } else {
+        render_wpm();
+    }
+    return false;
+}
+#endif
+'''
+
+
 def main():
     keys = [(s, k) for s in ('left', 'right') for k in load(s)]
     layout = []
@@ -47,13 +84,14 @@ def main():
         'processor': 'atmega32u4',
         'bootloader': 'atmel-dfu',
         'usb': {'vid': '0xFEED', 'pid': '0x4E52', 'device_version': '1.0.0'},
-        'features': {'bootmagic': True, 'extrakey': True, 'mousekey': False, 'nkro': True},
+        'features': {'bootmagic': True, 'extrakey': True, 'mousekey': False, 'nkro': True, 'oled': True, 'wpm': True},
         'diode_direction': 'COL2ROW',
         'matrix_pins': {'rows': ROW_PINS, 'cols': COL_PINS},
         'split': {
             'enabled': True,
             'serial': {'driver': 'bitbang', 'pin': SERIAL_PIN},
             'handedness': {'pin': HAND_PIN},
+            'transport': {'sync': {'layer_state': True, 'led_state': True, 'wpm': True}},
         },
         'layouts': {'LAYOUT': {'layout': layout}},
     }
@@ -86,8 +124,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {{
         {fn}
     )
 }};
+
 '''
-    open(os.path.join(OUT, 'keymaps', 'default', 'keymap.c'), 'w').write(c)
+    open(os.path.join(OUT, 'keymaps', 'default', 'keymap.c'), 'w').write(c + OLED_C)
     open(os.path.join(OUT, 'readme.md'), 'w').write(
         '# nrsk\n\nSplit keyboard, ATmega32U4 on each half (Atmel DFU bootloader), TRRS soft serial.\n\n'
         'Copy this folder to `qmk_firmware/keyboards/nrsk` and build:\n\n'

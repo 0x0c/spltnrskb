@@ -29,6 +29,8 @@ ELEC = {
     ('10k', 'Resistor_SMD:R_0805_2012Metric'): ('受動部品', '抵抗 10 kΩ', '0805 1%'),
     ('22', 'Resistor_SMD:R_0805_2012Metric'): ('受動部品', '抵抗 22 Ω', '0805 1%（USB D+/D−）'),
     ('5.1k', 'Resistor_SMD:R_0805_2012Metric'): ('受動部品', '抵抗 5.1 kΩ', '0805 1%（USB-C CC）'),
+    ('OLED 128x32', 'nrsk:OLED_0.91in_128x32_I2C'): ('表示', 'OLED モジュール 0.91 インチ', '128×32、SSD1306、I2C、ピン順 GND/VCC/SCL/SDA（基板から約 2 mm 浮かせて半田付け）'),
+    ('4.7k', 'Resistor_SMD:R_0805_2012Metric'): ('受動部品', '抵抗 4.7 kΩ', '0805 1%（I2C プルアップ）'),
     ('Reset', 'Button_Switch_SMD:SW_SPST_PTS810'): ('スイッチ', 'タクトスイッチ（リセット）', 'C&K PTS810 SJM 250 SMTR LFS'),
 }
 
@@ -72,7 +74,8 @@ def main():
         out.append(('キーキャップ', f'キーキャップ {w:g} u', '', '', '', widths[w], ''))
 
     rep = json.load(open(os.path.join(ROOT, 'case', 'case_report.json')))
-    scr = [rep[s]['screws'] for s in SIDES]
+    cov = [rep[s]['cover_screws'] for s in SIDES]
+    scr = [rep[s]['screws'] - rep[s]['cover_screws'] for s in SIDES]
     std = [rep[s]['pcb_holes'] for s in SIDES]
     size = {s: '×'.join(f'{v:g}' for v in rep[s]['case_mm']) for s in SIDES}
 
@@ -89,7 +92,11 @@ def main():
     add('アクリル版', 'M2 × 20 mm なべネジ', '外周（プレート〜底板を貫通、16.5 mm + ナット）', scr[0], scr[1], '')
     add('アクリル版', 'M2 ナット', '外周ネジ用', scr[0], scr[1], '')
     add('アクリル版', 'M2 × 5 mm なべネジ', '底板の下からスペーサーへ', std[0], std[1], '')
-    add('3D プリント版', 'M2 ヒートセットインサート', '外径 3.2 mm × 長さ 3 mm（壁上面の穴 φ3.2 × 4 mm）', scr[0], scr[1], '')
+    add('OLED カバー', '透明アクリル板 2 mm', '<side>-oled-cover（DXF/SVG）', 1, 1, 'プレートの上に直接載せる。両方の筐体で共通')
+    add('アクリル版', 'M2 × 22 mm なべネジ', 'OLED カバー〜底板を貫通（18.5 mm + ナット）', cov[0], cov[1], '')
+    add('アクリル版', 'M2 ナット（OLED カバー用）', '', cov[0], cov[1], '')
+    add('3D プリント版', 'M2 ヒートセットインサート', '外径 3.2 mm × 長さ 3 mm（壁上面の穴 φ3.2 × 4 mm）', scr[0] + cov[0], scr[1] + cov[1], '外周と OLED カバーの両方')
+    add('3D プリント版', 'M2 × 6 mm なべネジ', 'OLED カバーとプレートをインサートへ固定', cov[0], cov[1], '')
     add('3D プリント版', 'M2 × 5 mm なべネジ', 'プレートをインサートへ固定', scr[0], scr[1], '')
     add('3D プリント版', 'M2 × 6 mm タッピングネジ', '基板をボス（下穴 φ1.6）へ固定', std[0], std[1], '')
     add('ケーブル', 'TRRS ケーブル（4 極、オス-オス）', '3.5 mm', '', '', '1 本')
