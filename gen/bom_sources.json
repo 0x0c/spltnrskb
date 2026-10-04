@@ -23,14 +23,14 @@
    "shop": "LCSC C431535",
    "url": "https://www.lcsc.com/product-detail/C431535.html",
    "price": "US$0.05",
-   "note": "フットプリントは Qingpu WQP-PJ320D 基準。本体長 12.1 mm の互換品なので、発注前にパッド位置を照合"
+   "note": "LCSC の EasyEDA フットプリントと照合済み：固定ピン間隔 7.0 mm が一致し、端子位置の差は 0.1 mm 以内で KiCad の PJ320D パッドに載る"
   },
   {
    "mpn": "Korean Hroparts PJ-320D-4A",
    "shop": "LCSC C95562",
    "url": "https://www.lcsc.com/product-detail/C95562.html",
    "price": "US$0.11",
-   "note": "代替（本体長 14.1 mm）。同じくパッド位置を照合"
+   "note": "代替。同じく固定ピン間隔 7.0 mm が一致し、端子位置の差は 0.1 mm 以内"
   }
  ],
  "USB ESD 保護": [

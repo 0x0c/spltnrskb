@@ -22,9 +22,11 @@ CORNER_R = 4.0
 SIDES = {
     # connectors on the BACK so plugs pass under the PCB and the switch plate needs no cut-outs;
     # values are the y of each connector on the inner edge and the MCU centre
-    # each board hugs its own key grid (3 mm margin); the TRRS jacks sit at the same height on both halves
-    'left': dict(key_shift=0.0, width=8.25 * U + MARGIN, inner=+1, usb_y=19.0, trrs_y=112.3,
-                 mcu=(152.8, 66.0), oled=(153.9, 57.15, 90), wheel='top-left'),
+    # each board hugs its own key grid (3 mm margin); the TRRS jacks sit at the same height on both halves.
+    # The OLEDs sit at the same height too (top two rows, flush with the inner edge): the left board is
+    # 4.7 mm wider so its module clears the row-0/1 switches by the same 2.45 mm as on the right.
+    'left': dict(key_shift=0.0, width=8.25 * U + MARGIN + 4.7, inner=+1, usb_y=19.0, trrs_y=112.3,
+                 mcu=(152.8, 66.0), oled=(8.25 * U + MARGIN + 4.7 - 6.3, 19.05, 90), wheel='top-left'),
     'right': dict(key_shift=9.75 * U, width=9.5 * U + MARGIN, inner=-1, usb_y=81.0, trrs_y=112.3, mcu=(6.0, 94.0),
                   oled=(3.3, 19.05, 270), wheel='top-right'),
 }
@@ -279,6 +281,27 @@ def place_encoder(fp, x, y, rot=90):
 MOUTH_OVERHANG = {'usb': 0.5, 'trrs': 0.355}
 
 
+# KiCad's library has no 3D model for these footprints; use LCSC's (gen/fetch_3d.sh), shifted so
+# their pegs and shell legs land on KiCad's pads. Offsets are 3D (y up), in mm.
+LCSC_3D = '${KIPRJMOD}/../tools/easyeda/nrsk_lcsc.3dshapes/'
+MODELS = {
+    'USB_C_Receptacle_HRO_TYPE-C-31-M-12': ('USB-C_SMD-TYPE-C-31-M-12_1.wrl', (0, 1.42, 0), (0, 0, 180)),
+    'Jack_3.5mm_PJ320D_Horizontal': ('AUDIO-SMD_PJ-320D-1.wrl', (0.925, 0, 0), (0, 0, 0)),
+}
+
+
+def set_model(fp, name):
+    if name not in MODELS:
+        return
+    f, off, rot = MODELS[name]
+    m = pcbnew.FP_3DMODEL()
+    m.m_Filename = LCSC_3D + f
+    m.m_Offset = pcbnew.VECTOR3D(*off)
+    m.m_Rotation = pcbnew.VECTOR3D(*rot)
+    fp.Models().clear()
+    fp.Models().push_back(m)
+
+
 def place_connector(fp, edge_x, y, inner, kind):
     """Back-side connector on the inner edge, mouth flush with the edge."""
     fp.SetPosition(mm(0, y))
@@ -363,6 +386,7 @@ def build(side):
         fp.SetValue(c['value'])
         fp.SetPath(pcbnew.KIID_PATH('/' + c['uuid']))
         fp.SetSheetname('/'); fp.SetSheetfile(f'nrsk-{side}.kicad_sch')
+        set_model(fp, name)
         board.Add(fp)
         fps[ref] = fp
 

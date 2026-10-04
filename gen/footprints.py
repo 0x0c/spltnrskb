@@ -7,6 +7,9 @@ from layout import HERE
 OUT = os.path.join(HERE, '..', 'lib', 'nrsk.pretty')
 WIDTHS = [1.0, 1.25, 1.5, 1.75, 2.0, 2.25]
 U = 19.05
+# 3D models (fetched by gen/fetch_3d.sh into tools/, which is not committed; see README)
+KISWITCH = '${KIPRJMOD}/../tools/kiswitch/library/3dmodels/3d-library.3dshapes/'
+NRSK_3D = '${KIPRJMOD}/../lib/nrsk.3dshapes/'
 
 
 def uid():
@@ -40,6 +43,12 @@ def text(s, x, y, layer, size=1.0, mirror=False):
             f'    (effects (font (size {size} {size}) (thickness 0.15)){j}))\n')
 
 
+def model(path, offset=(0, 0, 0), rotate=(0, 0, 0)):
+    xyz = lambda v: ' '.join(f'{c:g}' for c in v)
+    return (f'  (model "{path}"\n    (offset (xyz {xyz(offset)}))\n    (scale (xyz 1 1 1))\n'
+            f'    (rotate (xyz {xyz(rotate)}))\n  )\n')
+
+
 def mx_hotswap(w):
     name = f'SW_MX_Hotswap_{w:.2f}u'
     s = (f'(footprint "{name}"\n  (version 20241229)\n  (generator "nrsk-gen")\n  (layer "F.Cu")\n'
@@ -70,6 +79,11 @@ def mx_hotswap(w):
         for sx in (-11.9, 11.9):
             s += npth(sx, -7.0, 3.05)
             s += npth(sx, 8.24, 4.0)
+    # same switch / socket geometry as kiswitch's SW_Hotswap_Kailh_MX footprints, so their models fit as-is
+    s += model(KISWITCH + 'SW_Hotswap_Kailh_MX.stp')
+    s += model(KISWITCH + 'SW_Cherry_MX_PCB.stp')
+    if w >= 2:
+        s += model(KISWITCH + 'Stabilizer_Cherry_MX_2.00u.stp')
     s += ')\n'
     return name, s
 
@@ -105,6 +119,7 @@ def oled_module():
         s += (f'  (pad "{i + 1}" thru_hole {shape} (at {px:.2f} {y:.2f}) (size 1.7 1.7) (drill 1.0) '
               f'(layers "*.Cu" "*.Mask") (uuid "{uid()}"))\n')
         s += text(lbl, px + 3.2, y, 'F.SilkS', 0.8)
+    s += model(NRSK_3D + 'OLED_0.91in_128x32.wrl')
     s += ')\n'
     return name, s
 

@@ -9,6 +9,8 @@ KC="$KICAD/MacOS/kicad-cli"
 export NRSK_WORK="${NRSK_WORK:-$(mktemp -d)}"
 SIDES="${*:-left right}"
 
+./gen/fetch_3d.sh
+python3 gen/models3d.py
 python3 gen/footprints.py
 for s in $SIDES; do
   python3 gen/make_sch.py "$s"
@@ -40,6 +42,7 @@ for s in $SIDES; do
   "$KC" pcb export pdf --mode-single -l B.Fab,B.SilkS,B.Cu,Edge.Cuts --mirror \
     -o "$out/nrsk-$s-assembly-back.pdf" "$s/nrsk-$s.kicad_pcb" >/dev/null 2>&1
 done
+NRSK_KC="$KC" "$KPY" gen/export_3d.py $SIDES
 python3 gen/make_qmk.py
 VENV="$PWD/.venv/bin/python"
 if [ -x "$VENV" ]; then "$VENV" gen/make_case.py && "$VENV" gen/case_preview.py && "$VENV" gen/case_section.py && "$VENV" gen/case_viewer.py; fi

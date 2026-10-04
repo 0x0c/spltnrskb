@@ -18,3 +18,4 @@ fab/*/gerber/
 
 # large duplicates of committed images
 docs/img/oled-study/sheet.png
+build/

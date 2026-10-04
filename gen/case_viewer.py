@@ -1,4 +1,8 @@
-"""Self-contained 3D viewer of the assembled halves: case/preview/viewer.html."""
+"""Self-contained 3D viewer of the assembled halves: case/preview/viewer.html.
+
+The boards are shown as KiCad exports them (gen/export_3d.py -> build/3d/*.glb, every part with its
+3D model). Without those exports the viewer falls back to a plain board, OLED and switch blocks.
+"""
 import base64
 import json
 import os
@@ -8,6 +12,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from manifold3d import Manifold  # noqa: E402
+import glb_mesh  # noqa: E402
 from make_case import (Half, OUT, FLOOR, STANDOFF, PCB_T, PLATE_GAP, BOTTOM_T, FRAME_T,  # noqa: E402
                        N_FRAMES, PLATE_T, COVER_T, WHEEL_GAP)
 
@@ -26,7 +31,21 @@ def switches(hf, z):
     return out
 
 
+GLB = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'build', '3d')
+
+
+def load_pcba():
+    paths = {(s, k): os.path.join(GLB, f'{s}-{k}.glb') for s in ('left', 'right') for k in ('pcba', 'switches')}
+    if not all(os.path.exists(p) for p in paths.values()):
+        print('no KiCad 3D export in build/3d; using plain board blocks')
+        return None, None
+    pool = {}
+    boards = {s: {k: glb_mesh.load(paths[s, k], pool) for k in ('pcba', 'switches')} for s in ('left', 'right')}
+    return pool['items'], boards
+
+
 def main():
+    pool, boards = load_pcba()
     scenes = {}
     for variant in ('print', 'acrylic'):
         parts = []
@@ -42,12 +61,16 @@ def main():
                     f = Manifold.extrude(hf.frame(i), FRAME_T).translate((0, 0, BOTTOM_T + i * FRAME_T))
                     parts.append((side, f'frame{i + 1}', pack(f), '#cfe8ff', 0.55))
             z_plate = z_pcb + PCB_T + PLATE_GAP
-            parts.append((side, 'pcb', pack(hf.pcb3d().translate((0, 0, z_pcb))), '#1f6b3a', 1.0))
             parts.append((side, 'plate', pack(hf.plate3d().translate((0, 0, z_plate))), '#9aa4b1', 0.9))
-            parts.append((side, 'switch', pack(switches(hf, z_plate + PLATE_T)), '#333333', 1.0))
-            bx0, by0, bx1, by1 = hf.d['oled']['box']
-            oled = Manifold.cube((bx1 - bx0 - 0.5, by1 - by0 - 0.5, 2.6)).translate((bx0 + 0.25, -by1 + 0.25, z_pcb + PCB_T + 2.0))
-            parts.append((side, 'oled', pack(oled), '#11151a', 1.0))
+            if boards:     # KiCad's assembled board is placed at z_pcb by the page
+                parts.append((side, 'pcba', z_pcb, None, None))
+            else:
+                parts.append((side, 'pcb', pack(hf.pcb3d().translate((0, 0, z_pcb))), '#1f6b3a', 1.0))
+                parts.append((side, 'switch', pack(switches(hf, z_plate + PLATE_T)), '#333333', 1.0))
+                bx0, by0, bx1, by1 = hf.d['oled']['box']
+                oled = Manifold.cube((bx1 - bx0 - 0.5, by1 - by0 - 0.5, 2.6)).translate(
+                    (bx0 + 0.25, -by1 + 0.25, z_pcb + PCB_T + 2.0))
+                parts.append((side, 'oled', pack(oled), '#11151a', 1.0))
             z_floor = FLOOR if variant == 'print' else BOTTOM_T
             parts.append((side, 'wheel', pack(hf.wheel3d().translate((0, 0, z_floor + WHEEL_GAP))), '#c9ccd1', 1.0))
             cover = Manifold.extrude(hf.cover(), COVER_T).translate((0, 0, z_plate + PLATE_T))
@@ -66,7 +89,8 @@ def main():
             ['高さ', f'{BOTTOM_T + N_FRAMES * FRAME_T + PLATE_T:g} mm'], ['基板の固定', f'M2 スペーサー {STANDOFF:g} mm × 8'], ['コネクタ', '基板裏面。プレートと最上段の枠は切り欠きなし'],
             ['外周', 'M2 × 20 mm + ナット'], ['ホイール', '角にサムホイール × 2（AS5600）'], ['OLED', '0.91 インチ × 2、透明アクリル 2 mm のカバー']]),
     }
-    html = TEMPLATE.replace('__DATA__', json.dumps(scenes)).replace('__SPEC__', json.dumps(spec_data, ensure_ascii=False))
+    html = TEMPLATE.replace('__DATA__', json.dumps(scenes)).replace('__POOL__', json.dumps(pool)) \
+        .replace('__BOARDS__', json.dumps(boards)).replace('__SPEC__', json.dumps(spec_data, ensure_ascii=False))
     path = os.path.join(OUT, 'preview', 'viewer.html')
     open(path, 'w').write(html)
     print('wrote', path, f'{os.path.getsize(path) / 1e6:.1f} MB')
@@ -94,6 +118,10 @@ body{background:var(--bg);color:var(--fg);font:14px/1.5 var(--sans);overflow:hid
 button{font:inherit;font-size:13px;border:1px solid var(--line);background:transparent;color:var(--fg);border-radius:6px;padding:4px 10px;cursor:pointer}
 button.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.gap[hidden]{display:none}
+.gap{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.gap input{width:min(160px,40vw);accent-color:var(--accent)}
+.gap output{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--fg);min-width:4.5em}
 </style>
 <canvas id="view" aria-label="キーボード筐体の 3D 表示。ドラッグで回転、右ドラッグか 2 本指でパン、ホイールかピンチでズーム、ダブルクリックで視点リセット"></canvas>
 <div id="ui" class="panel">
@@ -101,6 +129,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
  <span class="sep"></span>
  <button id="t-switch" data-t="switch" class="on">スイッチ</button><button id="t-plate" data-t="plate" class="on">プレート</button>
  <button id="t-explode" data-t="explode">分解表示</button>
+ <label id="gap" class="gap" hidden>間隔 <input id="gap-in" type="range" min="0" max="40" step="1" value="10" aria-label="分解表示のレイヤー間隔（mm）"> <output id="gap-out">10 mm</output></label>
  <span class="sep"></span>
  <button id="t-reset" type="button">視点リセット</button>
 </div>
@@ -109,6 +138,8 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 const DATA = __DATA__;
+const POOL = __POOL__;       // shared part geometry from KiCad's 3D export (null: plain blocks)
+const BOARDS = __BOARDS__;   // per side: {pcba, switches} = [[pool id, instance matrices], ...]
 const SPEC = __SPEC__;
 const b64 = (s, T) => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new T(u.buffer); };
 const canvas = document.getElementById('view');
@@ -127,8 +158,10 @@ ctl.mouseButtons = {LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: 
 ctl.touches = {ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN};
 scene.add(new THREE.HemisphereLight(0xffffff, 0x666666, 0.9));
 const dl = new THREE.DirectionalLight(0xffffff, 0.6); dl.position.set(200, -300, 400); scene.add(dl);
-let group = null; const state = {v: 'print', switch: true, plate: true, explode: false};
-const LIFT = {tray: 0, bottom: 0, frame1: 8, frame2: 16, frame3: 24, frame4: 32, pcb: 48, oled: 52, plate: 72, cover: 100, knob: 110, switch: 92};
+let group = null; const state = {v: 'print', switch: true, plate: true, explode: false, gap: 10};
+// exploded view: each layer rises by its level x the gap set on the slider (mm)
+const LEVEL = {tray: 0, bottom: 0, wheel: 0, frame1: 1, frame2: 2, frame3: 3, frame4: 4, pcb: 6, pcba: 6, oled: 6.5,
+               plate: 9, switch: 11.5, cover: 12.5};
 const GAP = 25;   // mm between the halves
 function bg() { scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()); }
 function spec() {
@@ -136,20 +169,51 @@ function spec() {
   document.getElementById('spec-title').textContent = s.title;
   document.getElementById('spec-dl').innerHTML = s.rows.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
 }
+// pool geometry: int16 positions over the part's box, normals computed here
+const geoCache = [], matCache = [];
+function poolGeo(id) {
+  if (geoCache[id]) return geoCache[id];
+  const p = POOL[id], q = b64(p.v, Int16Array), v = new Float32Array(q.length);
+  for (let i = 0; i < q.length; i++) v[i] = q[i] * p.s[i % 3] + p.o[i % 3];
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(v, 3));
+  g.setIndex(new THREE.BufferAttribute(b64(p.i, p.big ? Uint32Array : Uint16Array), 1));
+  g.computeVertexNormals();
+  const [r, gr, b, a] = p.mat.c;
+  const color = new THREE.Color(r, gr, b).convertLinearToSRGB();
+  matCache[id] = new THREE.MeshStandardMaterial({color, metalness: Math.min(p.mat.m, 0.6), roughness: Math.max(p.mat.r, 0.25),
+                                                 transparent: a < 1, opacity: a, side: THREE.DoubleSide});
+  return geoCache[id] = g;
+}
+function board(list) {
+  const g = new THREE.Group(), m4 = new THREE.Matrix4();
+  for (const [id, inst] of list) {
+    const mats = b64(inst, Float32Array), n = mats.length / 16;
+    const mesh = new THREE.InstancedMesh(poolGeo(id), matCache[id], n);
+    for (let i = 0; i < n; i++) mesh.setMatrixAt(i, m4.fromArray(mats, i * 16));
+    g.add(mesh);
+  }
+  return g;
+}
+function place(obj) { obj.position.z = obj.userData.z0 + (state.explode ? (LEVEL[obj.userData.layer] || 0) * state.gap : 0); }
 function build() {
   if (group) scene.remove(group);
   group = new THREE.Group();
   const halves = {left: new THREE.Group(), right: new THREE.Group()};
+  const add = (side, layer, obj, z0 = 0) => { obj.userData = {layer, z0}; place(obj); halves[side].add(obj); };
   for (const [side, name, m, color, op] of DATA[state.v]) {
     if (!state[name] && (name === 'switch' || name === 'plate')) continue;
+    if (name === 'pcba') {
+      add(side, 'pcba', board(BOARDS[side].pcba), m);
+      if (state.switch) add(side, 'switch', board(BOARDS[side].switches), m);
+      continue;
+    }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(b64(m.v, Float32Array), 3));
     g.setIndex(new THREE.BufferAttribute(b64(m.i, Uint32Array), 1));
     g.computeVertexNormals();
     const mat = new THREE.MeshStandardMaterial({color, transparent: op < 1, opacity: op, roughness: 0.6, metalness: 0.05, flatShading: true});
-    const mesh = new THREE.Mesh(g, mat);
-    if (state.explode) mesh.position.z = LIFT[name] || 0;
-    halves[side].add(mesh);
+    add(side, name, new THREE.Mesh(g, mat));
   }
   group.add(halves.left, halves.right);
   group.userData.halves = halves;
@@ -196,8 +260,15 @@ function onResize() {
 document.querySelectorAll('button[data-v], button[data-t]').forEach(b => b.addEventListener('click', () => {
   if (b.dataset.v) { state.v = b.dataset.v; document.querySelectorAll('[data-v]').forEach(x => x.classList.toggle('on', x === b)); }
   else { state[b.dataset.t] = !state[b.dataset.t]; b.classList.toggle('on', state[b.dataset.t]); }
+  if (b.dataset.t === 'explode') document.getElementById('gap').hidden = !state.explode;
   build(); if (b.dataset.v || b.dataset.t === 'explode') fit();
 }));
+const gapIn = document.getElementById('gap-in'), gapOut = document.getElementById('gap-out');
+gapIn.addEventListener('input', () => {
+  state.gap = +gapIn.value; gapOut.textContent = `${state.gap} mm`;
+  for (const h of Object.values(group.userData.halves)) h.children.forEach(place);
+});
+gapIn.addEventListener('change', fit);   // refit once the slider is released
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', bg);
 new MutationObserver(bg).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
 addEventListener('resize', onResize);

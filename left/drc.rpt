@@ -1,32 +1,32 @@
 ** Drc report for nrsk-left.kicad_pcb **
-** Created on 2026-10-04T18:45:20 **
+** Created on 2026-10-04T19:22:13 **
 ** Report includes: Errors, Warnings, Exclusions **
 
 ** Found 6 DRC violations **
 [silk_over_copper]: Silkscreen clipped by solder mask
     Local override; error
     @(170.6375 mm, 127.7750 mm): Rectangle of SW44 on F.Silkscreen
-    @(179.5175 mm, 142.3000 mm): NPTH pad of J1
+    @(184.2175 mm, 142.3000 mm): NPTH pad of J1
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
-    @(190.1625 mm, 31.0000 mm): Segment on Edge.Cuts
-    @(188.1175 mm, 139.8000 mm): Segment of J1 on B.Silkscreen
+    @(194.8625 mm, 31.0000 mm): Segment on Edge.Cuts
+    @(193.1675 mm, 44.3000 mm): Segment of J2 on B.Silkscreen
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
-    @(186.1625 mm, 143.3000 mm): Arc on Edge.Cuts
-    @(188.1175 mm, 144.8000 mm): Segment of J1 on B.Silkscreen
+    @(194.8625 mm, 31.0000 mm): Segment on Edge.Cuts
+    @(193.1675 mm, 53.7000 mm): Segment of J2 on B.Silkscreen
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
-    @(190.1625 mm, 31.0000 mm): Segment on Edge.Cuts
-    @(190.1175 mm, 139.8000 mm): Segment of J1 on B.Silkscreen
+    @(194.8625 mm, 31.0000 mm): Segment on Edge.Cuts
+    @(192.8175 mm, 139.8000 mm): Segment of J1 on B.Silkscreen
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
-    @(190.1625 mm, 31.0000 mm): Segment on Edge.Cuts
-    @(188.4675 mm, 44.3000 mm): Segment of J2 on B.Silkscreen
+    @(190.8625 mm, 143.3000 mm): Arc on Edge.Cuts
+    @(192.8175 mm, 144.8000 mm): Segment of J1 on B.Silkscreen
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
-    @(190.1625 mm, 31.0000 mm): Segment on Edge.Cuts
-    @(188.4675 mm, 53.7000 mm): Segment of J2 on B.Silkscreen
+    @(194.8625 mm, 31.0000 mm): Segment on Edge.Cuts
+    @(194.8175 mm, 139.8000 mm): Segment of J1 on B.Silkscreen
 
 ** Found 0 unconnected pads **
 
