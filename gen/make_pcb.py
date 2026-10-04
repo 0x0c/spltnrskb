@@ -22,8 +22,10 @@ CORNER_R = 4.0
 SIDES = {
     # connectors on the BACK so plugs pass under the PCB and the switch plate needs no cut-outs;
     # values are the y of each connector on the inner edge and the MCU centre
-    'left': dict(key_shift=0.0, width=8.25 * U + MARGIN, inner=+1, usb_y=19.0, trrs_y=44.5, mcu=(152.8, 66.0),
-                 oled=(153.9, 57.15, 90)),
+    # both halves share one outline (same case size); the left board is widened on its inner side and
+    # its MCU / connectors / OLED mirror the right half, so the TRRS jacks line up across the gap
+    'left': dict(key_shift=0.0, width=9.5 * U + MARGIN, inner=+1, usb_y=81.0, trrs_y=109.0,
+                 mcu=(9.5 * U + MARGIN - 9.0, 94.0), oled=(9.5 * U + MARGIN - 6.3, 19.05, 270)),
     'right': dict(key_shift=9.75 * U, width=9.5 * U + MARGIN, inner=-1, usb_y=81.0, trrs_y=109.0, mcu=(6.0, 94.0),
                   oled=(3.3, 19.05, 270)),
 }

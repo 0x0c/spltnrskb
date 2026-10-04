@@ -1,7 +1,7 @@
 {
  "left": {
   "case_mm": [
-   180.2,
+   204.0,
    137.3
   ],
   "height_print": 15.6,
@@ -9,7 +9,7 @@
   "screws": 13,
   "cover_screws": 2,
   "pcb_holes": 8,
-  "tray_volume_cm3": 104.8,
+  "tray_volume_cm3": 116.0,
   "plate_genus": 60,
   "tray_status": "Error.NoError"
  },

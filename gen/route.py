@@ -33,6 +33,35 @@ def remove_dangling_vias(board):
             board.Remove(v)
 
 
+def dangling_tracks(board):
+    """Unlocked track segments with an end that touches nothing (Freerouting leftovers)."""
+    tracks = [t for t in board.GetTracks() if t.Type() == pcbnew.PCB_TRACE_T]
+    vias = [t for t in board.GetTracks() if t.Type() == pcbnew.PCB_VIA_T]
+    pads = [p for fp in board.GetFootprints() for p in fp.Pads()]
+
+    def connected(t, pt):
+        if any(o is not t and o.GetNetCode() == t.GetNetCode() and o.GetLayer() == t.GetLayer() and
+               (o.GetStart() == pt or o.GetEnd() == pt or o.HitTest(pt, 0)) for o in tracks):
+            return True
+        if any(v.GetNetCode() == t.GetNetCode() and v.GetPosition() == pt for v in vias):
+            return True
+        return any(p.GetNetCode() == t.GetNetCode() and p.IsOnLayer(t.GetLayer()) and p.HitTest(pt) for p in pads)
+    return [t for t in tracks if not t.IsLocked() and not (connected(t, t.GetStart()) and connected(t, t.GetEnd()))]
+
+
+def remove_dangling_tracks(pcb):
+    """Repeatedly drop dangling stubs; save and reload between passes (removal invalidates the track list)."""
+    for _ in range(5):
+        board = pcbnew.LoadBoard(pcb)
+        stubs = dangling_tracks(board)
+        if not stubs:
+            return
+        print(f'removing {len(stubs)} dangling track(s)')
+        for t in stubs:
+            board.Remove(t)
+        pcbnew.SaveBoard(pcb, board)
+
+
 def route(side, passes=100):
     pcb = os.path.join(ROOT, side, f'nrsk-{side}.kicad_pcb')
     board = pcbnew.LoadBoard(pcb)
@@ -50,9 +79,19 @@ def route(side, passes=100):
             t.SetWidth(pcbnew.FromMM(0.15))
     remove_dangling_vias(board)
     pcbnew.SaveBoard(pcb, board)
+    remove_dangling_tracks(pcb)
     print('routed', pcb)
 
 
+def cleanup(side):
+    pcb = os.path.join(ROOT, side, f'nrsk-{side}.kicad_pcb')
+    remove_dangling_tracks(pcb)
+
+
 if __name__ == '__main__':
-    for s in sys.argv[1:] or ('left', 'right'):
-        route(s)
+    if sys.argv[1:2] == ['--cleanup']:
+        for s in sys.argv[2:]:
+            cleanup(s)
+    else:
+        for s in sys.argv[1:] or ('left', 'right'):
+            route(s)
