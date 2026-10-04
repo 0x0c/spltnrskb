@@ -1,0 +1,39 @@
+** Drc report for nrsk-left.kicad_pcb **
+** Created on 2026-10-04T10:15:13 **
+** Report includes: Errors, Warnings, Exclusions **
+
+** Found 5 DRC violations **
+[silk_edge_clearance]: Silkscreen clipped by board edge
+    Rule: board setup constraints silk; warning
+    @(190.1625 mm, 31.0000 mm): Segment on Edge.Cuts
+    @(188.4675 mm, 44.3000 mm): Segment of J2 on B.Silkscreen
+[silk_edge_clearance]: Silkscreen clipped by board edge
+    Rule: board setup constraints silk; warning
+    @(190.1625 mm, 31.0000 mm): Segment on Edge.Cuts
+    @(188.4675 mm, 53.7000 mm): Segment of J2 on B.Silkscreen
+[silk_edge_clearance]: Silkscreen clipped by board edge
+    Rule: board setup constraints silk; warning
+    @(190.1625 mm, 31.0000 mm): Segment on Edge.Cuts
+    @(188.1175 mm, 72.0000 mm): Segment of J1 on B.Silkscreen
+[silk_edge_clearance]: Silkscreen clipped by board edge
+    Rule: board setup constraints silk; warning
+    @(190.1625 mm, 31.0000 mm): Segment on Edge.Cuts
+    @(188.1175 mm, 77.0000 mm): Segment of J1 on B.Silkscreen
+[silk_edge_clearance]: Silkscreen clipped by board edge
+    Rule: board setup constraints silk; warning
+    @(190.1625 mm, 31.0000 mm): Segment on Edge.Cuts
+    @(190.1175 mm, 72.0000 mm): Segment of J1 on B.Silkscreen
+
+** Found 0 unconnected pads **
+
+** Found 0 Footprint errors **
+
+** Ignored checks **
+    - Footprint has no courtyard defined
+    - Track endpoint not centered on via
+    - Tuning profile track geometries
+    - Footprint doesn't match symbol's footprint filters
+    - PTH inside courtyard
+    - NPTH inside courtyard
+
+** End of Report **

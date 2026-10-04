@@ -1,0 +1,106 @@
+[
+  {
+    "name": "nrsk-split-left"
+  },
+  [
+    {
+      "c": "#ff7a00"
+    },
+    "1\n\n\n\n\n\nEsc",
+    {
+      "c": "#cccccc"
+    },
+    "2\n\n\n\n\n\nF1",
+    "3\n\n\n\n\n\nF2",
+    "4\n\n\n\n\n\nF3",
+    "5\n\n\n\n\n\nF4",
+    "6\n\n\n\n\n\nF5",
+    "7\n\n\n\n\n\nF6",
+    "8"
+  ],
+  [
+    "9\n`\n\n\n\n\n~",
+    "10\n1\n\n\n\n\n!",
+    "11\n2\n\n\n\n\n@",
+    "12\n3\n\n\n\n\n#",
+    "13\n4\n\n\n\n\n$",
+    "14\n5\n\n\n\n\n%",
+    "15\n6\n\n\n\n\n^",
+    "16"
+  ],
+  [
+    {
+      "c": "#6e6e6e",
+      "w": 1.5
+    },
+    "17\n\n\n\n\n\nTab",
+    {
+      "c": "#cccccc"
+    },
+    "18\n\n\n\n\n\nQ",
+    "19\n\n\n\n\n\nW",
+    "20\n\n\n\n\n\nE",
+    "21\n\n\n\n\n\nR",
+    "22\n\n\n\n\n\nT",
+    "23"
+  ],
+  [
+    {
+      "c": "#6e6e6e",
+      "w": 1.75
+    },
+    "24\n\n\n\n\n\nCtrl",
+    {
+      "c": "#cccccc"
+    },
+    "25\n\n\n\n\n\nA",
+    "26\n\n\n\n\n\nS",
+    "27\n\n\n\n\n\nD",
+    "28\n\n\n\n\n\nF",
+    "29\n\n\n\n\n\nG",
+    "30"
+  ],
+  [
+    {
+      "c": "#6e6e6e",
+      "sm": "cherry",
+      "w": 2.25
+    },
+    "31\n\n\n\n\n\nShift",
+    {
+      "c": "#cccccc"
+    },
+    "32\n\n\n\n\n\nZ",
+    "33\n\n\n\n\n\nX",
+    "34\n\n\n\n\n\nC",
+    "35\n\n\n\n\n\nV",
+    "36\n\n\n\n\n\nB",
+    "37"
+  ],
+  [
+    {
+      "x": 0.5,
+      "c": "#6e6e6e",
+      "w": 1.25
+    },
+    "38\n\n\n\n\n\nCtrl",
+    {
+      "w": 1.25
+    },
+    "39\n\n\n\n\n\nOpt",
+    {
+      "w": 1.25
+    },
+    "40\n\n\n\n\n\nCmd",
+    {
+      "c": "#04b000"
+    },
+    "41\n\n\n\n\n\nSpace",
+    {
+      "c": "#cccccc"
+    },
+    "42\n\n\n\n\n\nSpace",
+    "43\n\n\n\n\n\nSpace",
+    "44"
+  ]
+]

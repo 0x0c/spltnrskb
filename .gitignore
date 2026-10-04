@@ -1,0 +1,17 @@
+# local tools
+.venv/
+tools/
+__pycache__/
+
+# KiCad local / backup files
+*-backups/
+*.kicad_prl
+*.lck
+fp-info-cache
+_autosave-*
+*.bak
+
+# intermediate fabrication output (zips are committed)
+fab/*/gerber/
+
+.DS_Store

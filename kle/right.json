@@ -1,0 +1,117 @@
+[
+  {
+    "name": "nrskb-split-right"
+  },
+  [
+    {
+      "x": 10.25
+    },
+    "71",
+    "8\n\n\n\n\n\nF7",
+    "9\n\n\n\n\n\nF8",
+    "10\n\n\n\n\n\nF9",
+    "11\n\n\n\n\n\nF10",
+    "12\n\n\n\n\n\nF11",
+    "13\n\n\n\n\n\nF12"
+  ],
+  [
+    {
+      "x": 10.25
+    },
+    "73",
+    "21\n7\n\n\n\n\n&",
+    "22\n8\n\n\n\n\n*",
+    "23\n9\n\n\n\n\n(",
+    "24\n0\n\n\n\n\n)",
+    "25\n-\n\n\n\n\n_",
+    "26\n=\n\n\n\n\n+",
+    {
+      "c": "#6e6e6e",
+      "w": 2
+    },
+    "401\n\n\n\n\n\nBackspace"
+  ],
+  [
+    {
+      "x": 9.75,
+      "c": "#cccccc"
+    },
+    "75",
+    "32\n\n\n\n\n\nY",
+    "33\n\n\n\n\n\nU",
+    "34\n\n\n\n\n\nI",
+    "35\n\n\n\n\n\nO",
+    "36\n\n\n\n\n\nP",
+    "37\n[\n\n\n\n\n{",
+    "38\n]\n\n\n\n\n}",
+    {
+      "w": 1.5
+    },
+    "202\n\\\n\n\n\n\n|"
+  ],
+  [
+    {
+      "x": 10
+    },
+    "77",
+    "44\n\n\n\n\n\nH",
+    "45\n\n\n\n\n\nJ",
+    "46\n\n\n\n\n\nK",
+    "47\n\n\n\n\n\nL",
+    "48\n;\n\n\n\n\n:",
+    "49\n'\n\n\n\n\n\"",
+    {
+      "c": "#6e6e6e",
+      "w": 2.25
+    },
+    "601\n\n\n\n\n\nEnter"
+  ],
+  [
+    {
+      "x": 10.5,
+      "c": "#cccccc",
+      "sm": "cherry"
+    },
+    "79",
+    "55\n\n\n\n\n\nN",
+    "56\n\n\n\n\n\nM",
+    "57\n,\n\n\n\n\n<",
+    "58\n.\n\n\n\n\n>",
+    "59\n/\n\n\n\n\n?",
+    {
+      "x": 0.75,
+      "c": "#6e6e6e"
+    },
+    "65\n\n\n\n\n\n\n\n\n↑",
+    {
+      "c": "#cccccc"
+    },
+    "69\n\n\n\n\n\nfn"
+  ],
+  [
+    {
+      "x": 10.5
+    },
+    "81",
+    "63\n\n\n\n\n\nSpace",
+    {
+      "c": "#ff7a00"
+    },
+    "64\n\n\n\n\n\nSpace",
+    {
+      "c": "#6e6e6e",
+      "w": 1.25
+    },
+    "104\n\n\n\n\n\nCmd",
+    {
+      "w": 1.25
+    },
+    "105\n\n\n\n\n\nOpt",
+    {
+      "x": 0.25
+    },
+    "66\n\n\n\n\n\n\n\n\n←",
+    "67\n\n\n\n\n\n\n\n\n↓",
+    "68\n\n\n\n\n\n\n\n\n→"
+  ]
+]
