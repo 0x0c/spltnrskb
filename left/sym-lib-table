@@ -1,0 +1,4 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "nrsk") (type "KiCad") (uri "${KIPRJMOD}/../lib/nrsk.kicad_sym") (options "") (descr "nrsk keyboard symbols"))
+)

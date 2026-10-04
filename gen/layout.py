@@ -10,6 +10,8 @@ ROW_PINS = ['F4', 'F5', 'F6', 'F7', 'B1', 'B3']          # A3 A2 A1 A0 15 14
 COL_PINS = ['D4', 'C6', 'D7', 'E6', 'B4', 'B5', 'B6', 'B2']  # 4 5 6 7 8 9 10 16
 SERIAL_PIN = 'D2'   # RX1, QMK soft serial (half duplex)
 HAND_PIN = 'D3'     # TX0, tied to VCC on left / GND on right
+# corner thumbwheel: AS5600 magnetic angle sensor on the I2C bus (PD0 / PD1, shared with the OLED)
+WHEEL_I2C_ADDR = 0x36
 N_ROWS, N_COLS = len(ROW_PINS), len(COL_PINS)
 
 

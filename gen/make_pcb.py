@@ -25,9 +25,9 @@ SIDES = {
     # both halves share one outline (same case size); the left board is widened on its inner side and
     # its MCU / connectors / OLED mirror the right half, so the TRRS jacks line up across the gap
     'left': dict(key_shift=0.0, width=9.5 * U + MARGIN, inner=+1, usb_y=81.0, trrs_y=109.0,
-                 mcu=(9.5 * U + MARGIN - 9.0, 94.0), oled=(9.5 * U + MARGIN - 6.3, 19.05, 270)),
+                 mcu=(9.5 * U + MARGIN - 9.0, 94.0), oled=(9.5 * U + MARGIN - 6.3, 19.05, 270), wheel='top-left'),
     'right': dict(key_shift=9.75 * U, width=9.5 * U + MARGIN, inner=-1, usb_y=81.0, trrs_y=109.0, mcu=(6.0, 94.0),
-                  oled=(3.3, 19.05, 270)),
+                  oled=(3.3, 19.05, 270), wheel='top-right'),
 }
 
 # Support parts: (ref, list of (footprint ref, pad) the part should sit close to)
@@ -41,6 +41,7 @@ SUPPORT = [
     ('C3', [('U1', '6')]), ('C4', [('U1', '2')]), ('C5', [('U1', '14')]), ('C6', [('U1', '24')]),
     ('C7', [('U1', '44')]), ('C8', [('U1', '34')]),
     ('R8', [('U1', '18')]), ('R9', [('U1', '19')]),
+    ('C9', [('U3', '2')]), ('C10', [('U3', '1')]),
     ('R6', [('U1', '13')]), ('RSW1', [('U1', '13')]), ('R7', [('U1', '33')]), ('R1', [('U1', '21')]),
 ]
 
@@ -120,8 +121,11 @@ def mounting_holes(board, keys, w, h, shift):
     for r in range(1, 6):    # along the boundaries between rows
         for i in range(int(w * 2)):
             cands.add((i * 0.5, round(r * U, 3)))
+    wcx, wcy = wheel_centre(SIDE_NOW[0], w)
     ok = []
     for (x, y) in cands:
+        if math.hypot(x - wcx, y - wcy) < WHEEL_R + WHEEL_CLEAR:
+            continue
         if not (3 < x < w - 3 and 3 < y < h - 3):
             continue
         if min(box_dist(x, y, b) for b in bodies) < 2.5:   # M2 hole courtyard / pan head between switch housings
@@ -252,6 +256,26 @@ def autoplace(board, fp, anchors, w, h):
     fp.SetPosition(best[2])
 
 
+# corner thumbwheel: concentric with the rounded case corner, 1 mm further in on both axes
+WHEEL_R = 14.6            # rim protrudes 3.5 mm at the corner diagonal, ~1 mm on the two faces
+WHEEL_CLEAR = 3.0         # keep standoffs / bosses this far outside the wheel
+
+
+def wheel_centre(side, w):
+    inset = CORNER_R + 1.0
+    return (-MARGIN + inset, -MARGIN + inset) if SIDES[side]['wheel'] == 'top-left' else (w - inset, -MARGIN + inset)
+
+
+def place_encoder(fp, x, y, rot=90):
+    """EC11 on the front with its shaft (midpoint of the two mounting tabs) at (x, y)."""
+    fp.SetOrientationDegrees(rot)
+    fp.SetPosition(mm(x, y))
+    mp = [p.GetPosition() for p in fp.Pads() if p.GetNumber() == 'MP']
+    cx, cy = (mp[0].x + mp[1].x) // 2, (mp[0].y + mp[1].y) // 2
+    target = mm(x, y)
+    fp.Move(pcbnew.VECTOR2I(target.x - cx, target.y - cy))
+
+
 # courtyard overhang beyond the connector mouth (mouth ends flush with the board edge)
 MOUTH_OVERHANG = {'usb': 0.5, 'trrs': 0.355}
 
@@ -303,12 +327,17 @@ def write_case_data(side, board, fps, keys, holes, w, h, shift):
         ),
         reset=local(fps['RSW1'].GetPosition()),
         oled=dict(box=local_box(fps['J3'])),
+        wheel=dict(center=list(wheel_centre(side, w)), r=WHEEL_R),
     )
     import json
     json.dump(data, open(os.path.join(ROOT, side, 'case_data.json'), 'w'), indent=1, ensure_ascii=False)
 
 
+SIDE_NOW = [None]
+
+
 def build(side):
+    SIDE_NOW[0] = side
     cfg = SIDES[side]
     shift = cfg['key_shift']
     keys = {f'SW{i}': k for i, k in enumerate(load(side), 1)}
@@ -354,21 +383,29 @@ def build(side):
 
     # switches + diodes
     row_vias = {}
+    # a key whose socket would sit on the wheel sensor is turned 180 deg (south-facing switch, socket below
+    # the stem); its diode moves above the stem and its row link is left to the autorouter
+    wcx, wcy = wheel_centre(side, w)
+    turned = {ref for ref, k in keys.items() if math.hypot(k['cx'] - shift - wcx, k['cy'] - wcy) < 12.0}
     for ref, k in keys.items():
         x, y = k['cx'] - shift, k['cy']
-        sw = place(ref, x, y)
+        flip = ref in turned
+        sw = place(ref, x, y, 180 if flip else 0)
         sw.Reference().SetVisible(False)
         dref = 'D' + ref[2:]
-        d = place(dref, x - 7.2, y + 5.0, 90, back=True)
-        if pad(d, '2').y > pad(d, '1').y:   # anode toward the socket (up)
+        dx, dy = (7.2, -5.0) if flip else (-7.2, 5.0)
+        d = place(dref, x + dx, y + dy, 90, back=True)
+        anode_up = pad(d, '2').y < pad(d, '1').y
+        if anode_up == flip:                # anode toward the socket
             d.SetOrientationDegrees(270)
         d.Reference().SetTextSize(pcbnew.VECTOR2I(pcbnew.FromMM(0.8), pcbnew.FromMM(0.8)))
-        d.Reference().SetPosition(mm(x - 9.0, y + 5.0))
+        d.Reference().SetPosition(mm(x + dx - (1.8 if not flip else -1.8), y + dy))
         d.Reference().SetTextAngleDegrees(90)
         # fixed pre-route: socket pad 2 -> anode, cathode -> via on the row line
         a, kp, sp = pad(d, '2'), pad(d, '1'), pad(sw, '2')
         track(board, a, sp, pcbnew.B_Cu, padnet(d, '2'))
-        row_vias.setdefault((k['row'], round(y, 2)), []).append((mm(x - 5.6, y + ROW_Y), kp, padnet(d, '1')))
+        if not flip:
+            row_vias.setdefault((k['row'], round(y, 2)), []).append((mm(x - 5.6, y + ROW_Y), kp, padnet(d, '1')))
 
     # cathode -> via, and row lines on F.Cu through each physical row
     # (a key wired to a row in another physical row is left to the autorouter)
@@ -393,6 +430,8 @@ def build(side):
     place_connector(fps['J2'], edge_x, cfg['usb_y'], cfg['inner'], 'usb')
     place_connector(fps['J1'], edge_x, cfg['trrs_y'], cfg['inner'], 'trrs')
     place('J3', *cfg['oled'])          # OLED module on the front, in a key-free notch
+    wx, wy = wheel_centre(side, w)
+    place('U3', wx, wy, 0, back=True)    # AS5600 right above the wheel's magnet
     u1 = place('U1', *cfg['mcu'], 0, back=True)
     a6 = pad(fps['J2'], 'A6')
     best = min((0, 90, 180, 270), key=lambda r: (u1.SetOrientationDegrees(r), dist(pad(u1, '4'), a6))[1])

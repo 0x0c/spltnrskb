@@ -6,11 +6,11 @@
   ],
   "height_print": 15.6,
   "height_acrylic": 16.5,
-  "screws": 13,
+  "screws": 14,
   "cover_screws": 2,
   "pcb_holes": 8,
-  "tray_volume_cm3": 116.0,
-  "plate_genus": 60,
+  "tray_volume_cm3": 114.5,
+  "plate_genus": 61,
   "tray_status": "Error.NoError"
  },
  "right": {
@@ -20,11 +20,11 @@
   ],
   "height_print": 15.6,
   "height_acrylic": 16.5,
-  "screws": 13,
+  "screws": 14,
   "cover_screws": 2,
   "pcb_holes": 8,
-  "tray_volume_cm3": 116.0,
-  "plate_genus": 66,
+  "tray_volume_cm3": 114.5,
+  "plate_genus": 67,
   "tray_status": "Error.NoError"
  }
 }

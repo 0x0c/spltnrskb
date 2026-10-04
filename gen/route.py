@@ -79,7 +79,8 @@ def route(side, passes=100):
             t.SetWidth(pcbnew.FromMM(0.15))
     remove_dangling_vias(board)
     pcbnew.SaveBoard(pcb, board)
-    remove_dangling_tracks(pcb)
+    # reloading the board in this process returns a broken object; clean up in a fresh one
+    subprocess.run([sys.executable, os.path.abspath(__file__), '--cleanup', side], check=True)
     print('routed', pcb)
 
 

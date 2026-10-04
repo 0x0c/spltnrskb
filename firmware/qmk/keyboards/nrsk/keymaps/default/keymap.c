@@ -35,6 +35,17 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 
 
+// Corner thumbwheels (index 0 = left half, 1 = right half). Return value is ignored.
+bool dial_update_user(uint8_t index, bool clockwise) {
+    bool fn = get_highest_layer(layer_state) == 1;
+    if (index == 0) {
+        tap_code(fn ? (clockwise ? KC_BRIU : KC_BRID) : (clockwise ? KC_VOLU : KC_VOLD));
+    } else {
+        tap_code(fn ? (clockwise ? KC_RGHT : KC_LEFT) : (clockwise ? KC_PGDN : KC_PGUP));
+    }
+    return true;
+}
+
 #ifdef OLED_ENABLE
 // 0.91" 128x32 OLED mounted vertically on both halves
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {

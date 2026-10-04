@@ -26,12 +26,36 @@ FP = {
     'fuse': 'Fuse:Fuse_1206_3216Metric',
     'reset': 'Button_Switch_SMD:SW_SPST_PTS810',
     'oled': 'nrsk:OLED_0.91in_128x32_I2C',
+    'angle': 'Package_SO:SOIC-8_3.9x4.9mm_P1.27mm',
 }
 
 # ATmega32U4 TQFP-44 pin -> port name
 MCU_PORTS = {1: 'E6', 8: 'B0', 9: 'B1', 10: 'B2', 11: 'B3', 12: 'B7', 18: 'D0', 19: 'D1', 20: 'D2', 21: 'D3',
              22: 'D5', 25: 'D4', 26: 'D6', 27: 'D7', 28: 'B4', 29: 'B5', 30: 'B6', 31: 'C6', 32: 'C7', 33: 'E2',
              36: 'F7', 37: 'F6', 38: 'F5', 39: 'F4', 40: 'F1', 41: 'F0'}
+
+
+def _as5600():
+    pins = [(1, 'VDD5V', 'power_in', -10.16, 3.81), (2, 'VDD3V3', 'passive', -10.16, 1.27),
+            (3, 'OUT', 'output', -10.16, -1.27), (4, 'GND', 'power_in', -10.16, -3.81),
+            (5, 'PGO', 'input', 10.16, -3.81), (6, 'SDA', 'bidirectional', 10.16, -1.27),
+            (7, 'SCL', 'input', 10.16, 1.27), (8, 'DIR', 'input', 10.16, 3.81)]
+    f = '(effects (font (size 1.27 1.27)))'
+    h = '(effects (font (size 1.27 1.27)) (hide yes))'
+    s = ('(symbol "nrsk:AS5600" (pin_names (offset 1.016)) (exclude_from_sim no) (in_bom yes) (on_board yes) '
+         f'(property "Reference" "U" (at 0 7.62 0) {f}) (property "Value" "AS5600" (at 0 -7.62 0) {f}) '
+         f'(property "Footprint" "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" (at 0 0 0) {h}) '
+         f'(property "Datasheet" "https://ams-osram.com/products/sensor-solutions/position-sensors/ams-as5600-position-sensor" (at 0 0 0) {h}) '
+         f'(property "Description" "12-bit magnetic rotary position sensor, I2C 0x36" (at 0 0 0) {h}) '
+         '(symbol "AS5600_0_1" (rectangle (start -7.62 6.35) (end 7.62 -6.35) (stroke (width 0.254) (type default)) '
+         '(fill (type background)))) (symbol "AS5600_1_1" ')
+    for n, name, kind, x, y in pins:
+        ang = 0 if x < 0 else 180
+        s += f'(pin {kind} line (at {x} {y} {ang}) (length 2.54) (name "{name}" {f}) (number "{n}" {f})) '
+    return s + '))'
+
+
+CUSTOM = {'nrsk:AS5600': _as5600()}
 
 
 def key_fp(w):
@@ -53,6 +77,9 @@ class Lib:
 
     def get(self, lib_id):
         if lib_id in self.used:
+            return self.used[lib_id]
+        if lib_id in CUSTOM:
+            self.used[lib_id] = sexpr.parse(CUSTOM[lib_id])
             return self.used[lib_id]
         lib, name = lib_id.split(':')
         src = self._lib(lib)[name]
@@ -297,6 +324,14 @@ def build(side):
     two_pin(sh, 'Device:R', 'R8', '4.7k', OX + 25.4, OY - 2.54, FP['r'], 'VCC', 'SCL')
     two_pin(sh, 'Device:R', 'R9', '4.7k', OX + 35.56, OY - 2.54, FP['r'], 'VCC', 'SDA')
 
+    # corner thumbwheel: AS5600 under the wheel's magnet, on the I2C bus with the OLED
+    AX, AY = 342.9, 254.0
+    sh.text('Thumbwheel sensor AS5600 (I2C 0x36, magnet in the wheel)', AX - 12.7, AY - 17.78)
+    sh.symbol('nrsk:AS5600', 'U3', 'AS5600-ASOM', AX, AY, 0, FP['angle'],
+              {'1': 'VCC', '2': 'VDD3V3', '3': None, '4': 'GND', '5': None, '6': 'SDA', '7': 'SCL', '8': 'GND'})
+    two_pin(sh, 'Device:C', 'C9', '1uF', AX + 25.4, AY, FP['c'], 'VDD3V3', 'GND')
+    two_pin(sh, 'Device:C', 'C10', '0.1uF', AX + 35.56, AY, FP['c'], 'VCC', 'GND')
+
     path = os.path.join(HERE, '..', side, project + '.kicad_sch')
     os.makedirs(os.path.dirname(path), exist_ok=True)
     sh.write(path, f'nrsk split keyboard - {side} half')
@@ -305,9 +340,14 @@ def build(side):
     open(os.path.join(d, 'fp-lib-table'), 'w').write(
         '(fp_lib_table\n\t(version 7)\n\t(lib (name "nrsk") (type "KiCad") (uri "${KIPRJMOD}/../lib/nrsk.pretty") '
         '(options "") (descr "nrsk keyboard footprints"))\n)\n')
-    sl = os.path.join(d, 'sym-lib-table')
-    if os.path.exists(sl):
-        os.remove(sl)
+    # project symbol library (custom symbols such as the AS5600)
+    lib_sym = os.path.join(HERE, '..', 'lib', 'nrsk.kicad_sym')
+    body = '\n'.join(v.replace('"nrsk:', '"', 1) for v in CUSTOM.values())
+    open(lib_sym, 'w').write('(kicad_symbol_lib (version 20241209) (generator "nrsk-gen") (generator_version "10.0")\n'
+                             + body + '\n)\n')
+    open(os.path.join(d, 'sym-lib-table'), 'w').write(
+        '(sym_lib_table\n\t(version 7)\n\t(lib (name "nrsk") (type "KiCad") (uri "${KIPRJMOD}/../lib/nrsk.kicad_sym") '
+        '(options "") (descr "nrsk keyboard symbols"))\n)\n')
     print('wrote', path)
 
 

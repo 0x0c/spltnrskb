@@ -52,6 +52,16 @@ OLED_WINDOW_CLEAR = 0.15     # added to the module courtyard (courtyard = module
 COVER_T = 2.0                # cover top = plate top + 2.0, below the keycap skirts (plate top + 5.6)
 COVER_MARGIN = 3.0
 SWITCH_TOP_KEEPOUT = 8.4     # half size of an MX top housing (15.6 mm) + 0.6 mm
+# corner thumbwheel: lies under the PCB, rim out of the corner; magnet (6 x 1.5 mm, diametric) on top,
+# read through the air gap by the AS5600 on the PCB back
+WHEEL_T = 4.1
+WHEEL_GAP = 0.3              # wheel bottom above the floor / bottom plate
+WHEEL_CUT = 0.6              # radial clearance of the wall opening
+BORE_D, BORE_DEPTH = 4.0, 2.0          # axle bore from below
+MAGNET_D, MAGNET_DEPTH = 6.1, 1.6      # magnet pocket from the top
+POST_D = 3.8                 # printed axle post (3D print variant)
+AXLE_HOLE_D = 3.2            # M3 axle screw through the bottom plate (acrylic variant)
+KNURL = 72
 STAB_CUT = (7.0, 15.4, 0.5)   # w, h, centre y offset (down) of each stabilizer housing cut-out
 STAB_X = 11.938
 
@@ -134,6 +144,13 @@ class Half:
     def window_cs(self):
         return rect(*self.window_box)
 
+    def wheel_xy(self):
+        return self.d['wheel']['center'], self.d['wheel']['r']
+
+    def wheel_cut(self, grow=WHEEL_CUT):
+        (x, y), r = self.wheel_xy()
+        return circle(x, y, 2 * (r + grow))
+
     def switch_tops(self):
         cs = CrossSection()
         h = SWITCH_TOP_KEEPOUT
@@ -176,6 +193,14 @@ class Half:
             a2, b2 = a + 3.5, b - 3.5
             if b2 - a2 >= 0:
                 pts.append((inner_x, (a2 + b2) / 2))
+        # the corner wheel takes the corner screw; put one on each face just past the wheel opening
+        (wx, wy), wr = self.d['wheel']['center'], self.d['wheel']['r']
+        keep = wr + WHEEL_CUT + SCREW_D / 2 + 1.5
+        pts = [p for p in pts if math.hypot(p[0] - wx, p[1] - wy) > keep]
+        d = math.sqrt(keep ** 2 - (wy - Y0) ** 2)
+        side_x = X0 if wx < (X0 + X1) / 2 else X1
+        pts.append((wx + d if side_x == X0 else wx - d, Y0))
+        pts.append((side_x, wy + math.sqrt(keep ** 2 - (wx - side_x) ** 2)))
         return pts
 
     # 2D layers ------------------------------------------------------------------------
@@ -200,13 +225,17 @@ class Half:
     def frame(self, layer):
         cs = self.outer - self.inner - self.holes(self.screws, SCREW_D)
         z0 = BOTTOM_T + layer * FRAME_T
+        wz0 = BOTTOM_T + WHEEL_GAP
+        if z0 < wz0 + WHEEL_T + 0.4 and z0 + FRAME_T > wz0 - 0.3:   # this frame is level with the wheel
+            cs = cs - self.wheel_cut()
         if z0 < BOTTOM_T + STANDOFF + PCB_T + PLUG_TOP:   # this frame is level with the plugs
             cs = cs - self.slot_cs(False)
         return cs
 
     def bottom(self):
+        (wx, wy), _ = self.wheel_xy()
         return (self.outer - self.holes(self.screws, SCREW_D) - self.holes(self.d['holes'], SCREW_D)
-                - circle(*self.d['reset'], RESET_D))
+                - circle(*self.d['reset'], RESET_D) - circle(wx, wy, AXLE_HOLE_D))
 
     # 3D print -------------------------------------------------------------------------
     def tray(self):
@@ -222,9 +251,28 @@ class Half:
         for x, y in self.screws:
             body = body - Manifold.cylinder(INSERT_DEPTH + 0.01, INSERT_D / 2, INSERT_D / 2).translate(
                 (x, -y, wall_top - INSERT_DEPTH))
+        (wx, wy), wr = self.wheel_xy()
+        wz0 = FLOOR + WHEEL_GAP
+        body = body - Manifold.extrude(self.wheel_cut(), WHEEL_T + 0.7).translate((0, 0, wz0 - 0.3))
+        body = body + Manifold.cylinder(WHEEL_GAP + BORE_DEPTH - 0.3, POST_D / 2, POST_D / 2, 48).translate(
+            (wx, -wy, FLOOR))
         rx, ry = self.d['reset']
         body = body - Manifold.cylinder(FLOOR + 0.02, RESET_D / 2, RESET_D / 2).translate((rx, -ry, -0.01))
         return body
+
+    def wheel3d(self):
+        """Knurled thumbwheel (printable or machined): bore from below, magnet pocket on top."""
+        (x, y), r = self.wheel_xy()
+        pts = []
+        for i in range(KNURL * 4):
+            a = 2 * math.pi * i / (KNURL * 4)
+            rr = r - (0.45 if (i % 4) in (2,) else 0.0)
+            pts.append((x + rr * math.cos(a), y + rr * math.sin(a)))
+        rim = cs_poly(pts)
+        w = Manifold.extrude(rim, WHEEL_T)
+        w = w - Manifold.cylinder(BORE_DEPTH, BORE_D / 2, BORE_D / 2, 48).translate((x, -y, 0))
+        w = w - Manifold.cylinder(MAGNET_DEPTH + 0.01, MAGNET_D / 2, MAGNET_D / 2, 48).translate((x, -y, WHEEL_T - MAGNET_DEPTH))
+        return w
 
     def plate3d(self):
         return Manifold.extrude(self.plate(), PLATE_T)
@@ -294,6 +342,7 @@ def main(sides):
         tray, plate = hf.tray(), hf.plate3d()
         write_stl(os.path.join(OUT, 'print', f'{side}-tray.stl'), tray)
         write_stl(os.path.join(OUT, 'print', f'{side}-plate.stl'), plate)
+        write_stl(os.path.join(OUT, 'print', f'{side}-wheel.stl'), hf.wheel3d())
         write_stl(os.path.join(OUT, 'preview', f'{side}-oled-cover.stl'), Manifold.extrude(hf.cover(), COVER_T))
         # assembly preview (print variant): tray + PCB + plate in place
         z_pcb = FLOOR + STANDOFF
@@ -339,6 +388,14 @@ def check(hf, layers):
     assert (layers['oled-cover'] ^ hf.switch_tops()).area() < 0.01, 'cover hits a switch'
     assert (win - layers['oled-cover']).area() < 0.01, 'cover does not close the window'
     assert all(not (s['y'] - s['half'] < y < s['y'] + s['half']) for s in hf.slots for _, y in hf.cover_screws)
+
+    # wheel: clear of standoffs, screws and the OLED; its rim must leave the case outline at the corner
+    (wx, wy), wr = hf.wheel_xy()
+    for x, y in hf.d['holes']:
+        assert math.hypot(x - wx, y - wy) > wr + WHEEL_CUT + BOSS_D / 2, 'wheel hits a standoff'
+    for x, y in hf.screws:
+        assert math.hypot(x - wx, y - wy) > wr + WHEEL_CUT + SCREW_D / 2 + 0.8, 'wheel hits a case screw'
+    assert (hf.wheel_cut(0) - hf.outer).area() > 20, 'wheel does not stick out of the corner'
 
     # the switch plate and the top frame must keep an unbroken outer edge (no connector notches)
     for name in ('plate', f'frame{N_FRAMES}'):

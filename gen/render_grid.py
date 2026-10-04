@@ -14,6 +14,7 @@ GROUPS = [
     ('基板に直付け・プレートの窓から見せる', 'OLED は基板のコネクタに直接半田付け。プレートに窓を開ける', [
         [('render-hero.png', '完成イメージ（全体）'), ('render-detail.png', '完成イメージ（寄り）'),
          ('render-oled.png', '現在の設計：カバーをプレート上に載せる')],
+        [('render-wheel-left.png', '角のサムホイール（左上）'), ('render-wheel-right.png', '角のサムホイール（右上）'), None],
         [('oled-study/user-0.png', 'A  ツライチ 0 mm・目線'), ('oled-study/close-0.png', 'A  ツライチ 0 mm・寄り'), None],
     ]),
     ('外寄せの水平台座', '壁の上に台座を立て、OLED は基板のコネクタから配線で接続', [
@@ -28,7 +29,8 @@ GROUPS = [
     ]),
 ]
 COLS = 3
-CELL_W, CELL_H = 1600, 1067        # every image is fitted into a 3:2 cell
+CELL_W = int(os.environ.get('RES', '1600'))
+CELL_H = CELL_W * 2 // 3           # every image is fitted into a 3:2 cell
 GAP, CAPTION = 24, 84
 BG, INK, BADGE, MUTED = (246, 246, 244), (30, 32, 36), (242, 77, 0), (110, 114, 120)
 FONT = next((f for f in glob.glob('/System/Library/Fonts/ヒラギノ角ゴシック W6.ttc') +
@@ -39,21 +41,34 @@ def font(size):
     return ImageFont.truetype(FONT, size) if FONT else ImageFont.load_default()
 
 
-def main():
+DIAL_GROUPS = [
+    ('サムホイール型', '大径ホイールを水平に置き、縁を側面のスリットから出す。親指でなぞって回す', [
+        [('dial-study/hero-thumb.png', 'サムホイール・全体'), ('dial-study/dial-left-thumb.png', 'サムホイール・左側面'),
+         ('dial-study/dial-right-thumb.png', 'サムホイール・右側面')],
+    ]),
+    ('横向きノブ型', '横向きのエンコーダーで、側面から突き出したつまみを回す', [
+        [('dial-study/hero-knob.png', '横向きノブ・全体'), ('dial-study/dial-left-knob.png', '横向きノブ・左側面'),
+         ('dial-study/dial-right-knob.png', '横向きノブ・右側面')],
+    ]),
+]
+
+
+def main(groups=None, out_name='render-grid', title='nrsk  レンダリング一覧（OLED の取り付け方式別）'):
+    groups = groups or GROUPS
     W = COLS * CELL_W + (COLS + 1) * GAP
     HEAD, GROUP_HEAD = 130, 140
-    n_rows = sum(len(rows) for _, _, rows in GROUPS)
+    n_rows = sum(len(rows) for _, _, rows in groups)
     H = HEAD + len(GROUPS) * (GROUP_HEAD + GAP) + n_rows * (CELL_H + CAPTION + GAP) + GAP
     sheet = Image.new('RGB', (W, H), BG)
     d = ImageDraw.Draw(sheet)
-    d.text((GAP, 36), 'nrsk  レンダリング一覧（OLED の取り付け方式別）', font=font(64), fill=INK)
+    d.text((GAP, 36), title, font=font(64), fill=INK)
     y = HEAD
     n = 0
-    for gi, (title, note, rows) in enumerate(GROUPS, 1):
+    for gi, (gtitle, note, rows) in enumerate(groups, 1):
         y += GAP
         d.rectangle((GAP, y, W - GAP, y + GROUP_HEAD - 12), fill=(232, 233, 230))
         d.rectangle((GAP, y, GAP + 14, y + GROUP_HEAD - 12), fill=BADGE)
-        d.text((GAP + 40, y + 14), f'グループ {gi}　{title}', font=font(54), fill=INK)
+        d.text((GAP + 40, y + 14), f'グループ {gi}　{gtitle}', font=font(54), fill=INK)
         d.text((GAP + 40, y + 82), note, font=font(34), fill=MUTED)
         y += GROUP_HEAD
         for row in rows:
@@ -74,11 +89,15 @@ def main():
                 d.text((x + 36 - tw / 2, y + CELL_H + 18), label, font=font(42), fill=(255, 255, 255))
                 d.text((x + 90, y + CELL_H + 20), caption, font=font(42), fill=INK)
             y += CELL_H + CAPTION + GAP
-    out = os.path.join(IMG, 'render-grid.png')
+    out = os.path.join(IMG, f'{out_name}.png')
     sheet.save(out, optimize=True)
     sheet.save(out.replace('.png', '.jpg'), quality=93, subsampling=0)
     print('wrote', out, sheet.size, n, 'images')
 
 
 if __name__ == '__main__':
-    main()
+    import sys
+    if '--dial' in sys.argv:
+        main(DIAL_GROUPS, 'dial-study/dial-grid', 'nrsk  側面ダイヤルの比較')
+    else:
+        main()

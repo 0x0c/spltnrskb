@@ -124,6 +124,7 @@ def box_mesh(name, w, d, h, top_w=None, top_d=None, top_dy=0.0, bevel=0.0, mat=N
     faces = [(0, 1, 2, 3), (4, 7, 6, 5), (0, 4, 5, 1), (1, 5, 6, 2), (2, 6, 7, 3), (3, 7, 4, 0)]
     for f in faces:
         bm.faces.new([v[i] for i in f])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)     # all faces point outward
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)
     bm.free()
@@ -201,6 +202,13 @@ def oled(data, side, module=None, glass_top=None):
     return out
 
 
+def corner_wheel(side):
+    """Knurled thumbwheel lying under the PCB at the case corner (geometry from case/print)."""
+    w = import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-wheel.stl'), MAT['metal'], f'{side} wheel')
+    w.location.z = (FLOOR + 0.3) * MM
+    return [w]
+
+
 def knurled_plug(name, length=16.0, radius=3.6):
     bpy.ops.mesh.primitive_cylinder_add(vertices=48, radius=radius * MM, depth=length * MM)
     body = bpy.context.active_object
@@ -240,6 +248,7 @@ def build_half(side, world):
         cover.location.z = Z_PLATE_TOP * MM
         objs.append(cover)
         data['oled_module'] = None
+    objs += corner_wheel(side)
     if OLED_H is not None and OLED_H not in ('0', '0.0'):
         # the display moved away from the plate window: close the window (plate without it)
         fill = import_stl(os.path.join(VARIANTS, f'{side}-lens-0.stl'), MAT['case'], f'{side} window fill')
@@ -489,6 +498,13 @@ def main():
     # what a seated typist sees: from the front, ~45 cm away and ~30 cm above the desk
     shots['user'] = dict(loc=tuple(c + Vector((-0.10, -0.40, 0.30))), target=tuple(c + Vector((-0.03, -0.02, 0.0))),
                          lens=50, focus=tuple(c), fstop=8.0, res=(RES, int(RES * 2 / 3)))
+    # close-ups of the corner wheels
+    for side, sx in (('left', -1), ('right', 1)):
+        o = data[side]['outline']
+        cx = (o['x0'] - 6.0) if side == 'left' else (o['x1'] + 6.0)
+        t = board_point(W[side], cx, o['y0'] - 6.0, 5.0)
+        shots[f'wheel-{side}'] = dict(loc=tuple(t + Vector((sx * 0.12, 0.05, 0.10))), target=tuple(t),
+                                      lens=75, focus=tuple(t), fstop=5.6, res=(RES, int(RES * 2 / 3)))
     for name in SHOTS:
         s = shots[name]
         sc.camera = camera(name, s['loc'], s['target'], s['lens'], s['focus'], s['fstop'])
