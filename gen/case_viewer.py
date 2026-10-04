@@ -93,12 +93,14 @@ button{font:inherit;font-size:13px;border:1px solid var(--line);background:trans
 button.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
-<canvas id="view" aria-label="キーボード筐体の 3D 表示"></canvas>
+<canvas id="view" aria-label="キーボード筐体の 3D 表示。ドラッグで回転、右ドラッグか 2 本指でパン、ホイールかピンチでズーム、ダブルクリックで視点リセット"></canvas>
 <div id="ui" class="panel">
  <button id="v-print" data-v="print" class="on">3D プリント版</button><button id="v-acrylic" data-v="acrylic">アクリル版</button>
  <span class="sep"></span>
  <button id="t-switch" data-t="switch" class="on">スイッチ</button><button id="t-plate" data-t="plate" class="on">プレート</button>
  <button id="t-explode" data-t="explode">分解表示</button>
+ <span class="sep"></span>
+ <button id="t-reset" type="button">視点リセット</button>
 </div>
 <div id="spec" class="panel"><h1 id="spec-title"></h1><dl id="spec-dl"></dl></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -111,11 +113,20 @@ const canvas = document.getElementById('view');
 const renderer = new THREE.WebGLRenderer({canvas, antialias: true}); renderer.setPixelRatio(devicePixelRatio);
 const scene = new THREE.Scene();
 const cam = new THREE.PerspectiveCamera(35, 1, 1, 5000);
+cam.up.set(0, 0, 1);                       // Z is up; must be set before OrbitControls is created
 const ctl = new THREE.OrbitControls(cam, canvas);
+ctl.enableDamping = true;
+ctl.dampingFactor = 0.12;
+ctl.rotateSpeed = 0.7;
+ctl.screenSpacePanning = true;
+ctl.minPolarAngle = 0.05;                  // from straight above ...
+ctl.maxPolarAngle = Math.PI / 2 - 0.08;    // ... down to just above the desk
+ctl.mouseButtons = {LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN};
+ctl.touches = {ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN};
 scene.add(new THREE.HemisphereLight(0xffffff, 0x666666, 0.9));
 const dl = new THREE.DirectionalLight(0xffffff, 0.6); dl.position.set(200, -300, 400); scene.add(dl);
 let group = null; const state = {v: 'print', switch: true, plate: true, explode: false};
-const LIFT = {tray: 0, bottom: 0, frame1: 8, frame2: 16, frame3: 24, frame4: 32, pcb: 48, oled: 52, plate: 72, cover: 100, switch: 92};
+const LIFT = {tray: 0, bottom: 0, frame1: 8, frame2: 16, frame3: 24, frame4: 32, pcb: 48, oled: 52, plate: 72, cover: 100, knob: 110, switch: 92};
 const GAP = 25;   // mm between the halves
 function bg() { scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()); }
 function spec() {
@@ -158,7 +169,7 @@ function fit() {
   const corners = [];
   for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) corners.push(new THREE.Vector3(x, y, z));
   const dir = new THREE.Vector3(0, -0.75, 0.66).normalize();
-  cam.up.set(0, 0, 1); ctl.target.copy(c);
+  ctl.target.copy(c);
   const fits = d => {
     cam.position.copy(c).addScaledVector(dir, d); cam.lookAt(c); cam.near = d / 50; cam.far = d * 10;
     cam.updateMatrixWorld(); cam.updateProjectionMatrix();
@@ -180,7 +191,7 @@ function onResize() {
   const wide = cam.aspect >= 1;
   if (wide !== lastWide) { lastWide = wide; layout(); fit(); }
 }
-document.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+document.querySelectorAll('button[data-v], button[data-t]').forEach(b => b.addEventListener('click', () => {
   if (b.dataset.v) { state.v = b.dataset.v; document.querySelectorAll('[data-v]').forEach(x => x.classList.toggle('on', x === b)); }
   else { state[b.dataset.t] = !state[b.dataset.t]; b.classList.toggle('on', state[b.dataset.t]); }
   build(); if (b.dataset.v || b.dataset.t === 'explode') fit();
@@ -189,7 +200,9 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', bg);
 new MutationObserver(bg).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
 addEventListener('resize', onResize);
 bg(); resize(); build(); lastWide = cam.aspect >= 1; fit();
-(function loop() { requestAnimationFrame(loop); renderer.render(scene, cam); })();
+canvas.addEventListener('dblclick', fit);
+document.getElementById('t-reset').addEventListener('click', fit);
+(function loop() { requestAnimationFrame(loop); ctl.update(); renderer.render(scene, cam); })();
 </script>
 '''
 
