@@ -39,7 +39,7 @@ jobs:
           } > _site/index.html
           cp docs/img/render-hero.png _site/og.png
           touch _site/.nojekyll
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
