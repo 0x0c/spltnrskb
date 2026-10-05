@@ -16,6 +16,11 @@ ROOT = os.path.abspath(os.path.join(HERE, '..'))
 ORIGIN = (30.0, 30.0)          # board placement on the page [mm]
 MARGIN = 3.0                   # board edge outside the key grid [mm]
 TOP = MARGIN + 5.0             # top edge: 5 mm more, so the OLED's half-mirror cover has room above and below
+# connector tongues: the board reaches into the case wall under each connector so its mouth sits PORT_SKIN
+# inside the outer surface; the opening in the wall is then just the connector outline
+CASE_WALL = 0.5 + 8.0          # PCB edge to case outer surface (make_case CLEAR + WALL)
+PORT_SKIN = 0.8                # wall left in front of the connector mouth
+TONGUE_W = 12.0
 OLED_Y = U - 5.0               # OLED centre (both halves): rows 0-1, raised 5 mm to clear the row-2 switches
 CORNER_R = 4.0
 
@@ -84,8 +89,22 @@ def read_netlist(side):
     return comps, nets
 
 
-def outline(board, w, h):
-    """Rounded rectangle on Edge.Cuts from (-MARGIN,-TOP) to (w,h)."""
+def tongue_len(kind):
+    return CASE_WALL - PORT_SKIN - MOUTH_OVERHANG[kind]
+
+
+def tongues(side, w):
+    """Board-local rectangles (x0, y0, x1, y1) of the USB-C (top edge) and TRRS (inner edge) tongues."""
+    cfg = SIDES[side]
+    ux, ty, lu, lt = cfg['usb_x'], cfg['trrs_y'], tongue_len('usb'), tongue_len('trrs')
+    usb = (ux - TONGUE_W / 2, -TOP - lu, ux + TONGUE_W / 2, -TOP)
+    trrs = (w, ty - TONGUE_W / 2, w + lt, ty + TONGUE_W / 2) if cfg['inner'] > 0 else \
+        (-MARGIN - lt, ty - TONGUE_W / 2, -MARGIN, ty + TONGUE_W / 2)
+    return {'usb': usb, 'trrs': trrs}
+
+
+def outline(board, w, h, tg=None):
+    """Rounded rectangle on Edge.Cuts from (-MARGIN,-TOP) to (w,h), with the connector tongues."""
     x0, y0, x1, y1, r = -MARGIN, -TOP, w, h, CORNER_R
 
     def seg(a, b):
@@ -101,8 +120,24 @@ def outline(board, w, h):
         s.SetLayer(pcbnew.Edge_Cuts); s.SetWidth(pcbnew.FromMM(0.1))
         board.Add(s)
 
-    seg((x0 + r, y0), (x1 - r, y0)); seg((x1, y0 + r), (x1, y1 - r))
-    seg((x1 - r, y1), (x0 + r, y1)); seg((x0, y1 - r), (x0, y0 + r))
+    def path(pts):
+        for a, b in zip(pts, pts[1:]):
+            seg(a, b)
+    u = tg['usb'] if tg else None
+    if u:       # top edge with the USB tongue
+        path([(x0 + r, y0), (u[0], y0), (u[0], u[1]), (u[2], u[1]), (u[2], y0), (x1 - r, y0)])
+    else:
+        seg((x0 + r, y0), (x1 - r, y0))
+    t = tg['trrs'] if tg else None
+    if t and t[0] >= x1 - 1e-6:     # right edge with the TRRS tongue
+        path([(x1, y0 + r), (x1, t[1]), (t[2], t[1]), (t[2], t[3]), (x1, t[3]), (x1, y1 - r)])
+    else:
+        seg((x1, y0 + r), (x1, y1 - r))
+    seg((x1 - r, y1), (x0 + r, y1))
+    if t and t[2] <= x0 + 1e-6:     # left edge with the TRRS tongue
+        path([(x0, y1 - r), (x0, t[3]), (t[0], t[3]), (t[0], t[1]), (x0, t[1]), (x0, y0 + r)])
+    else:
+        seg((x0, y1 - r), (x0, y0 + r))
     arc((x1 - r, y0 + r), 270); arc((x1 - r, y1 - r), 0); arc((x0 + r, y1 - r), 90); arc((x0 + r, y0 + r), 180)
 
 
@@ -341,7 +376,7 @@ def place_connector(fp, edge_x, y, inner, kind):
     fp.Move(pcbnew.VECTOR2I(0, pcbnew.FromMM(y - cy)))
 
 
-def place_connector_top(fp, x, kind):
+def place_connector_top(fp, x, kind, edge_y=None):
     """Back-side connector on the top (back) edge, mouth flush with it, centred on x."""
     fp.SetPosition(mm(x, 0))
     if not fp.IsFlipped():
@@ -358,7 +393,7 @@ def place_connector_top(fp, x, kind):
 
     fp.SetOrientationDegrees(max((0, 90, 180, 270), key=outwardness))
     b = bbox_mm(fp.GetCourtyard(pcbnew.B_CrtYd).BBox())
-    dy = ORIGIN[1] - TOP - MOUTH_OVERHANG[kind] - b[1]
+    dy = ORIGIN[1] + (-TOP if edge_y is None else edge_y) - MOUTH_OVERHANG[kind] - b[1]
     dx = ORIGIN[0] + x - (b[0] + b[2]) / 2
     fp.Move(pcbnew.VECTOR2I(pcbnew.FromMM(dx), pcbnew.FromMM(dy)))
 
@@ -377,6 +412,7 @@ def write_case_data(side, board, fps, keys, holes, w, h, shift):
     data = dict(
         side=side, inner_side=inner_side,
         outline=dict(x0=-MARGIN, y0=-TOP, x1=w, y1=h, r=CORNER_R), thickness=1.6,
+        tongues={k: [round(v, 3) for v in t] for k, t in tongues(side, w).items()}, port_skin=PORT_SKIN,
         holes=[[round(x, 3), round(y, 3)] for x, y in holes],
         keys=[dict(cx=round(k['cx'] - shift, 3), cy=round(k['cy'], 3), w=k['w'], h=k['h'], name=k['name'])
               for k in keys.values()],
@@ -484,12 +520,12 @@ def build(side):
             track(board, p0, p1, pcbnew.F_Cu, net)
 
     # pre-routed copper is an obstacle for part placement
-    outline(board, w, h)
+    outline(board, w, h, tongues(side, w))
 
     # connectors (front) and MCU (back)
-    edge_x = w if cfg['inner'] > 0 else -MARGIN
-    place_connector_top(fps['J2'], cfg['usb_x'], 'usb')
-    place_connector(fps['J1'], edge_x, cfg['trrs_y'], cfg['inner'], 'trrs')
+    tg = tongues(side, w)
+    place_connector_top(fps['J2'], cfg['usb_x'], 'usb', edge_y=tg['usb'][1])
+    place_connector(fps['J1'], tg['trrs'][2] if cfg['inner'] > 0 else tg['trrs'][0], cfg['trrs_y'], cfg['inner'], 'trrs')
     place('J3', *cfg['oled'])          # OLED module on the front, in a key-free notch
     wx, wy = wheel_centre(side, w)
     place('U3', wx, wy, 0, back=True)    # AS5600 right above the wheel's magnet

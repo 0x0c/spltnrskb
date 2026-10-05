@@ -1,0 +1,48 @@
+{
+ "parts": {
+  "current": {
+   "left-current-case.stl": "case",
+   "left-current-shell.stl": "metal",
+   "left-current-tongue.stl": "switch",
+   "left-current-jack.stl": "switch",
+   "left-current-bore.stl": "switch"
+  },
+  "tidy": {
+   "left-tidy-case.stl": "case",
+   "left-tidy-shell.stl": "metal",
+   "left-tidy-tongue.stl": "switch",
+   "left-tidy-jack.stl": "switch",
+   "left-tidy-bore.stl": "switch"
+  },
+  "stepped": {
+   "left-stepped-case.stl": "case",
+   "left-stepped-shell.stl": "metal",
+   "left-stepped-tongue.stl": "switch",
+   "left-stepped-jack.stl": "switch",
+   "left-stepped-bore.stl": "switch"
+  },
+  "flush": {
+   "left-flush-case.stl": "case",
+   "left-flush-shell.stl": "metal",
+   "left-flush-tongue.stl": "switch",
+   "left-flush-jack.stl": "switch",
+   "left-flush-bore.stl": "switch",
+   "left-flush-cap.stl": "case"
+  },
+  "panel": {
+   "left-panel-case.stl": "case",
+   "left-panel-shell.stl": "metal",
+   "left-panel-tongue.stl": "switch",
+   "left-panel-jack.stl": "switch",
+   "left-panel-bore.stl": "switch",
+   "left-panel-flange.stl": "metal",
+   "left-panel-heads.stl": "metal",
+   "left-panel-nut.stl": "metal"
+  }
+ },
+ "focus": [
+  169.5625,
+  -8.0,
+  9.0
+ ]
+}

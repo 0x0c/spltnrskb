@@ -41,7 +41,9 @@ RES = int(arg('--res', '1800'))
 OLED_H = arg('--oled-height', None)          # None = built design (cover on the plate); else variant height
 OUT_SUFFIX = arg('--suffix', '')
 SCREWS = arg('--screws', 'none')             # case screws on the plate: 'none', 'flat' (M2 countersunk, flush) or 'lowpan' (M2 low-head pan)
-TOP = arg('--top', 'acrylic')                # switch plate: 'acrylic' (clear, laser cut) or 'print' (printed, with web)
+TOP = arg('--top', 'acrylic')
+PORTS = arg('--ports', None)                 # USB-C/TRRS opening study style (case/preview/port-variants), left half only
+NO_CABLES = '--no-cables' in args                # switch plate: 'acrylic' (clear, laser cut) or 'print' (printed, with web)
 VARIANTS = os.path.join(ROOT, 'case', 'preview', 'oled-variants')
 
 
@@ -284,7 +286,12 @@ def build_half(side, world):
     from layout import load
     for k, src in zip(data['keys'], load(side)):   # same order as the KiCad footprints
         k['id'] = src['id']
-    objs = [import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-tray.stl'), MAT['case'], f'{side} tray')]
+    if PORTS and side == 'left':
+        pv = os.path.join(ROOT, 'case', 'preview', 'port-variants')
+        objs = [import_stl(os.path.join(pv, fn), MAT[m], f'{side} {fn}')
+                for fn, m in json.load(open(os.path.join(pv, 'parts.json')))['parts'][PORTS].items()]
+    else:
+        objs = [import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-tray.stl'), MAT['case'], f'{side} tray')]
     if TOP == 'print':     # printed plate with its stiffening web (case/print/<side>-plate.stl)
         plate = import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-plate.stl'), MAT['case'], f'{side} plate')
     else:                  # clear acrylic plate (the laser-cut part, placed by make_case.py)
@@ -293,6 +300,8 @@ def build_half(side, world):
     plate.location.z += (Z_PLATE_TOP - PLATE_T) * MM
     objs.append(plate)
     objs.append(import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-wheel-cap.stl'), MAT['case'], f'{side} wheel cap'))
+    if not (PORTS and side == 'left'):
+        objs.append(import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-port-caps.stl'), MAT['case'], f'{side} port caps'))
     if TOP != 'print':     # through the clear plate the board shows: green PCB slab
         pcb = import_stl(os.path.join(ROOT, 'case', 'preview', f'{side}-pcb.stl'), MAT['pcb'], f'{side} pcb')
         objs.append(pcb)
@@ -494,6 +503,8 @@ def main():
     ob = data['left']['oled_module'] or data['left']['oled']['box']
     oled_c = board_point(W['left'], (ob[0] + ob[2]) / 2, (ob[1] + ob[3]) / 2, Z_PLATE_TOP)
 
+    if NO_CABLES:
+        return finish(W, data)
     # cables ------------------------------------------------------------------------------
     z_conn = FLOOR + STANDOFF - 1.7          # back-side connectors: axis just below the PCB
     ends = {}
@@ -521,6 +532,12 @@ def main():
         p.z = max(p.z, 2.6 * MM)
     cable('usb cable', pts)
 
+    finish(W, data)
+
+
+def finish(W, data):
+    ob = data['left']['oled_module'] or data['left']['oled']['box']
+    oled_c = board_point(W['left'], (ob[0] + ob[2]) / 2, (ob[1] + ob[3]) / 2, Z_PLATE_TOP)
     sc = bpy.context.scene
     out_dir = os.path.join(ROOT, 'docs', 'img')
     shots = {
@@ -555,6 +572,11 @@ def main():
         t = board_point(W[side], cx, o['y0'] - 6.0, 5.0)
         shots[f'wheel-{side}'] = dict(loc=tuple(t + Vector((sx * 0.12, 0.05, 0.10))), target=tuple(t),
                                       lens=75, focus=tuple(t), fstop=5.6, res=(RES, int(RES * 2 / 3)))
+    # the left half's inner top corner, from outside: USB-C on the back edge and TRRS on the inner edge
+    o = data['left']['outline']
+    t = board_point(W['left'], o['x1'] - 4.0, o['y0'] + 2.0, 6.0)
+    shots['ports'] = dict(loc=tuple(board_point(W['left'], o['x1'] + 85.0, o['y0'] - 80.0, 75.0)), target=tuple(t),
+                          lens=70, focus=tuple(t), fstop=8.0, res=(RES, int(RES * 2 / 3)))
     for name in SHOTS:
         s = shots[name]
         sc.camera = camera(name, s['loc'], s['target'], s['lens'], s['focus'], s['fstop'])
