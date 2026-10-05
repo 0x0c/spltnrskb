@@ -153,7 +153,7 @@ void housekeeping_task_kb(void) {
         if (is_keyboard_master()) {
             dial_emit(self, local);
             int8_t remote = 0;
-            if (transaction_rpc_recv(RPC_ID_DIAL, 0, NULL, sizeof(remote), &remote)) {
+            if (transaction_rpc_recv(RPC_ID_DIAL, sizeof(remote), &remote)) {
                 dial_emit(1 - self, remote);
             }
         } else {
@@ -215,7 +215,7 @@ def main():
         'manufacturer': 'nrsk',
         'keyboard_name': 'nrsk',
         'maintainer': 'nrsk',
-        'url': '',
+        'url': 'https://github.com/0x0c/spltnrskb',
         'processor': 'RP2040',
         'bootloader': 'rp2040',
         'usb': {'vid': '0xFEED', 'pid': '0x4E52', 'device_version': '1.0.0'},
@@ -226,7 +226,7 @@ def main():
             'enabled': True,
             'serial': {'driver': 'vendor', 'pin': SERIAL_PIN},
             'handedness': {'pin': HAND_PIN},
-            'transport': {'sync': {'layer_state': True, 'led_state': True, 'wpm': True}},
+            'transport': {'sync': {'layer_state': True, 'indicators': True, 'wpm': True}},
         },
         'layouts': {'LAYOUT': {'layout': layout}},
     }

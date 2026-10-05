@@ -97,7 +97,7 @@ TRRS の配線は Tip = DATA、Ring2 = VCC（5 V）、Sleeve = GND で、Ring1 �
 
 割り当ては `keymap.c` の `dial_update_user()` で変更できます。1 回転のクリック数は `gen/layout.py` の `WHEEL_DETENTS` で、ホイールの歯の数とファームウェアの `DIAL_STEP` が同時に変わります。
 
-側面ダイヤルの 2 タイプ（サムホイール型と横向きノブ型）を比べたレンダリングは [docs/img/dial-study/dial-grid.jpg](docs/img/dial-study/dial-grid.jpg) にあります。サムホイール型を採用し、角に置く形にしました。
+検討段階の記録として、側面ダイヤルの 2 タイプ（サムホイール型と横向きノブ型）を比べたレンダリングは [docs/img/dial-study/dial-grid.jpg](docs/img/dial-study/dial-grid.jpg) にあります。サムホイール型を採用し、角に置く形にしました。
 
 ## OLED
 
@@ -111,6 +111,7 @@ TRRS の配線は Tip = DATA、Ring2 = VCC（5 V）、Sleeve = GND で、Ring1 �
 
 ### OLED の高さ・角度の比較
 
+検討段階の記録です（採用したのは、上に書いたプレートと面一のハーフミラーのカバーです）。画像は当時の基板・筐体の形で描いています。
 キーキャップに隠れにくい OLED の付け方を、高さ 0〜13 mm の 4 案（A〜D）と傾斜 2 案（E・F）で比べました。
 座った目線と寄りのレンダリングを、取り付け方式ごとに [docs/img/render-grid.jpg](docs/img/render-grid.jpg) にまとめています。
 台座の形状は `gen/oled_variants.py`、レンダリングは `gen/render_all.sh` で作り直せます。既定は確認用のプレビュー（長辺 1200 px、数分）で、`FINAL=1 ./gen/render_all.sh` とすると高画質（長辺 2400 px）で出力します。
@@ -259,6 +260,7 @@ qmk setup
 
 `qmk setup` は `~/qmk_firmware` に QMK を取得し、ビルドに使う ARM のコンパイラなどもまとめて入れます。
 Windows では [QMK MSYS](https://msys.qmk.fm/) を使ってください。
+Homebrew の `arm-none-eabi-gcc` は標準 C ライブラリ（newlib）を含まないためビルドできません。`qmk setup` が入れるツールチェーンか、Arm 公式の [Arm GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)（arm-none-eabi）を使ってください。
 
 ### 2. キーボード定義をコピーしてビルドする
 
@@ -309,4 +311,4 @@ KLE で刻印のないキー（左右の内側の列、計 12 キー）は `KC_N
 - RP2040 は 0.4 mm ピッチの QFN で、裏面のサーマルパッドも GND に半田付けする必要があります。手半田はホットエアかリフローが前提なので、JLCPCB などの部品実装サービスを使うのがおすすめです（BOM の LCSC 部品番号がそのまま使えます）。USB-C（0.5 mm ピッチ）も同様です。
 - ホットスワップソケットのフットプリントは、一般的な Kailh CPG151101S11 の寸法で作った自作品です。1 枚目は実物のソケットと照合してください。
 - TRRS ケーブルは、USB を接続したまま抜き差ししないでください。電源ピンが一瞬ショートして、マイコンを壊すおそれがあります。
-- QMK のビルドはこの環境では実行していません。`keyboard.json` の記法は QMK の現行のデータ駆動形式に合わせてあります。
+- QMK のファームウェアは、現行の qmk_firmware（2026-10 時点）で `qmk compile -kb nrsk -km default` が通り、`nrsk_default.uf2`（約 84 KB）ができることを確認しています。実機での動作（キー入力、左右通信、OLED、ホイール）はまだ確認していません。

@@ -2,7 +2,7 @@
     "manufacturer": "nrsk",
     "keyboard_name": "nrsk",
     "maintainer": "nrsk",
-    "url": "",
+    "url": "https://github.com/0x0c/spltnrskb",
     "processor": "RP2040",
     "bootloader": "rp2040",
     "usb": {
@@ -51,7 +51,7 @@
         "transport": {
             "sync": {
                 "layer_state": true,
-                "led_state": true,
+                "indicators": true,
                 "wpm": true
             }
         }

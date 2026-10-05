@@ -70,7 +70,7 @@ void housekeeping_task_kb(void) {
         if (is_keyboard_master()) {
             dial_emit(self, local);
             int8_t remote = 0;
-            if (transaction_rpc_recv(RPC_ID_DIAL, 0, NULL, sizeof(remote), &remote)) {
+            if (transaction_rpc_recv(RPC_ID_DIAL, sizeof(remote), &remote)) {
                 dial_emit(1 - self, remote);
             }
         } else {
