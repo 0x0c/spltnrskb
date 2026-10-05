@@ -70,6 +70,7 @@ CAP_FIT = 0.15
 RIB_T = 2.0                  # all-printed variant: web under the printed plate (PCB top + 1.5)
 TRAY_FILLET = 2.0     # 3D-printed tray: rounded bottom outer edge
 TRAY_TOP_FILLET = 0.6 # small round on the top outer edge, under the plate
+PLATE_FILLET = 1.0    # all-printed plate: rounded top outer edge (prints fine top-down: 1 mm reach on the bed side)
 SWITCH_CUT = 14.0
 # OLED: window in the switch plate, filled by a half-mirror acrylic cover flush with the plate top. Half-mirror
 # acrylic starts at 2 mm, so the cover reaches 0.5 mm below the 1.5 mm plate; it rests on the module's glass
@@ -151,7 +152,7 @@ class Half:
         self.screws = [p for p in self.screws if not inside(cov, p) and
                        all(math.dist(p, c) > 8 for c in self.cover_screws)] + self.cover_screws
 
-    # connector openings through the inner wall -----------------------------------
+    # connector openings through the top wall -------------------------------------
     def _slots(self):
         """Connector ports (from the tongues in case_data). Each entry also carries the along-wall extent used to
         keep case screws away ('y'/'half' on the inner edge, 'full' rectangle on the top edge)."""
@@ -179,6 +180,14 @@ class Half:
                     full = (ox0 - 1, a0, self.pcb[0], a1)
                 out.append(dict(name=name, edge='inner', y=(t[1] + t[3]) / 2, half=(a1 - a0) / 2, full=full,
                                 chan=chan, cap=cap, along=(t[1] + t[3]) / 2))
+        # neighbouring ports on the top edge share one cap (no thin sliver of wall between two caps)
+        tops = sorted((sl for sl in out if sl['edge'] == 'top'), key=lambda sl: sl['full'][0])
+        for a, b in zip(tops, tops[1:]):
+            if b['full'][0] - a['full'][2] < 2 * PORT_CAP_EXTRA:
+                full = (a['full'][0], a['full'][1], b['full'][2], a['full'][3])
+                cap = rect(full[0], full[1], full[2], self.pcb[1] - CLEAR + 0.01) ^ (self.outer - self.inner)
+                for sl in (a, b):
+                    sl.update(full=full, cap=cap, half=(full[2] - full[0]) / 2)
         return out
 
     def port_z(self, port, z_pcb):
@@ -199,6 +208,8 @@ class Half:
             m = Manifold.extrude(cs, depth + 1).rotate((-90, 0, 0))        # along +y (3D) = outward on the top edge
             return m.translate((port['along'], -oy0 - depth, zc))
         m = Manifold.cylinder(depth + 1, hh / 2, hh / 2, 48).rotate((0, 90, 0))   # along +x
+        if port['edge'] == 'top':
+            return m.rotate((0, 0, 90)).translate((port['along'], -oy0 - depth, zc))
         if self.inner_right:
             return m.translate((ox1 - depth, -port['along'], zc))
         return m.rotate((0, 0, 180)).translate((ox0 + depth, -port['along'], zc))
@@ -416,12 +427,19 @@ class Half:
         # port caps: the wall above each connector, lifted out so the board (tongues and connectors) drops in
         z_pcb = FLOOR + STANDOFF
         self._portcaps = []
+        groups = []        # ports sharing one cap
         for p in self.slots:
-            zb, _, _ = self.port_z(p, z_pcb)
-            zs = zb - 0.2
-            vol = Manifold.extrude(p['cap'], wall_top - zs + 0.01).translate((0, 0, zs))
-            chan = Manifold.extrude(p['chan'], z_pcb + PCB_T + 0.3 - zs + 0.02).translate((0, 0, zs - 0.01))
-            self._portcaps.append((body ^ vol) - chan - self.port_hole(p, z_pcb))
+            g = next((g for g in groups if g[0]['cap'] is p['cap']), None)
+            groups.append([p]) if g is None else g.append(p)
+        for g in groups:
+            zs = min(self.port_z(p, z_pcb)[0] for p in g) - 0.2
+            vol = Manifold.extrude(g[0]['cap'], wall_top - zs + 0.01).translate((0, 0, zs))
+            cap = body ^ vol
+            for p in g:
+                zp = self.port_z(p, z_pcb)[0] - 0.2
+                cap = cap - Manifold.extrude(p['chan'], z_pcb + PCB_T + 0.3 - zp + 0.02).translate((0, 0, zp - 0.01)) \
+                    - self.port_hole(p, z_pcb)
+            self._portcaps.append(cap)
             body = body - vol
         body = body + Manifold.cylinder(WHEEL_GAP + BORE_DEPTH - 0.3, POST_D / 2, POST_D / 2, 48).translate(
             (wx, -wy, FLOOR))
@@ -501,7 +519,15 @@ class Half:
                 (x, -y, -PLATE_BOSS[1]))
             plate = plate - Manifold.cylinder(PLATE_BOSS[1] + 0.01, INSERT_D / 2, INSERT_D / 2, 24).translate(
                 (x, -y, -PLATE_BOSS[1] - 0.01))
-        return plate
+        # fillet the top outer edge: clip with the outline inset along a quarter circle (stacked slices)
+        r, n = PLATE_FILLET, 8
+        env = Manifold.extrude(self.outer.offset(1.0, JoinType.Round), PLATE_T - r + 10).translate((0, 0, -10))
+        for i in range(n):
+            za, zb = PLATE_T - r + r * i / n, PLATE_T - r + r * (i + 1) / n
+            zm = (za + zb) / 2 - (PLATE_T - r)
+            inset = r - math.sqrt(max(r * r - zm * zm, 0))
+            env = env + Manifold.extrude(self.outer.offset(-inset, JoinType.Round), zb - za).translate((0, 0, za))
+        return plate ^ env
 
     def pcb3d(self):
         x0, y0, x1, y1, r = self.pcb

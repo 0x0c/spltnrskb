@@ -78,6 +78,8 @@ def materials():
     MAT['white'] = principled('keycap white', srgb('#f4f3ef'), 0.42, sss=0.15)
     MAT['orange'] = principled('keycap orange', srgb('#f24d00'), 0.45, sss=0.1)
     MAT['switch'] = principled('switch', srgb('#2b2d30'), 0.5)
+    MAT['legend dark'] = principled('legend dark', srgb('#26282c'), 0.5)
+    MAT['legend light'] = principled('legend light', srgb('#fbfaf6'), 0.5)
     MAT['cable'] = principled('cable', srgb('#f23f00'), 0.55)
     MAT['metal'] = principled('metal', srgb('#d7d9dc'), 0.22, metal=1.0)
     MAT['floor'] = principled('backdrop', srgb('#f7f7f7'), 0.9)
@@ -160,7 +162,38 @@ def keycap(k, side):
     cap.location = (k['cx'] * MM, -k['cy'] * MM, CAP_BOTTOM * MM)
     sw = box_mesh('switch', 14.0, 14.0, 6.6, 12.0, 12.0, mat=MAT['switch'])
     sw.location = (k['cx'] * MM, -k['cy'] * MM, Z_PLATE_TOP * MM)
-    return [cap, sw]
+    return [cap, sw] + legends(k, w - 5.4 - 2.2, MAT['legend light' if color == 'orange' else 'legend dark'])
+
+
+LEGEND_FONT = '/System/Library/Fonts/Supplemental/Arial Unicode.ttf'   # has the arrow glyphs
+
+
+def legends(k, flat_w, mat):
+    """Printed legends on the flat top of a keycap: one centred legend, or shifted symbol over the base one."""
+    texts = k.get('legends') or []
+    if not texts:
+        return []
+    font = bpy.data.fonts.load(LEGEND_FONT, check_existing=True) if os.path.exists(LEGEND_FONT) else None
+    z = (CAP_BOTTOM + CAP_H + 0.02) * MM
+    if len(texts) >= 2:                       # e.g. '1' with '!' above it
+        rows = [(texts[1], 3.3, 2.4), (texts[0], 3.3, -2.4)]
+    else:
+        t = texts[0]
+        size = 4.4 if len(t) <= 2 else min(2.9, (flat_w - 1.5) / (0.56 * len(t)))
+        rows = [(t, size, 0.0)]
+    out = []
+    for text, size, dy in rows:
+        cu = bpy.data.curves.new('legend', 'FONT')
+        cu.body = text
+        if font:
+            cu.font = font
+        cu.size = size * MM
+        cu.align_x, cu.align_y = 'CENTER', 'CENTER'
+        ob = link(bpy.data.objects.new(f'keycap legend {text}', cu))
+        ob.data.materials.append(mat)
+        ob.location = (k['cx'] * MM, (-k['cy'] + 0.4 + dy) * MM, z)
+        out.append(ob)
+    return out
 
 
 def oled(data, side, module=None, glass_top=None):
@@ -285,7 +318,7 @@ def build_half(side, world):
     sys.path.insert(0, HERE)
     from layout import load
     for k, src in zip(data['keys'], load(side)):   # same order as the KiCad footprints
-        k['id'] = src['id']
+        k['id'], k['legends'] = src['id'], src['legends']
     if PORTS and side == 'left':
         pv = os.path.join(ROOT, 'case', 'preview', 'port-variants')
         objs = [import_stl(os.path.join(pv, fn), MAT[m], f'{side} {fn}')
@@ -572,10 +605,10 @@ def finish(W, data):
         t = board_point(W[side], cx, o['y0'] - 6.0, 5.0)
         shots[f'wheel-{side}'] = dict(loc=tuple(t + Vector((sx * 0.12, 0.05, 0.10))), target=tuple(t),
                                       lens=75, focus=tuple(t), fstop=5.6, res=(RES, int(RES * 2 / 3)))
-    # the left half's inner top corner, from outside: USB-C on the back edge and TRRS on the inner edge
+    # the left half's inner top corner, from outside: USB-C and TRRS on the back edge
     o = data['left']['outline']
-    t = board_point(W['left'], o['x1'] - 4.0, o['y0'] + 2.0, 6.0)
-    shots['ports'] = dict(loc=tuple(board_point(W['left'], o['x1'] + 85.0, o['y0'] - 80.0, 75.0)), target=tuple(t),
+    t = board_point(W['left'], o['x1'] - 26.0, o['y0'] - 4.0, 4.0)
+    shots['ports'] = dict(loc=tuple(board_point(W['left'], o['x1'] + 30.0, o['y0'] - 110.0, 60.0)), target=tuple(t),
                           lens=70, focus=tuple(t), fstop=8.0, res=(RES, int(RES * 2 / 3)))
     for name in SHOTS:
         s = shots[name]
