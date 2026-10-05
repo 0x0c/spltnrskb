@@ -15,6 +15,8 @@ STD_FP = KICAD + '/SharedSupport/footprints'
 ROOT = os.path.abspath(os.path.join(HERE, '..'))
 ORIGIN = (30.0, 30.0)          # board placement on the page [mm]
 MARGIN = 3.0                   # board edge outside the key grid [mm]
+TOP = MARGIN + 5.0             # top edge: 5 mm more, so the OLED's half-mirror cover has room above and below
+OLED_Y = U - 5.0               # OLED centre (both halves): rows 0-1, raised 5 mm to clear the row-2 switches
 CORNER_R = 4.0
 
 # Per-side geometry in board-local mm. Keys are shifted so the board starts at x = -MARGIN.
@@ -23,27 +25,35 @@ SIDES = {
     # connectors on the BACK so plugs pass under the PCB and the switch plate needs no cut-outs;
     # values are the y of each connector on the inner edge and the MCU centre
     # each board hugs its own key grid (3 mm margin); the TRRS jacks sit at the same height on both halves.
-    # The OLEDs sit at the same height too (top two rows, flush with the inner edge): the left board is
-    # 4.7 mm wider so its module clears the row-0/1 switches by the same 2.45 mm as on the right.
-    'left': dict(key_shift=0.0, width=8.25 * U + MARGIN + 4.7, inner=+1, usb_y=19.0, trrs_y=112.3,
-                 mcu=(152.8, 66.0), oled=(8.25 * U + MARGIN + 4.7 - 6.3, 19.05, 90), wheel='top-left'),
-    'right': dict(key_shift=9.75 * U, width=9.5 * U + MARGIN, inner=-1, usb_y=81.0, trrs_y=112.3, mcu=(6.0, 94.0),
-                  oled=(3.3, 19.05, 270), wheel='top-right'),
+    # The OLEDs sit at the same height too (top two rows, flush with the inner edge). Both boards are widened on
+    # the inner edge so the OLED sits 5 mm clear of the switch tops (room for a half-mirror cover centred on it);
+    # the right one 8 mm more, so its MCU fits between the inner edge and the first column of sockets.
+    # USB-C on the top (back) edge near the inner corner; TRRS on the inner edge behind the OLED (same height
+    # on both halves); the MCU on the back between them.
+    'left': dict(key_shift=0.0, width=8.25 * U + MARGIN + 9.4, inner=+1, usb_x=8.25 * U + MARGIN + 9.4 - 22.0,
+                 trrs_y=OLED_Y, mcu=(157.0, 45.0), oled=(8.25 * U + MARGIN + 9.4 - 6.3, OLED_Y, 90), wheel='top-left'),
+    'right': dict(key_shift=9.75 * U - 12.6, width=9.5 * U + MARGIN + 12.6, inner=-1, usb_x=-MARGIN + 22.0,
+                  trrs_y=OLED_Y, mcu=(5.0, 45.0), oled=(3.3, OLED_Y, 270), wheel='top-right'),
 }
 
 # Support parts: (ref, list of (footprint ref, pad) the part should sit close to)
 SUPPORT = [
-    ('Y1', [('U1', '16'), ('U1', '17')]),
-    ('C1', [('Y1', '1')]), ('C2', [('Y1', '3')]),
-    ('R2', [('U1', '4'), ('J2', 'A6')]), ('R3', [('U1', '3'), ('J2', 'A7')]),
+    ('U5', [('U1', '52'), ('U1', '56')]),                       # QSPI flash
+    ('Y1', [('U1', '20'), ('U1', '21')]),
+    ('C1', [('Y1', '1')]), ('C2', [('Y1', '3')]), ('R10', [('U1', '21'), ('Y1', '3')]),
+    ('R2', [('U1', '47'), ('J2', 'A6')]), ('R3', [('U1', '46'), ('J2', 'A7')]),
     ('U2', [('J2', 'A6'), ('J2', 'A7')]),
     ('R4', [('J2', 'A5')]), ('R5', [('J2', 'B5')]),
-    ('F1', [('J2', 'A4')]), ('D99', [('F1', '1'), ('U1', '14')]),
-    ('C3', [('U1', '6')]), ('C4', [('U1', '2')]), ('C5', [('U1', '14')]), ('C6', [('U1', '24')]),
-    ('C7', [('U1', '44')]), ('C8', [('U1', '34')]),
-    ('R8', [('U1', '18')]), ('R9', [('U1', '19')]),
+    ('F1', [('J2', 'A4')]), ('D99', [('F1', '1')]),
+    ('U4', [('D99', '1')]), ('C16', [('U4', '1')]), ('C17', [('U4', '5')]), ('C19', [('U4', '5')]),
+    ('C3', [('U1', '44')]), ('C4', [('U1', '45')]), ('C5', [('U1', '23')]), ('C6', [('U1', '50')]),
+    ('C7', [('U1', '1')]), ('C8', [('U1', '10')]), ('C11', [('U1', '22')]), ('C12', [('U1', '33')]),
+    ('C13', [('U1', '42')]), ('C14', [('U1', '49')]), ('C15', [('U1', '48')]), ('C18', [('U1', '43')]),
+    ('C20', [('U5', '8')]),
+    ('R8', [('U1', '5')]), ('R9', [('U1', '4')]),
     ('C9', [('U3', '2')]), ('C10', [('U3', '1')]),
-    ('R6', [('U1', '13')]), ('RSW1', [('U1', '13')]), ('R7', [('U1', '33')]), ('R1', [('U1', '21')]),
+    ('R6', [('U1', '26')]), ('RSW1', [('U1', '26')]), ('R7', [('U5', '1')]), ('JP1', [('R7', '2')]),
+    ('R1', [('U1', '2')]),
 ]
 
 
@@ -75,8 +85,8 @@ def read_netlist(side):
 
 
 def outline(board, w, h):
-    """Rounded rectangle on Edge.Cuts from (-MARGIN,-MARGIN) to (w,h)."""
-    x0, y0, x1, y1, r = -MARGIN, -MARGIN, w, h, CORNER_R
+    """Rounded rectangle on Edge.Cuts from (-MARGIN,-TOP) to (w,h)."""
+    x0, y0, x1, y1, r = -MARGIN, -TOP, w, h, CORNER_R
 
     def seg(a, b):
         s = pcbnew.PCB_SHAPE(board, pcbnew.SHAPE_T_SEGMENT)
@@ -202,6 +212,10 @@ def overlap(a, b):
     return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
 
 
+STUB = 1.2               # escape stub length from the MCU pad centre
+MCU_FANOUT = 2.5       # mm around the MCU courtyard kept clear of other parts
+
+
 def obstacles(board, skip, back=True, socket_courtyards=True):
     """Bounding boxes (absolute mm) that a back-side SMD part must not overlap."""
     layer = pcbnew.B_CrtYd if back else pcbnew.F_CrtYd
@@ -212,7 +226,8 @@ def obstacles(board, skip, back=True, socket_courtyards=True):
             continue
         cy = fp.GetCourtyard(layer)
         if cy.OutlineCount() and (socket_courtyards or not fp.GetReference().startswith('SW')):
-            out.append(bbox_mm(cy.BBox()))
+            # keep a fan-out ring free around the RP2040's 0.4 mm-pitch pins for the escape tracks and vias
+            out.append(bbox_mm(cy.BBox(), MCU_FANOUT if fp.GetReference() == 'U1' else 0.0))
         for p in fp.Pads():
             if p.GetAttribute() in (pcbnew.PAD_ATTRIB_PTH, pcbnew.PAD_ATTRIB_NPTH) or p.IsOnLayer(cu):
                 out.append(bbox_mm(p.GetBoundingBox(), 0.25))
@@ -229,7 +244,7 @@ def autoplace(board, fp, anchors, w, h):
     if not fp.IsFlipped():
         fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
     obs = obstacles(board, fp)
-    lim = (ORIGIN[0] - MARGIN + 0.8, ORIGIN[1] - MARGIN + 0.8, ORIGIN[0] + w - 0.8, ORIGIN[1] + h - 0.8)
+    lim = (ORIGIN[0] - MARGIN + 0.8, ORIGIN[1] - TOP + 0.8, ORIGIN[0] + w - 0.8, ORIGIN[1] + h - 0.8)
     best = None
     step = pcbnew.FromMM(0.25)
     for r in range(0, 160):          # spiral-ish search on rings of growing radius
@@ -264,7 +279,7 @@ WHEEL_CLEAR = 3.0         # keep standoffs / bosses this far outside the wheel
 
 def wheel_centre(side, w):
     inset = CORNER_R + 1.0
-    return (-MARGIN + inset, -MARGIN + inset) if SIDES[side]['wheel'] == 'top-left' else (w - inset, -MARGIN + inset)
+    return (-MARGIN + inset, -TOP + inset) if SIDES[side]['wheel'] == 'top-left' else (w - inset, -TOP + inset)
 
 
 def place_encoder(fp, x, y, rot=90):
@@ -326,6 +341,28 @@ def place_connector(fp, edge_x, y, inner, kind):
     fp.Move(pcbnew.VECTOR2I(0, pcbnew.FromMM(y - cy)))
 
 
+def place_connector_top(fp, x, kind):
+    """Back-side connector on the top (back) edge, mouth flush with it, centred on x."""
+    fp.SetPosition(mm(x, 0))
+    if not fp.IsFlipped():
+        fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
+
+    def outwardness(rot):
+        fp.SetOrientationDegrees(rot)
+        c = fp.GetPosition()
+        if kind == 'usb':      # contacts at the back (+y, into the board), mouth toward -y
+            pads = [p for p in fp.Pads() if p.GetAttribute() == pcbnew.PAD_ATTRIB_SMD]
+            return sum(p.GetPosition().y for p in pads) / len(pads) - c.y
+        pegs = [p for p in fp.Pads() if p.GetAttribute() == pcbnew.PAD_ATTRIB_NPTH]
+        return -(sum(p.GetPosition().y for p in pegs) / len(pegs) - c.y)
+
+    fp.SetOrientationDegrees(max((0, 90, 180, 270), key=outwardness))
+    b = bbox_mm(fp.GetCourtyard(pcbnew.B_CrtYd).BBox())
+    dy = ORIGIN[1] - TOP - MOUTH_OVERHANG[kind] - b[1]
+    dx = ORIGIN[0] + x - (b[0] + b[2]) / 2
+    fp.Move(pcbnew.VECTOR2I(pcbnew.FromMM(dx), pcbnew.FromMM(dy)))
+
+
 def write_case_data(side, board, fps, keys, holes, w, h, shift):
     """Geometry the enclosure generator needs, in board-local mm (y down)."""
     def local_box(fp):
@@ -339,13 +376,13 @@ def write_case_data(side, board, fps, keys, holes, w, h, shift):
     inner_side = 'right' if side == 'left' else 'left'
     data = dict(
         side=side, inner_side=inner_side,
-        outline=dict(x0=-MARGIN, y0=-MARGIN, x1=w, y1=h, r=CORNER_R), thickness=1.6,
+        outline=dict(x0=-MARGIN, y0=-TOP, x1=w, y1=h, r=CORNER_R), thickness=1.6,
         holes=[[round(x, 3), round(y, 3)] for x, y in holes],
         keys=[dict(cx=round(k['cx'] - shift, 3), cy=round(k['cy'], 3), w=k['w'], h=k['h'], name=k['name'])
               for k in keys.values()],
         connectors=dict(
-            usb=dict(center=local(fps['J2'].GetPosition()), box=local_box(fps['J2']), plug=[12.5, 7.0]),
-            trrs=dict(center=local(fps['J1'].GetPosition()), box=local_box(fps['J1']), plug=[9.0, 9.0]),
+            usb=dict(center=local(fps['J2'].GetPosition()), box=local_box(fps['J2']), plug=[12.5, 7.0], edge='top'),
+            trrs=dict(center=local(fps['J1'].GetPosition()), box=local_box(fps['J1']), plug=[9.0, 9.0], edge='inner'),
         ),
         reset=local(fps['RSW1'].GetPosition()),
         oled=dict(box=local_box(fps['J3'])),
@@ -387,6 +424,7 @@ def build(side):
         fp.SetPath(pcbnew.KIID_PATH('/' + c['uuid']))
         fp.SetSheetname('/'); fp.SetSheetfile(f'nrsk-{side}.kicad_sch')
         set_model(fp, name)
+        fp.SetExcludedFromBOM(False)        # e.g. the BOOTSEL solder jumper: listed in the BOM like its symbol
         board.Add(fp)
         fps[ref] = fp
 
@@ -450,15 +488,61 @@ def build(side):
 
     # connectors (front) and MCU (back)
     edge_x = w if cfg['inner'] > 0 else -MARGIN
-    place_connector(fps['J2'], edge_x, cfg['usb_y'], cfg['inner'], 'usb')
+    place_connector_top(fps['J2'], cfg['usb_x'], 'usb')
     place_connector(fps['J1'], edge_x, cfg['trrs_y'], cfg['inner'], 'trrs')
     place('J3', *cfg['oled'])          # OLED module on the front, in a key-free notch
     wx, wy = wheel_centre(side, w)
     place('U3', wx, wy, 0, back=True)    # AS5600 right above the wheel's magnet
     u1 = place('U1', *cfg['mcu'], 0, back=True)
-    a6 = pad(fps['J2'], 'A6')
-    best = min((0, 90, 180, 270), key=lambda r: (u1.SetOrientationDegrees(r), dist(pad(u1, '4'), a6))[1])
-    u1.SetOrientationDegrees(best)
+    # orientation: shortest total ratsnest from the MCU pins to the rest of their nets (USB pair weighted),
+    # so the matrix pins face the keys instead of the board edge
+    others = {}
+    unplaced = {r for r, _ in SUPPORT}
+    for fp in board.GetFootprints():
+        if fp.GetReference() == 'U1' or fp.GetReference() in unplaced:
+            continue
+        for p in fp.Pads():
+            n = p.GetNetname()
+            if n and n not in ('GND', '/3V3', '/1V1'):
+                others.setdefault(n, []).append(p.GetPosition())
+
+    def cost(rot):
+        u1.SetOrientationDegrees(rot)
+        c = 0.0
+        for p in u1.Pads():
+            pts = others.get(p.GetNetname())
+            if pts:
+                c += min(dist(p.GetPosition(), q) for q in pts)
+        a6 = pad(fps['J2'], 'A6')       # USB pair goes through R2/R3 (placed later) to the connector
+        return c + 3.0 * (dist(pad(u1, '47'), a6) + dist(pad(u1, '46'), a6))
+    u1.SetOrientationDegrees(min((0, 90, 180, 270), key=cost))
+
+    # TESTEN (pin 19) is tied to GND: run it straight under the chip into the exposed pad, so the autorouter
+    # does not have to squeeze it out between the corner pins
+    tp, c = pad(u1, '19'), u1.GetPosition()
+    gnd = board.FindNet('GND')
+    ep_in = pcbnew.FromMM(1.3)       # stop 0.3 mm inside the 3.2 mm exposed pad's edge, square to the pin row
+    if abs(c.x - tp.x) > abs(c.y - tp.y):
+        end = pcbnew.VECTOR2I(c.x - ep_in if tp.x < c.x else c.x + ep_in, tp.y)
+    else:
+        end = pcbnew.VECTOR2I(tp.x, c.y - ep_in if tp.y < c.y else c.y + ep_in)
+    track(board, tp, end, pcbnew.B_Cu, gnd, width=0.2)
+    # escape stubs: every signal pin gets a short straight track out of the 0.4 mm-pitch pin row, so the
+    # autorouter starts from points with room around them (it often failed to leave the corner pins)
+    for p in u1.Pads():
+        n = p.GetNetname()
+        if not n or n == 'GND' or p.GetNumber() == '57' or n.startswith('unconnected'):
+            continue
+        pp = p.GetPosition()
+        if abs(pp.x - c.x) > abs(pp.y - c.y):
+            out = pcbnew.VECTOR2I(pp.x + (1 if pp.x > c.x else -1) * pcbnew.FromMM(STUB), pp.y)
+        else:
+            out = pcbnew.VECTOR2I(pp.x, pp.y + (1 if pp.y > c.y else -1) * pcbnew.FromMM(STUB))
+        track(board, pp, out, pcbnew.B_Cu, p.GetNet(), width=0.2)
+    # thermal / ground vias in the exposed pad (as in the Raspberry Pi reference design)
+    for dx in (-0.8, 0.8):
+        for dy in (-0.8, 0.8):
+            via(board, pcbnew.VECTOR2I(c.x + pcbnew.FromMM(dx), c.y + pcbnew.FromMM(dy)), gnd)
 
     for ref, anchors in SUPPORT:
         autoplace(board, fps[ref], [pad(fps[r], p) for r, p in anchors], w, h)

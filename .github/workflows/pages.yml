@@ -28,15 +28,18 @@ jobs:
       - name: Build site
         run: |
           mkdir -p _site
-          {
+          wrap() {
             echo '<!doctype html>'
             echo '<html lang="ja"><head>'
             echo '<meta charset="utf-8">'
             echo '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
             echo '</head><body>'
-            cat case/preview/viewer.html
+            cat "$1"
             echo '</body></html>'
-          } > _site/index.html
+          }
+          wrap case/preview/viewer.html > _site/index.html
+          wrap case/preview/assembly.html > _site/assembly.html
+          cp case/preview/model-data.js _site/
           cp docs/img/render-hero.png _site/og.png
           touch _site/.nojekyll
       - uses: actions/configure-pages@v6

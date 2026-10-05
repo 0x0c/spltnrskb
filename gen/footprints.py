@@ -88,7 +88,8 @@ def mx_hotswap(w):
     return name, s
 
 
-# 0.91" 128x32 SSD1306 I2C module (38 x 12 mm), soldered ~2 mm above the PCB.
+# 0.91" 128x32 SSD1306 I2C module (38 x 12 mm), soldered so its glass top is 2.5 mm above the PCB
+# (the flush 2 mm half-mirror cover is taped onto it).
 OLED_W, OLED_H = 38.0, 12.0
 OLED_PIN_FROM_EDGE = 1.6      # header row centre to the module's short edge
 OLED_GLASS = (30.0, 11.5)     # glass panel, toward the end away from the header
@@ -99,7 +100,7 @@ def oled_module():
     name = 'OLED_0.91in_128x32_I2C'
     s = (f'(footprint "{name}"\n  (version 20241229)\n  (generator "nrsk-gen")\n  (layer "F.Cu")\n'
          '  (descr "0.91 inch 128x32 OLED module (SSD1306, I2C), 38 x 12 mm, 4-pin 2.54 mm header '
-         '(GND VCC SCL SDA); mount ~2 mm above the PCB without the header spacer")\n'
+         '(GND VCC SCL SDA); glass top 2.5 mm above the PCB, header spacer removed")\n'
          '  (tags "OLED SSD1306 I2C 0.91 128x32")\n  (attr through_hole)\n')
     s += prop('Reference', 'REF**', (0, -7.5), 'F.SilkS')
     s += prop('Value', name, (0, 0), 'F.Fab')

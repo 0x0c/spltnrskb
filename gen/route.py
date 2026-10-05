@@ -34,7 +34,7 @@ def remove_dangling_vias(board):
 
 
 def dangling_tracks(board):
-    """Unlocked track segments with an end that touches nothing (Freerouting leftovers)."""
+    """Track segments with an end that touches nothing (Freerouting leftovers, unused escape stubs)."""
     tracks = [t for t in board.GetTracks() if t.Type() == pcbnew.PCB_TRACE_T]
     vias = [t for t in board.GetTracks() if t.Type() == pcbnew.PCB_VIA_T]
     pads = [p for fp in board.GetFootprints() for p in fp.Pads()]
@@ -46,20 +46,22 @@ def dangling_tracks(board):
         if any(v.GetNetCode() == t.GetNetCode() and v.GetPosition() == pt for v in vias):
             return True
         return any(p.GetNetCode() == t.GetNetCode() and p.IsOnLayer(t.GetLayer()) and p.HitTest(pt) for p in pads)
-    return [t for t in tracks if not t.IsLocked() and not (connected(t, t.GetStart()) and connected(t, t.GetEnd()))]
+    # locked 0.2 mm tracks are the MCU escape stubs from make_pcb; drop the ones the router did not use
+    removable = lambda t: not t.IsLocked() or t.GetWidth() == pcbnew.FromMM(0.2)
+    return [t for t in tracks if removable(t) and not (connected(t, t.GetStart()) and connected(t, t.GetEnd()))]
 
 
 def remove_dangling_tracks(pcb):
-    """Repeatedly drop dangling stubs; save and reload between passes (removal invalidates the track list)."""
-    for _ in range(5):
-        board = pcbnew.LoadBoard(pcb)
-        stubs = dangling_tracks(board)
-        if not stubs:
-            return
-        print(f'removing {len(stubs)} dangling track(s)')
-        for t in stubs:
-            board.Remove(t)
+    """One pass: drop dangling stubs and save. Returns how many were removed. A board must not be loaded twice
+    in one process (the second load returns a broken object), so the caller runs each pass in a new process."""
+    board = pcbnew.LoadBoard(pcb)
+    stubs = dangling_tracks(board)
+    for t in stubs:
+        board.Remove(t)
+    if stubs:
         pcbnew.SaveBoard(pcb, board)
+    print(f'removed {len(stubs)} dangling track(s)')
+    return len(stubs)
 
 
 def route(side, passes=100):
@@ -80,7 +82,12 @@ def route(side, passes=100):
     remove_dangling_vias(board)
     pcbnew.SaveBoard(pcb, board)
     # reloading the board in this process returns a broken object; clean up in a fresh one
-    subprocess.run([sys.executable, os.path.abspath(__file__), '--cleanup', side], check=True)
+    for _ in range(5):
+        r = subprocess.run([sys.executable, os.path.abspath(__file__), '--cleanup', side], check=True,
+                           capture_output=True, text=True)
+        print(r.stdout.strip().splitlines()[-1])
+        if 'removed 0 ' in r.stdout:
+            break
     print('routed', pcb)
 
 

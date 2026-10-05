@@ -5,13 +5,14 @@ import os
 U = 19.05  # 1u pitch [mm]
 HERE = os.path.dirname(os.path.abspath(__file__))
 
-# Pro Micro pin assignment (same on both halves)
-ROW_PINS = ['F4', 'F5', 'F6', 'F7', 'B1', 'B3']          # A3 A2 A1 A0 15 14
-COL_PINS = ['D4', 'C6', 'D7', 'E6', 'B4', 'B5', 'B6', 'B2']  # 4 5 6 7 8 9 10 16
-SERIAL_PIN = 'D2'   # RX1, QMK soft serial (half duplex)
-HAND_PIN = 'D3'     # TX0, tied to VCC on left / GND on right
-# corner thumbwheel: AS5600 magnetic angle sensor on the I2C bus (PD0 / PD1, shared with the OLED)
+# RP2040 GPIO assignment (same on both halves)
+ROW_PINS = ['GP4', 'GP5', 'GP6', 'GP7', 'GP8', 'GP9']
+COL_PINS = ['GP10', 'GP11', 'GP12', 'GP13', 'GP14', 'GP16', 'GP17', 'GP18']   # GP15 skipped: corner pin next to TESTEN/XIN
+SERIAL_PIN = 'GP1'  # QMK split serial (PIO, half duplex) on the TRRS tip
+HAND_PIN = 'GP0'    # 10k to 3V3 on left / GND on right
+I2C_SDA, I2C_SCL = 'GP2', 'GP3'   # I2C1: OLED and the AS5600 of the corner thumbwheel
 WHEEL_I2C_ADDR = 0x36
+WHEEL_DETENTS = 32   # mechanical clicks per turn = firmware steps per turn
 N_ROWS, N_COLS = len(ROW_PINS), len(COL_PINS)
 
 

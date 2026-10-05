@@ -1,14 +1,6 @@
 {
  "_checked": "2026-10-04",
  "_note": "Purchasable parts for each BOM line, keyed by the BOM 部品 name. Every URL was opened and the part number / spec checked on 2026-10-04. Prices are the listed unit price at the smallest quantity break on that day and will change.",
- "マイコン ATmega32U4-AU": [
-  {
-   "mpn": "Microchip ATMEGA32U4-AU",
-   "shop": "LCSC C44854",
-   "url": "https://www.lcsc.com/product-detail/C44854.html",
-   "price": "US$6.94"
-  }
- ],
  "USB-C レセプタクル": [
   {
    "mpn": "Korean Hroparts TYPE-C-31-M-12",
@@ -41,22 +33,6 @@
    "price": "US$0.18"
   }
  ],
- "水晶振動子 16 MHz": [
-  {
-   "mpn": "TXC 7M16000025（CL 20 pF）",
-   "shop": "LCSC C6409346",
-   "url": "https://www.lcsc.com/product-detail/C6409346.html",
-   "price": "US$0.16",
-   "note": "負荷容量 20 pF なので 22 pF のコンデンサと合う。JLC 定番の YXC X322516MLB4SI は 9 pF で不適"
-  },
-  {
-   "mpn": "JGHC S3216000201060（CL 20 pF）",
-   "shop": "LCSC C426974",
-   "url": "https://www.lcsc.com/product-detail/C426974.html",
-   "price": "US$0.05",
-   "note": "安価な代替。在庫少"
-  }
- ],
  "ポリスイッチ 500 mA": [
   {
    "mpn": "Bourns MF-NSMF050-2",
@@ -78,14 +54,6 @@
    "mpn": "1N4148W（SOD-123）",
    "shop": "LCSC C81598",
    "url": "https://www.lcsc.com/product-detail/C81598.html",
-   "price": "US$0.012"
-  }
- ],
- "コンデンサ 22 pF": [
-  {
-   "mpn": "Samsung CL21C220JBANNNC",
-   "shop": "LCSC C1804",
-   "url": "https://www.lcsc.com/product-detail/C1804.html",
    "price": "US$0.012"
   }
  ],
@@ -119,14 +87,6 @@
    "shop": "LCSC C17414",
    "url": "https://www.lcsc.com/product-detail/C17414.html",
    "price": "US$0.0034"
-  }
- ],
- "抵抗 22 Ω": [
-  {
-   "mpn": "UNI-ROYAL 0805W8F220JT5E",
-   "shop": "LCSC C17561",
-   "url": "https://www.lcsc.com/product-detail/C17561.html",
-   "price": "US$0.0046"
   }
  ],
  "抵抗 5.1 kΩ": [
@@ -333,29 +293,12 @@
    "price": "¥1,099 / 160 本"
   }
  ],
- "M2 × 6 mm なべネジ": [
-  {
-   "mpn": "OHSATO ナベ頭小ねじ M2 × 6（ステンレス）",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/1714/1848/",
-   "price": "¥241 / 50 本"
-  }
- ],
  "M2 × 20 mm なべネジ": [
   {
    "mpn": "OHSATO ナベ頭小ねじ M2 × 20（ステンレス）",
    "shop": "MonotaRO",
    "url": "https://www.monotaro.com/p/1714/1900/",
    "price": "¥329 / 50 本"
-  }
- ],
- "M2 × 22 mm なべネジ": [
-  {
-   "mpn": "大阪魂 ナベコ 2X22",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/1423/1257/",
-   "price": "¥734 / 147 本",
-   "note": "22 mm は規格外の長さで小袋なし。材質の記載なし"
   }
  ],
  "M2 ナット": [
@@ -370,15 +313,6 @@
    "shop": "MonotaRO",
    "url": "https://www.monotaro.com/p/1148/5784/",
    "price": "¥1,428 / 50 個"
-  }
- ],
- "M2 ナット（OLED カバー用）": [
-  {
-   "mpn": "大阪魂 六角ナット 1 種 M2（SUS304）",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/2876/3624/",
-   "price": "¥164 / 20 個",
-   "note": "外周用と同じ袋で足りる"
   }
  ],
  "M2 ヒートセットインサート": [
@@ -433,42 +367,6 @@
    "price": "¥48 / 個"
   }
  ],
- "アクリル板 1.5 mm（プレート）": [
-  {
-   "mpn": "アクリル板 DXF 切削（図面で WEB オーダー）",
-   "shop": "はざいや（菅原工芸）",
-   "url": "https://www.hazaiya.co.jp/estimate-drawing",
-   "price": "見積",
-   "note": "laser/*.dxf をアップロード。対応板厚はログイン後に確認。切断線どうしの間隔 3 mm 未満は不可"
-  }
- ],
- "アクリル板 3 mm（枠）": [
-  {
-   "mpn": "アクリル板 DXF 切削（図面で WEB オーダー）",
-   "shop": "はざいや（菅原工芸）",
-   "url": "https://www.hazaiya.co.jp/estimate-drawing",
-   "price": "見積",
-   "note": "laser/*.dxf をアップロード。対応板厚はログイン後に確認。切断線どうしの間隔 3 mm 未満は不可"
-  }
- ],
- "アクリル板 3 mm（底板）": [
-  {
-   "mpn": "アクリル板 DXF 切削（図面で WEB オーダー）",
-   "shop": "はざいや（菅原工芸）",
-   "url": "https://www.hazaiya.co.jp/estimate-drawing",
-   "price": "見積",
-   "note": "laser/*.dxf をアップロード。対応板厚はログイン後に確認。切断線どうしの間隔 3 mm 未満は不可"
-  }
- ],
- "透明アクリル板 2 mm": [
-  {
-   "mpn": "アクリル板 DXF 切削（図面で WEB オーダー）",
-   "shop": "はざいや（菅原工芸）",
-   "url": "https://www.hazaiya.co.jp/estimate-drawing",
-   "price": "見積",
-   "note": "laser/*.dxf をアップロード。対応板厚はログイン後に確認。切断線どうしの間隔 3 mm 未満は不可"
-  }
- ],
  "サムホイール": [
   {
    "mpn": "case/print/<side>-wheel.stl",
@@ -483,6 +381,199 @@
    "shop": "JLCPCB",
    "url": "https://cart.jlcpcb.com/quote",
    "price": "見積"
+  }
+ ],
+ "透明両面テープ 厚さ 0.5 mm": [
+  {
+   "mpn": "3M スコッチ はがせる両面テープ 超透明 KRT-15（幅 15 × 1.5 m × 厚さ 0.5 mm）",
+   "shop": "カインズ",
+   "url": "https://www.cainz.com/g/4547452982974.html",
+   "price": "",
+   "note": "はがせるタイプなので OLED を交換できる"
+  }
+ ],
+ "マイコン RP2040": [
+  {
+   "mpn": "Raspberry Pi RP2040",
+   "shop": "LCSC C2040",
+   "url": "https://www.lcsc.com/product-detail/C2040.html",
+   "price": "US$1.00"
+  }
+ ],
+ "QSPI フラッシュ 16 MB": [
+  {
+   "mpn": "Winbond W25Q128JVSIQ",
+   "shop": "LCSC C113767",
+   "url": "https://www.lcsc.com/product-detail/C113767.html",
+   "price": "US$2.52",
+   "note": "よく使われる C97521 は同じ型番だが確認時に在庫切れ"
+  },
+  {
+   "mpn": "Winbond W25Q16JVSSIQ（2 MB、同じ 208 mil）",
+   "shop": "LCSC C82317",
+   "url": "https://www.lcsc.com/product-detail/C82317.html",
+   "price": "US$1.07",
+   "note": "容量は小さいがキーボードには十分"
+  }
+ ],
+ "LDO 3.3 V": [
+  {
+   "mpn": "Diodes AP2112K-3.3TRG1",
+   "shop": "LCSC C51118",
+   "url": "https://www.lcsc.com/product-detail/C51118.html",
+   "price": "US$0.17"
+  }
+ ],
+ "水晶振動子 12 MHz": [
+  {
+   "mpn": "Abracon ABM8-272-T3（CL 10 pF）",
+   "shop": "LCSC C20625731",
+   "url": "https://www.lcsc.com/product-detail/C20625731.html",
+   "price": "US$0.63",
+   "note": "Raspberry Pi のリファレンスと同じ部品。安価な YXC X322512MSB4SI（C9002）は CL 20 pF なので 15 pF のコンデンサとは合わない"
+  }
+ ],
+ "コンデンサ 15 pF": [
+  {
+   "mpn": "YAGEO CC0805JRNPO9BN150",
+   "shop": "LCSC C107110",
+   "url": "https://www.lcsc.com/product-detail/C107110.html",
+   "price": "US$0.0096"
+  }
+ ],
+ "抵抗 1 kΩ": [
+  {
+   "mpn": "UNI-ROYAL 0805W8F1001T5E",
+   "shop": "LCSC C17513",
+   "url": "https://www.lcsc.com/product-detail/C17513.html",
+   "price": "US$0.0041"
+  }
+ ],
+ "抵抗 27 Ω": [
+  {
+   "mpn": "YAGEO RC0805FR-0727RL",
+   "shop": "LCSC C163408",
+   "url": "https://www.lcsc.com/product-detail/C163408.html",
+   "price": "US$0.0078",
+   "note": "確認時の在庫 4,900"
+  }
+ ],
+ "BOOTSEL パッド": [
+  {
+   "mpn": "部品なし（基板のはんだジャンパー）",
+   "shop": "—",
+   "url": "",
+   "price": ""
+  }
+ ],
+ "ハーフミラー アクリル板 2 mm": [
+  {
+   "mpn": "アクリル板キャスト ハーフミラー 30%（三菱 MRH-001T-30）",
+   "shop": "はざいや（菅原工芸）",
+   "url": "https://www.hazaiya.co.jp/products/detail/3373",
+   "price": "見積",
+   "note": "2 / 3 / 5 mm。図面 WEB オーダーで DXF から切り出し。1.5 mm のアクリル製ハーフミラーはメーカーにもない"
+  },
+  {
+   "mpn": "アクリルハーフミラー板 フリーカット（2 mm、透過 30%）",
+   "shop": "アクリ屋ドットコム",
+   "url": "https://www.acry-ya.com/products/detail/113/",
+   "price": "見積",
+   "note": "最小 10 × 10 mm から"
+  }
+ ],
+ "マットクリア アクリル板 3 mm（枠）": [
+  {
+   "mpn": "アクリル板キャスト 片面マットクリア（パラグラス C1 P）",
+   "shop": "はざいや（菅原工芸）",
+   "url": "https://www.hazaiya.co.jp/products/detail/3481",
+   "price": "見積",
+   "note": "2 / 3 / 5 mm。図面 WEB オーダー（https://www.hazaiya.co.jp/estimate-drawing）で DXF から切り出し"
+  }
+ ],
+ "マットクリア アクリル板 3 mm（底板）": [
+  {
+   "mpn": "アクリル板キャスト 片面マットクリア（パラグラス C1 P）",
+   "shop": "はざいや（菅原工芸）",
+   "url": "https://www.hazaiya.co.jp/products/detail/3481",
+   "price": "見積",
+   "note": "2 / 3 / 5 mm。図面 WEB オーダー（https://www.hazaiya.co.jp/estimate-drawing）で DXF から切り出し"
+  }
+ ],
+ "透明アクリル板 1.5 mm（プレート）": [
+  {
+   "mpn": "アクリル板 DXF 切削（図面で WEB オーダー）",
+   "shop": "はざいや（菅原工芸）",
+   "url": "https://www.hazaiya.co.jp/estimate-drawing",
+   "price": "見積",
+   "note": "透明 1.5 mm で注文。切断線どうしの間隔 3 mm 未満は不可"
+  }
+ ],
+ "M2 × 6 mm タッピングネジ（ブロック用）": [
+  {
+   "mpn": "大阪魂 ナベタッピンねじ 2 種 B-0 M2 × 6（ステンレス）",
+   "shop": "MonotaRO",
+   "url": "https://www.monotaro.com/p/4171/8022/",
+   "price": "¥593 / 50 本"
+  },
+  {
+   "mpn": "エスコ EA949AL-103",
+   "shop": "MonotaRO",
+   "url": "https://www.monotaro.com/p/5065/8362/",
+   "price": "¥435 / 40 本"
+  }
+ ],
+ "プランジャーブロック": [
+  {
+   "mpn": "case/print/<side>-detent.stl",
+   "shop": "自作（3D プリント）",
+   "url": "",
+   "price": "",
+   "note": "PETG 推奨。M3 の穴はタップを立てるか、プランジャーでねじを切りながら入れる"
+  }
+ ],
+ "M3 ボールプランジャー": [
+  {
+   "mpn": "NBK PAFS-3-L（ステンレス、L 6、1 → 2 N）",
+   "shop": "MonotaRO",
+   "url": "https://www.monotaro.com/p/2212/2932/",
+   "price": "¥395",
+   "note": "軽め。重くしたいときは PAFS-3-M（1.5 → 2.9 N）"
+  },
+  {
+   "mpn": "NBK PAFS-3-M（ステンレス、L 6、1.5 → 2.9 N）",
+   "shop": "MonotaRO",
+   "url": "https://www.monotaro.com/p/2212/2957/",
+   "price": "¥395"
+  },
+  {
+   "mpn": "MISUMI BPK3（ショートタイプ、L 5、ボール φ2、1 → 2 N）",
+   "shop": "MISUMI",
+   "url": "https://jp.misumi-ec.com/vona2/detail/110302018310/",
+   "price": "¥627",
+   "note": "ブロックの穴はそのまま使える（長さが 1 mm 短い）"
+  }
+ ],
+ "M2 × 5 mm スリムヘッド小ねじ（薄頭なべ）": [
+  {
+   "mpn": "大阪魂 (+)スリムヘッド小ねじ ステンレス M2 × 5（φ4 × 0.5、注文コード 41746704）",
+   "shop": "MonotaRO",
+   "url": "https://www.monotaro.com/p/4174/6704/",
+   "price": "¥593 / 7 本"
+  },
+  {
+   "mpn": "スリムヘッド小ねじ M2 × 5（鉄、三価ホワイト）A0800S2",
+   "shop": "遊舎工房",
+   "url": "https://shop.yushakobo.jp/products/a0800s2",
+   "price": "¥880 / 50 本",
+   "note": "寸法の記載なし"
+  },
+  {
+   "mpn": "MISUMI E-GCBSTSR2-5 超極低頭ボルト 六角穴（φ4 × 0.5、SUSXM7）",
+   "shop": "MISUMI",
+   "url": "https://jp.misumi-ec.com/vona2/detail/110311091879/?HissuCode=E-GCBSTSR2-5",
+   "price": "¥88 / 本",
+   "note": "六角穴 1.3 mm。推奨トルク 0.16 N·m"
   }
  ]
 }

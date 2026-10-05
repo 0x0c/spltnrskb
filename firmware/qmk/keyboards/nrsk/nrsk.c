@@ -33,8 +33,11 @@ static int8_t dial_poll(void) {
     if (d < -2048) d += 4096;
     dial_last = a;
     dial_acc -= d;
-    int8_t steps = dial_acc / DIAL_STEP;
-    dial_acc -= steps * DIAL_STEP;
+    // the wheel rests in a detent (dial_acc ~ 0); count a step once it passes the crest half-way to the next
+    // one, with a little hysteresis so a wheel balanced on the crest does not chatter
+    int8_t steps = 0;
+    while (dial_acc >= DIAL_STEP / 2 + DIAL_HYST) { steps++; dial_acc -= DIAL_STEP; }
+    while (dial_acc <= -(DIAL_STEP / 2 + DIAL_HYST)) { steps--; dial_acc += DIAL_STEP; }
     return steps;
 }
 

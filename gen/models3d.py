@@ -41,8 +41,8 @@ def shape(parts, color, shine=0.3):
 
 
 def oled():
-    """0.91" module, origin at its centre, header at -X, PCB 2 mm above the board."""
-    z0 = 2.0
+    """0.91" module, origin at its centre, header at -X; glass top 2.5 mm above the board (under the taped 2 mm cover)."""
+    z0 = 2.5 - 2.2
     pcb = [box(-19.0, -6.0, 19.0, 6.0, z0, z0 + 1.0)]
     gx = 19.0 - 15.0 - 1.0
     glass = [box(gx - 15.0, -5.75, gx + 15.0, 5.75, z0 + 1.0, z0 + 2.2)]

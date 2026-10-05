@@ -9,6 +9,7 @@ positions are quantised to int16 over the part's bounding box, and normals are l
 import base64
 import hashlib
 import json
+import re
 import struct
 
 import numpy as np
@@ -37,8 +38,27 @@ def trs(node):
     return t @ r @ s
 
 
+def category(ref, mesh_name):
+    """Assembly group of a KiCad part: what gets fitted together in one assembly step."""
+    if 'Stabilizer' in mesh_name:
+        return 'stab'
+    if ref.startswith('SW'):
+        return 'switch' if 'Cherry_MX' in mesh_name else 'socket'
+    if re.fullmatch(r'D\d+', ref) and ref != 'D99':
+        return 'diode'
+    if ref in ('J1', 'J2'):
+        return 'conn'
+    if ref == 'J3':
+        return 'oled'
+    if ref in ('U3', 'C9', 'C10'):
+        return 'sensor'
+    if '_PCB' in mesh_name or ref.endswith('_PCB') or ref.startswith(('left', 'right')):
+        return 'board'
+    return 'smd'
+
+
 def load(path, pool):
-    """Append new geometry to pool (list, plus pool_index dict) and return [(pool id, instances)]."""
+    """Append new geometry to pool (list, plus pool_index dict) and return {category: [(pool id, instances)]}."""
     d = open(path, 'rb').read()
     jl = struct.unpack('<I', d[12:16])[0]
     j = json.loads(d[20:20 + jl])
@@ -89,15 +109,18 @@ def load(path, pool):
     # walk the scene graph for instance matrices
     inst = {}
 
-    def walk(ni, parent):
+    def walk(ni, parent, ref):
         node = j['nodes'][ni]
         m = parent @ trs(node)
         if 'mesh' in node:
+            cat = category(ref or node.get('name', ''), j['meshes'][node['mesh']].get('name', ''))
             for g in mesh_parts[node['mesh']]:
-                inst.setdefault(g, []).append(m)
+                inst.setdefault((cat, g), []).append(m)
         for c in node.get('children', []):
-            walk(c, m)
+            walk(c, m, ref or j['nodes'][c].get('name', ''))
     for root in j['scenes'][j.get('scene', 0)]['nodes']:
-        walk(root, TO_VIEW)
-    return [(g, b64(np.array([m.T.reshape(16) for m in ms], dtype=np.float32)))   # column-major
-            for g, ms in inst.items()]
+        walk(root, TO_VIEW, None)
+    out = {}
+    for (cat, g), ms in inst.items():
+        out.setdefault(cat, []).append((g, b64(np.array([m.T.reshape(16) for m in ms], dtype=np.float32))))   # column-major
+    return out

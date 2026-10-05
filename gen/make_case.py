@@ -20,6 +20,7 @@ import struct
 import sys
 
 from manifold3d import CrossSection, JoinType, Manifold, set_circular_segments
+from layout import WHEEL_DETENTS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..'))
@@ -46,11 +47,27 @@ PILOT_D = 1.6        # M2 self-tapping
 INSERT_D = 3.2       # M2 heat-set insert in the wall top
 INSERT_DEPTH = 4.0
 RESET_D = 3.0
+# 3D print: the wall above the wheel opening is a separate cap, so the wheel can be dropped in from above
+CAP_SHOULDER = 2.0           # cap's top tier overhangs the opening by this much and rests on the wall
+CAP_LEDGE = 3.0              # thickness of that top tier
+CAP_FIT = 0.15
+RIB_T = 2.0                  # all-printed variant: web under the printed plate (PCB top + 1.5)
+TRAY_FILLET = 2.0     # 3D-printed tray: rounded bottom outer edge
+TRAY_TOP_FILLET = 0.6 # small round on the top outer edge, under the plate
 SWITCH_CUT = 14.0
-# OLED: window in the switch plate, closed by a clear acrylic cover lying directly on the plate
+# OLED: window in the switch plate, filled by a half-mirror acrylic cover flush with the plate top. Half-mirror
+# acrylic starts at 2 mm, so the cover reaches 0.5 mm below the 1.5 mm plate; it rests on the module's glass
+# (soldered low, glass top 2.5 mm above the PCB) and is held by 0.5 mm clear double-sided tape. No screws,
+# so the plate keeps its closed outer edge.
 OLED_WINDOW_CLEAR = 0.15     # added to the module courtyard (courtyard = module + 0.25)
-COVER_T = 2.0                # cover top = plate top + 2.0, below the keycap skirts (plate top + 5.6)
-COVER_MARGIN = 3.0
+COVER_T = 2.0                # half-mirror acrylic; top flush with the plate top
+COVER_FIT = 0.1              # cover edge to plate opening
+COVER_BORDER = 5.0           # cover: rounded rectangle, this much larger than the OLED window all round
+COVER_R = 5.0                 # follows the rounded case corner it sits next to
+COVER_MARGIN = 3.0           # cover stays at least this far inside the case outline
+WALL_POCKET = 0.5            # 3D print: wall top lowered under the cover (cover 2 mm vs plate 1.5 mm)
+TAPE_T = 0.5                 # clear double-sided tape between glass and cover
+OLED_GLASS_TOP = PLATE_GAP + PLATE_T - COVER_T - TAPE_T   # = 2.5: glass top above the PCB top
 SWITCH_TOP_KEEPOUT = 8.4     # half size of an MX top housing (15.6 mm) + 0.6 mm
 # corner thumbwheel: lies under the PCB, rim out of the corner; magnet (6 x 1.5 mm, diametric) on top,
 # read through the air gap by the AS5600 on the PCB back
@@ -61,7 +78,16 @@ BORE_D, BORE_DEPTH = 4.0, 2.0          # axle bore from below
 MAGNET_D, MAGNET_DEPTH = 6.1, 1.6      # magnet pocket from the top
 POST_D = 3.8                 # printed axle post (3D print variant)
 AXLE_HOLE_D = 3.2            # M3 axle screw through the bottom plate (acrylic variant)
-KNURL = 72
+# tactile detent: the rim carries WHEEL_DETENTS rounded teeth (also the grip); inside the case an M3 ball
+# plunger (steel spring + ball) is screwed sideways into a solid block and presses on the teeth, so the wheel
+# clicks once per firmware step. The force is radial and taken by the axle, so the wheel is not lifted, and
+# nothing printed has to flex. How far the plunger is screwed in sets the click force.
+TOOTH_DEPTH = 0.5            # valley depth of the rim teeth
+BLOCK_GAP = 0.4              # block face to the tooth crests
+BLOCK_W, BLOCK_L = 8.0, 9.0  # plunger block across / along the plunger (NBK PAFS-3: L 6 + ball 0.5, hex 1.5 at the rear)
+PLUNGER_TAP_D = 2.5          # M3 tapping hole (tap it, or let the plunger cut its own thread in PETG)
+PLUNGER_WALL = 1.0           # material above the tapped hole
+BLOCK_SCREWS = (-2.5, 2.5)   # acrylic variant: two M2 screws from below, across the block
 STAB_CUT = (7.0, 15.4, 0.5)   # w, h, centre y offset (down) of each stabilizer housing cut-out
 STAB_X = 11.938
 
@@ -77,6 +103,11 @@ def rect(x0, y0, x1, y1):
 
 def rounded_rect(x0, y0, x1, y1, r):
     return rect(x0 + r, y0 + r, x1 - r, y1 - r).offset(r, JoinType.Round)
+
+
+def inside(cs, p):
+    """Point (board coordinates) inside a cross-section."""
+    return (circle(p[0], p[1], 0.2) - cs).area() < 1e-4
 
 
 def circle(x, y, d):
@@ -97,49 +128,49 @@ class Half:
         self.inner_right = self.d['inner_side'] == 'right'
         self.slots = self._slots()
         self.screws = self._screws()
-        self.window_box, self.cover_screws = self._oled()
-        # cover screws replace perimeter screws that would sit too close to them
-        self.screws = [p for p in self.screws if all(math.dist(p, c) > 9 for c in self.cover_screws)] + self.cover_screws
+        self.window_box = self._oled()
+        self.cover_screws = self._cover_screws()
+        # perimeter screws under the cover give way to the cover's own screws
+        cov = self.cover_shape().offset(1.5, JoinType.Round)
+        self.screws = [p for p in self.screws if not inside(cov, p) and
+                       all(math.dist(p, c) > 8 for c in self.cover_screws)] + self.cover_screws
 
     # connector openings through the inner wall -----------------------------------
     def _slots(self):
+        """Plug openings: on the inner edge (TRRS) or the top edge (USB-C). Each has the full rectangle (from
+        the connector body out through the wall) and the part that cuts only the wall."""
         out = []
-        x0, _, x1, _, _ = self.outer_box
+        x0, y0, x1, _, _ = self.outer_box
+        px0, py0, px1, _, _ = self.pcb
         for name, c in self.d['connectors'].items():
             bx0, by0, bx1, by1 = c['box']
-            cy = (by0 + by1) / 2
-            half = max(c['plug'][0], by1 - by0 + 1.0) / 2
-            if self.inner_right:
-                out.append(dict(name=name, y=cy, half=half, x0=bx0 - 0.5, x1=x1 + 5))
+            if c.get('edge', 'inner') == 'top':
+                cx = (bx0 + bx1) / 2
+                half = max(c['plug'][0], bx1 - bx0 + 1.0) / 2
+                full = (cx - half, y0 - 5, cx + half, by1 + 0.5)
+                wall = (cx - half, y0 - 5, cx + half, py0)
+                out.append(dict(name=name, edge='top', x=cx, half=half, full=full, wall=wall))
             else:
-                out.append(dict(name=name, y=cy, half=half, x0=x0 - 5, x1=bx1 + 0.5))
+                cy = (by0 + by1) / 2
+                half = max(c['plug'][0], by1 - by0 + 1.0) / 2
+                if self.inner_right:
+                    full, wall = (bx0 - 0.5, cy - half, x1 + 5, cy + half), (px1, cy - half, x1 + 5, cy + half)
+                else:
+                    full, wall = (x0 - 5, cy - half, bx1 + 0.5, cy + half), (x0 - 5, cy - half, px0, cy + half)
+                out.append(dict(name=name, edge='inner', y=cy, half=half, full=full, wall=wall))
         return out
 
     def slot_cs(self, pcb_side_too=True):
         cs = CrossSection()
         for s in self.slots:
-            x0, x1 = s['x0'], s['x1']
-            if not pcb_side_too:   # only through the wall (from the PCB edge outward)
-                if self.inner_right:
-                    x0 = self.pcb[2]
-                else:
-                    x1 = self.pcb[0]
-            cs = cs + rect(x0, s['y'] - s['half'], x1, s['y'] + s['half'])
+            cs = cs + rect(*(s['full'] if pcb_side_too else s['wall']))
         return cs
 
     # OLED window and cover ---------------------------------------------------------------
     def _oled(self):
         bx0, by0, bx1, by1 = self.d['oled']['box']
         g = OLED_WINDOW_CLEAR
-        win = (bx0 - g, by0 - g, bx1 + g, by1 + g)
-        x0, _, x1, _, _ = self.pcb
-        wall_x = x1 + CLEAR + WALL / 2 if self.inner_right else x0 - CLEAR - WALL / 2
-        # two screws on the wall centre line beside the window, clear of the plug openings
-        ok = [y for y in [win[1] + i * 0.5 for i in range(int((win[3] - win[1]) / 0.5) + 1)]
-              if all(abs(y - s['y']) > s['half'] + 3.5 for s in self.slots)]
-        assert len(ok) >= 2, 'no room for OLED cover screws'
-        return win, [(wall_x, min(ok) + 3.0 if min(ok) + 3.0 < max(ok) - 3.0 else min(ok)),
-                     (wall_x, max(ok) - 3.0 if max(ok) - 3.0 > min(ok) + 3.0 else max(ok))]
+        return (bx0 - g, by0 - g, bx1 + g, by1 + g)
 
     def window_cs(self):
         return rect(*self.window_box)
@@ -158,16 +189,18 @@ class Half:
             cs = cs + rect(k['cx'] - h, k['cy'] - h, k['cx'] + h, k['cy'] + h)
         return cs
 
+    def cover_shape(self):
+        """Half-mirror inlay: rounded rectangle centred on the OLED window, COVER_BORDER wide all round."""
+        x0, y0, x1, y1 = self.window_box
+        m = COVER_BORDER
+        return rounded_rect(x0 - m, y0 - m, x1 + m, y1 + m, COVER_R)
+
+    def _cover_screws(self):
+        """The cover is held by clear double-sided tape (on the OLED glass and the wall ledge), not screws."""
+        return []
+
     def cover(self):
-        wx0, wy0, wx1, wy1 = self.window_box
-        m = COVER_MARGIN
-        sx = [p[0] for p in self.cover_screws]
-        sy = [p[1] for p in self.cover_screws]
-        x0, x1 = min(wx0 - m, min(sx) - 3.5), max(wx1 + m, max(sx) + 3.5)
-        y0, y1 = min(wy0 - m, min(sy) - 3.5), max(wy1 + m, max(sy) + 3.5)
-        cs = (rect(x0, y0, x1, y1) - self.switch_tops()) ^ self.outer.offset(-1.0, JoinType.Round)
-        cs = cs.offset(-1.0, JoinType.Round).offset(1.0, JoinType.Round)    # round the corners
-        return cs - self.holes(self.cover_screws, SCREW_D)
+        return self.cover_shape() - self.holes(self.cover_screws, SCREW_D)
 
     # perimeter screws on the wall centre line --------------------------------------
     def _screws(self):
@@ -184,7 +217,7 @@ class Half:
         # sides: outer side at mid height; inner side in every gap between slots
         outer_x, inner_x = (X0, X1) if self.inner_right else (X1, X0)
         pts.append((outer_x, (Y0 + Y1) / 2))
-        edges = sorted([(s['y'] - s['half'], s['y'] + s['half']) for s in self.slots])
+        edges = sorted([(s['y'] - s['half'], s['y'] + s['half']) for s in self.slots if s['edge'] == 'inner'])
         free, last = [], Y0 + R
         for a, b in edges:
             free.append((last, a)); last = b
@@ -195,12 +228,14 @@ class Half:
                 pts.append((inner_x, (a2 + b2) / 2))
         # the corner wheel takes the corner screw; put one on each face just past the wheel opening
         (wx, wy), wr = self.d['wheel']['center'], self.d['wheel']['r']
-        keep = wr + WHEEL_CUT + SCREW_D / 2 + 1.5
+        keep = wr + WHEEL_CUT + CAP_SHOULDER + INSERT_D / 2 + 0.8     # clear of the wheel cap's shoulder
         pts = [p for p in pts if math.hypot(p[0] - wx, p[1] - wy) > keep]
         d = math.sqrt(keep ** 2 - (wy - Y0) ** 2)
         side_x = X0 if wx < (X0 + X1) / 2 else X1
         pts.append((wx + d if side_x == X0 else wx - d, Y0))
         pts.append((side_x, wy + math.sqrt(keep ** 2 - (wx - side_x) ** 2)))
+        tops = [rect(*sl['full']).offset(3.5, JoinType.Miter) for sl in self.slots if sl['edge'] == 'top']
+        pts = [p for p in pts if not any(inside(t, p) for t in tops)]
         return pts
 
     # 2D layers ------------------------------------------------------------------------
@@ -220,7 +255,7 @@ class Half:
                 for sx in (-1, 1):
                     cx = k['cx'] + sx * STAB_X
                     cut = cut + rect(cx - w / 2, k['cy'] + dy - hh / 2, cx + w / 2, k['cy'] + dy + hh / 2)
-        return self.outer - cut - self.window_cs() - self.holes(self.screws, SCREW_D)
+        return self.outer - cut - self.cover_shape().offset(COVER_FIT, JoinType.Round) - self.holes(self.screws, SCREW_D)
 
     def frame(self, layer):
         cs = self.outer - self.inner - self.holes(self.screws, SCREW_D)
@@ -235,12 +270,72 @@ class Half:
     def bottom(self):
         (wx, wy), _ = self.wheel_xy()
         return (self.outer - self.holes(self.screws, SCREW_D) - self.holes(self.d['holes'], SCREW_D)
-                - circle(*self.d['reset'], RESET_D) - circle(wx, wy, AXLE_HOLE_D))
+                - circle(*self.d['reset'], RESET_D) - circle(wx, wy, AXLE_HOLE_D)
+                - self.holes(self.detent_screws_xy(), SCREW_D))
+
+    # tactile detent -------------------------------------------------------------------
+    def _detent_frame(self, turn=None):
+        """Tip point on the rim (3D frame: x, -y), radial unit u (outward) and tangent v. The plunger points at
+        the wheel from inside the case: toward the board centre, turned by the smallest angle that keeps the
+        block clear of the standoffs and the reset hole."""
+        (wx, wy), r = self.wheel_xy()
+        if turn is None:
+            turn = self._detent_turn()
+        x0, y0, x1, y1, _ = self.pcb
+        base = math.atan2(-((y0 + y1) / 2 - wy), (x0 + x1) / 2 - wx) + math.radians(turn)
+        ux, uy = math.cos(base), math.sin(base)
+        return (wx + r * ux, -wy + r * uy), (ux, uy), (-uy, ux)
+
+    def _detent_turn(self):
+        if not hasattr(self, '_turn'):
+            for t in sorted(range(-60, 61, 2), key=abs):
+                self._turn = t
+                foot = self.detent_block(FLOOR)[0].project()
+                inside = (foot - self.inner.offset(-0.5, JoinType.Round)).area() < 0.01
+                clear = all((foot ^ circle(x, y, BOSS_D + 1.0)).area() < 0.01
+                            for x, y in self.d['holes'] + [tuple(self.d['reset'])])
+                if inside and clear:
+                    break
+            else:
+                raise AssertionError('no room for the plunger block')
+        return self._turn
+
+    def _box(self, a0, a1, b0, b1, z0, z1):
+        (qx, qy), (ux, uy), (vx, vy) = self._detent_frame()
+        pts = [(qx + a * vx + b * ux, qy + a * vy + b * uy) for a, b in ((a0, b0), (a1, b0), (a1, b1), (a0, b1))]
+        cs = CrossSection([pts])
+        if cs.area() < 1e-6:
+            cs = CrossSection([pts[::-1]])
+        return Manifold.extrude(cs, z1 - z0).translate((0, 0, z0))
+
+    def detent_block(self, z_base):
+        """Solid plunger block on the floor (z_base) with the M3 hole aimed at the wheel centre."""
+        (qx, qy), (ux, uy), _ = self._detent_frame()
+        top = z_base + WHEEL_GAP + WHEEL_T - 0.3
+        zc = top - PLUNGER_WALL - PLUNGER_TAP_D / 2
+        block = self._box(-BLOCK_W / 2, BLOCK_W / 2, BLOCK_GAP, BLOCK_GAP + BLOCK_L, z_base, top)
+        ang = math.degrees(math.atan2(uy, ux))
+        hole = Manifold.cylinder(BLOCK_L + 2, PLUNGER_TAP_D / 2, PLUNGER_TAP_D / 2, 24).rotate((0, 90, 0)).translate(
+            (BLOCK_GAP - 1, 0, zc)).rotate((0, 0, ang)).translate((qx, qy, 0))
+        return block - hole, zc
+
+    def detent_screws_xy(self):
+        """Board coordinates of the two M2 screws holding the separate block (acrylic variant)."""
+        (qx, qy), (ux, uy), (vx, vy) = self._detent_frame()
+        b = BLOCK_GAP + BLOCK_L / 2
+        return [(qx + a * vx + b * ux, -(qy + a * vy + b * uy)) for a in BLOCK_SCREWS]
+
+    def detent_part(self):
+        """Separate printed plunger block for the acrylic variant: sits on the bottom plate, 2 x M2 from below."""
+        block, _ = self.detent_block(BOTTOM_T)
+        for x, y in self.detent_screws_xy():
+            block = block - Manifold.cylinder(2.0, PILOT_D / 2, PILOT_D / 2, 24).translate((x, -y, BOTTOM_T - 0.01))
+        return block
 
     # 3D print -------------------------------------------------------------------------
     def tray(self):
         wall_top = FLOOR + STANDOFF + PCB_T + PLATE_GAP
-        body = Manifold.extrude(self.outer, wall_top)
+        body = self._filleted(wall_top)
         body = body - Manifold.extrude(self.inner, wall_top).translate((0, 0, FLOOR))
         slot_top = FLOOR + STANDOFF + PCB_T + PLUG_TOP      # wall stays closed above this
         body = body - Manifold.extrude(self.slot_cs(False), slot_top - FLOOR).translate((0, 0, FLOOR))
@@ -254,19 +349,56 @@ class Half:
         (wx, wy), wr = self.wheel_xy()
         wz0 = FLOOR + WHEEL_GAP
         body = body - Manifold.extrude(self.wheel_cut(), WHEEL_T + 0.7).translate((0, 0, wz0 - 0.3))
+        # wall above the opening -> separate cap (stepped, rests on a ledge, held down by the plate)
+        z1 = wz0 - 0.3 + WHEEL_T + 0.7
+        cut = self.wheel_cut()
+        z_l = wall_top - CAP_LEDGE
+
+        def tiers(grow):
+            return (Manifold.extrude(cut.offset(grow, JoinType.Round), z_l - z1).translate((0, 0, z1)) +
+                    Manifold.extrude(cut.offset(CAP_SHOULDER + grow, JoinType.Round), CAP_LEDGE + 0.01).translate((0, 0, z_l)))
+        self._cap = body ^ tiers(-CAP_FIT)
+        body = body - tiers(0.0)
+        # pocket for the thicker cover
+        body = body - Manifold.extrude(self.cover_shape().offset(COVER_FIT, JoinType.Round), WALL_POCKET + 0.01).translate(
+            (0, 0, wall_top - WALL_POCKET))
         body = body + Manifold.cylinder(WHEEL_GAP + BORE_DEPTH - 0.3, POST_D / 2, POST_D / 2, 48).translate(
             (wx, -wy, FLOOR))
         rx, ry = self.d['reset']
         body = body - Manifold.cylinder(FLOOR + 0.02, RESET_D / 2, RESET_D / 2).translate((rx, -ry, -0.01))
-        return body
+        return body + self.detent_block(FLOOR)[0]
+
+    def _filleted(self, top):
+        """Outer block of the tray with filleted bottom and top outer edges (stacked offset slices)."""
+        def band(z0, z1, r, at_bottom):
+            parts, n = [], 8
+            for i in range(n):
+                za, zb = z0 + (z1 - z0) * i / n, z0 + (z1 - z0) * (i + 1) / n
+                zm = (za + zb) / 2 - z0 if at_bottom else z1 - (za + zb) / 2
+                inset = r - math.sqrt(max(r * r - (r - zm) ** 2, 0))
+                parts.append(Manifold.extrude(self.outer.offset(-inset, JoinType.Round), zb - za).translate((0, 0, za)))
+            return parts
+        rb, rt = TRAY_FILLET, TRAY_TOP_FILLET
+        parts = band(0, rb, rb, True) + [Manifold.extrude(self.outer, top - rb - rt).translate((0, 0, rb))] + \
+            band(top - rt, top, rt, False)
+        out = parts[0]
+        for m in parts[1:]:
+            out = out + m
+        return out
+
+    def wheel_cap(self):
+        if not hasattr(self, '_cap'):
+            self.tray()
+        return self._cap
 
     def wheel3d(self):
         """Knurled thumbwheel (printable or machined): bore from below, magnet pocket on top."""
         (x, y), r = self.wheel_xy()
         pts = []
-        for i in range(KNURL * 4):
-            a = 2 * math.pi * i / (KNURL * 4)
-            rr = r - (0.45 if (i % 4) in (2,) else 0.0)
+        n = WHEEL_DETENTS * 12
+        for i in range(n):
+            a = 2 * math.pi * i / n
+            rr = r - TOOTH_DEPTH * (1 - math.cos(WHEEL_DETENTS * a)) / 2      # rounded teeth, crests at r
             pts.append((x + rr * math.cos(a), y + rr * math.sin(a)))
         rim = cs_poly(pts)
         w = Manifold.extrude(rim, WHEEL_T)
@@ -276,6 +408,24 @@ class Half:
 
     def plate3d(self):
         return Manifold.extrude(self.plate(), PLATE_T)
+
+    def plate3d_printed(self):
+        """All-printed variant: the 1.5 mm switch plate plus a RIB_T web underneath, so a printed plate is stiff.
+        The web fills the cavity except around the switch housings, the stabilizers and the OLED cover, and
+        stays inside the walls. Print it upside down (top face on the bed)."""
+        keep = CrossSection()
+        g = SWITCH_CUT / 2 + 0.6
+        for k in self.d['keys']:
+            keep = keep + rect(k['cx'] - g, k['cy'] - g, k['cx'] + g, k['cy'] + g)
+            if k['w'] >= 2:
+                w, hh, dy = STAB_CUT
+                for sx in (-1, 1):
+                    cx = k['cx'] + sx * STAB_X
+                    keep = keep + rect(cx - w / 2 - 1.0, k['cy'] + dy - hh / 2 - 1.0, cx + w / 2 + 1.0, k['cy'] + dy + hh / 2 + 1.0)
+        web = self.inner.offset(-0.3, JoinType.Round) - keep - self.cover_shape().offset(1.0, JoinType.Round) \
+            - self.holes(self.d['holes'], BOSS_D + 2.0)
+        web = web.offset(-0.4, JoinType.Round).offset(0.4, JoinType.Round)
+        return self.plate3d() + Manifold.extrude(web, RIB_T).translate((0, 0, -RIB_T))
 
     def pcb3d(self):
         x0, y0, x1, y1, r = self.pcb
@@ -341,8 +491,10 @@ def main(sides):
             write_svg(os.path.join(OUT, 'laser', f'{side}-{name}.svg'), cs, f'{side} {name}')
         tray, plate = hf.tray(), hf.plate3d()
         write_stl(os.path.join(OUT, 'print', f'{side}-tray.stl'), tray)
-        write_stl(os.path.join(OUT, 'print', f'{side}-plate.stl'), plate)
+        write_stl(os.path.join(OUT, 'print', f'{side}-plate.stl'), hf.plate3d_printed())   # all-printed variant
         write_stl(os.path.join(OUT, 'print', f'{side}-wheel.stl'), hf.wheel3d())
+        write_stl(os.path.join(OUT, 'print', f'{side}-detent.stl'), hf.detent_part())   # acrylic variant only
+        write_stl(os.path.join(OUT, 'print', f'{side}-wheel-cap.stl'), hf.wheel_cap())   # 3D-print variant
         write_stl(os.path.join(OUT, 'preview', f'{side}-oled-cover.stl'), Manifold.extrude(hf.cover(), COVER_T))
         # assembly preview (print variant): tray + PCB + plate in place
         z_pcb = FLOOR + STANDOFF
@@ -353,7 +505,7 @@ def main(sides):
         report[side] = dict(case_mm=[round(ox1 - ox0, 1), round(oy1 - oy0, 1)],
                             height_print=round(FLOOR + STANDOFF + PCB_T + PLATE_GAP + PLATE_T, 2),
                             height_acrylic=BOTTOM_T + N_FRAMES * FRAME_T + PLATE_T,
-                            screws=len(hf.screws), cover_screws=len(hf.cover_screws), pcb_holes=len(hf.d['holes']),
+                            screws=len(hf.screws), screws_xy=[[round(float(x), 3), round(float(y), 3)] for x, y in hf.screws], pcb_holes=len(hf.d['holes']),
                             tray_volume_cm3=round(tray.volume() / 1000, 1),
                             plate_genus=plate.genus(), tray_status=str(tray.status()))
         check(hf, layers)
@@ -372,7 +524,9 @@ def check(hf, layers):
         assert x0 + 2 < x < x1 - 2 and y0 + 2 < y < y1 - 2
     # every connector slot must leave the outer wall
     for s in hf.slots:
-        assert (s['x1'] > hf.outer_box[2]) if hf.inner_right else (s['x0'] < hf.outer_box[0])
+        assert (rect(*s['wall']) - hf.outer).area() > 1.0, f"{s['name']} opening does not leave the wall"
+        for x, y in hf.screws:
+            assert not inside(rect(*s['full']).offset(2.0, JoinType.Miter), (x, y)), f"screw in the {s['name']} opening"
     for name, cs in layers.items():
         assert not cs.is_empty(), name
 
@@ -385,9 +539,9 @@ def check(hf, layers):
         h = SWITCH_CUT / 2 + 1.0
         keys = keys + rect(k['cx'] - h, k['cy'] - h, k['cx'] + h, k['cy'] + h)
     assert (win ^ keys).area() < 0.01, 'OLED window too close to a switch'
-    assert (layers['oled-cover'] ^ hf.switch_tops()).area() < 0.01, 'cover hits a switch'
-    assert (win - layers['oled-cover']).area() < 0.01, 'cover does not close the window'
-    assert all(not (s['y'] - s['half'] < y < s['y'] + s['half']) for s in hf.slots for _, y in hf.cover_screws)
+    assert (win - hf.cover_shape()).area() < 0.01, 'cover does not span the OLED window'
+    assert (hf.cover_shape() ^ hf.switch_tops()).area() < 0.01, 'cover hits a switch'
+    assert (hf.cover_shape() - hf.outer.offset(-COVER_MARGIN + 0.01)).area() < 0.01, 'cover leaves the case outline margin'
 
     # wheel: clear of standoffs, screws and the OLED; its rim must leave the case outline at the corner
     (wx, wy), wr = hf.wheel_xy()
@@ -396,6 +550,15 @@ def check(hf, layers):
     for x, y in hf.screws:
         assert math.hypot(x - wx, y - wy) > wr + WHEEL_CUT + SCREW_D / 2 + 0.8, 'wheel hits a case screw'
     assert (hf.wheel_cut(0) - hf.outer).area() > 20, 'wheel does not stick out of the corner'
+    # plunger block: inside the cavity, clear of the standoffs, the reset hole and the wheel; hole within the teeth band
+    block, zc = hf.detent_block(FLOOR)
+    foot = block.project()
+    assert (foot - hf.inner.offset(-0.5, JoinType.Round)).area() < 0.01, 'plunger block leaves the floor'
+    for x, y in hf.d['holes'] + [tuple(hf.d['reset'])]:
+        assert (foot ^ circle(x, y, BOSS_D + 1.0)).area() < 0.01, 'plunger block hits a standoff / reset hole'
+    wheel = hf.wheel3d().translate((0, 0, FLOOR + WHEEL_GAP))
+    assert (wheel ^ block).volume() < 1e-3, 'plunger block collides with the wheel'
+    assert FLOOR + WHEEL_GAP + 0.8 < zc < FLOOR + WHEEL_GAP + WHEEL_T - 0.8, 'plunger misses the teeth'
 
     # the switch plate and the top frame must keep an unbroken outer edge (no connector notches)
     for name in ('plate', f'frame{N_FRAMES}'):

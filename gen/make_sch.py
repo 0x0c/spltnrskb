@@ -1,6 +1,6 @@
 """Generate the KiCad schematic for one half: <side>/nrsk-<side>.kicad_sch.
 
-Each half carries its own ATmega32U4 (TQFP-44) with USB-C, crystal and support parts.
+Each half carries its own RP2040 (QFN-56) with QSPI flash, 12 MHz crystal, 3.3 V LDO and USB-C.
 """
 import math
 import os
@@ -9,7 +9,7 @@ import uuid
 
 import sexpr
 import make_pro
-from layout import HERE, ROW_PINS, COL_PINS, SERIAL_PIN, HAND_PIN, N_ROWS, N_COLS, load
+from layout import HERE, ROW_PINS, COL_PINS, SERIAL_PIN, HAND_PIN, I2C_SDA, I2C_SCL, N_ROWS, N_COLS, load
 from footprints import WIDTHS
 
 KI_SYM = os.path.expanduser('~/Applications/KiCad/KiCad.app/Contents/SharedSupport/symbols/')
@@ -18,7 +18,10 @@ FP = {
     'diode': 'Diode_SMD:D_SOD-123',
     'trrs': 'Connector_Audio:Jack_3.5mm_PJ320D_Horizontal',
     'usb': 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12',
-    'mcu': 'Package_QFP:TQFP-44_10x10mm_P0.8mm',
+    'mcu': 'Package_DFN_QFN:QFN-56-1EP_7x7mm_P0.4mm_EP3.2x3.2mm',
+    'flash': 'Package_SO:SOIC-8_5.3x5.3mm_P1.27mm',
+    'ldo': 'Package_TO_SOT_SMD:SOT-23-5',
+    'boot': 'Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm',
     'esd': 'Package_TO_SOT_SMD:SOT-23-6',
     'xtal': 'Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm_HandSoldering',
     'r': 'Resistor_SMD:R_0805_2012Metric',
@@ -29,10 +32,9 @@ FP = {
     'angle': 'Package_SO:SOIC-8_3.9x4.9mm_P1.27mm',
 }
 
-# ATmega32U4 TQFP-44 pin -> port name
-MCU_PORTS = {1: 'E6', 8: 'B0', 9: 'B1', 10: 'B2', 11: 'B3', 12: 'B7', 18: 'D0', 19: 'D1', 20: 'D2', 21: 'D3',
-             22: 'D5', 25: 'D4', 26: 'D6', 27: 'D7', 28: 'B4', 29: 'B5', 30: 'B6', 31: 'C6', 32: 'C7', 33: 'E2',
-             36: 'F7', 37: 'F6', 38: 'F5', 39: 'F4', 40: 'F1', 41: 'F0'}
+# RP2040 QFN-56: GPIO number -> pin
+RP_GPIO = {g: p for g, p in zip(range(16), [2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18])}
+RP_GPIO.update({g: p for g, p in zip(range(16, 30), [27, 28, 29, 30, 31, 32, 34, 35, 36, 37, 38, 39, 40, 41])})
 
 
 def _as5600():
@@ -245,45 +247,55 @@ def build(side):
 
     # --- MCU ----------------------------------------------------------------
     MX, MY = 279.4, 116.84
-    sh.text('MCU: ATmega32U4-AU (TQFP-44), 16 MHz, 5 V', MX - 25.4, MY - 55.88)
-    mcu = {}
-    for pin, port in MCU_PORTS.items():
-        if port in ROW_PINS:
-            mcu[str(pin)] = f'ROW{ROW_PINS.index(port)}'
-        elif port in COL_PINS:
-            mcu[str(pin)] = f'COL{COL_PINS.index(port)}'
-        elif port == SERIAL_PIN:
-            mcu[str(pin)] = 'DATA'
-        elif port == HAND_PIN:
-            mcu[str(pin)] = 'HAND'
-        elif port == 'E2':
-            mcu[str(pin)] = 'HWB'
-        else:
-            mcu[str(pin)] = None
-    mcu.update({'18': 'SCL', '19': 'SDA'})
-    mcu.update({'2': 'VCC', '14': 'VCC', '24': 'VCC', '3': 'D-', '4': 'D+', '5': 'GND', '15': 'GND',
-                '6': 'UCAP', '7': 'VBUS', '13': 'RST', '16': 'XTAL2', '17': 'XTAL1', '42': None})
-    sh.symbol('MCU_Microchip_ATmega:ATmega32U4-A', 'U1', 'ATmega32U4-AU', MX, MY, 0, FP['mcu'], mcu)
+    sh.text('MCU: RP2040 (QFN-56), 12 MHz, 3.3 V I/O, 16 MB QSPI flash', MX - 25.4, MY - 55.88)
+    roles = {SERIAL_PIN: 'DATA', HAND_PIN: 'HAND', I2C_SDA: 'SDA', I2C_SCL: 'SCL'}
+    roles.update({p: f'ROW{i}' for i, p in enumerate(ROW_PINS)})
+    roles.update({p: f'COL{i}' for i, p in enumerate(COL_PINS)})
+    mcu = {str(pin): roles.get(f'GP{g}') for g, pin in RP_GPIO.items()}
+    mcu.update({str(p): '3V3' for p in (1, 10, 22, 33, 42, 49, 43, 44, 48)})   # IOVDD, ADC_AVDD, VREG_VIN, USB_VDD
+    mcu.update({'23': '1V1', '50': '1V1', '45': '1V1',                       # DVDD <- internal regulator
+                '19': 'GND', '57': 'GND', '20': 'XIN', '21': 'XOUT', '24': None, '25': None, '26': 'RUN',
+                '46': 'D-', '47': 'D+', '51': 'QSPI_SD3', '52': 'QSPI_SCLK', '53': 'QSPI_SD0', '54': 'QSPI_SD2',
+                '55': 'QSPI_SD1', '56': 'QSPI_SS'})
+    sh.symbol('MCU_RaspberryPi:RP2040', 'U1', 'RP2040', MX, MY, 0, FP['mcu'], mcu)
 
-    # crystal
+    # QSPI flash
+    sh.text('Flash', 228.6, 15.24)
+    sh.symbol('Memory_Flash:W25Q128JVS', 'U5', 'W25Q128JVS', 241.3, 30.48, 0, FP['flash'],
+              {'1': 'QSPI_SS', '2': 'QSPI_SD1', '3': 'QSPI_SD2', '4': 'GND', '5': 'QSPI_SD0', '6': 'QSPI_SCLK',
+               '7': 'QSPI_SD3', '8': '3V3'})
+
+    # crystal (Raspberry Pi reference: 1k in series with XOUT, 15 pF loads)
     sh.text('Clock', 190.5, 63.5)
-    sh.symbol('Device:Crystal_GND24', 'Y1', '16MHz', 203.2, 76.2, 0, FP['xtal'], {'1': 'XTAL1', '3': 'XTAL2', '2': 'GND'})
-    two_pin(sh, 'Device:C', 'C1', '22pF', 190.5, 88.9, FP['c'], 'XTAL1', 'GND')
-    two_pin(sh, 'Device:C', 'C2', '22pF', 215.9, 88.9, FP['c'], 'XTAL2', 'GND')
+    sh.symbol('Device:Crystal_GND24', 'Y1', '12MHz', 203.2, 76.2, 0, FP['xtal'], {'1': 'XIN', '3': 'XTAL', '2': 'GND', '4': 'GND'})
+    two_pin(sh, 'Device:C', 'C1', '15pF', 190.5, 88.9, FP['c'], 'XIN', 'GND')
+    two_pin(sh, 'Device:C', 'C2', '15pF', 215.9, 88.9, FP['c'], 'XTAL', 'GND')
+    sh.symbol('Device:R', 'R10', '1k', 228.6, 76.2, 90, FP['r'], {'1': 'XTAL', '2': 'XOUT'})
 
     # decoupling
     sh.text('Decoupling', 190.5, 109.22)
-    for i, (ref, val) in enumerate([('C3', '1uF'), ('C4', '0.1uF'), ('C5', '0.1uF'), ('C6', '0.1uF'),
-                                    ('C7', '0.1uF'), ('C8', '10uF')]):
-        two_pin(sh, 'Device:C', ref, val, 182.88 + i * 10.16, 124.46, FP['c'], 'UCAP' if ref == 'C3' else 'VCC', 'GND')
+    caps = [('C3', '1uF', '3V3'), ('C4', '1uF', '1V1'), ('C5', '0.1uF', '1V1'), ('C6', '0.1uF', '1V1'),
+            ('C7', '0.1uF', '3V3'), ('C8', '0.1uF', '3V3'), ('C11', '0.1uF', '3V3'), ('C12', '0.1uF', '3V3'),
+            ('C13', '0.1uF', '3V3'), ('C14', '0.1uF', '3V3'), ('C15', '0.1uF', '3V3'), ('C18', '0.1uF', '3V3'),
+            ('C19', '10uF', '3V3'), ('C20', '0.1uF', '3V3')]
+    for i, (ref, val, net) in enumerate(caps):
+        two_pin(sh, 'Device:C', ref, val, 182.88 + (i % 7) * 10.16, 124.46 + (i // 7) * 15.24, FP['c'], net, 'GND')
 
     # reset / bootloader
-    sh.text('Reset (press = DFU bootloader via HWB)', 190.5, 152.4)
-    two_pin(sh, 'Device:R', 'R6', '10k', 190.5, 167.64, FP['r'], 'VCC', 'RST')
-    sh.symbol('Switch:SW_Push', 'RSW1', 'Reset', 205.74, 180.34, 0, FP['reset'], {'1': 'RST', '2': 'GND'})
-    two_pin(sh, 'Device:R', 'R7', '10k', 223.52, 167.64, FP['r'], 'HWB', 'GND')
-    two_pin(sh, 'Device:R', 'R1', '10k', 238.76, 167.64, FP['r'], 'HAND', 'VCC' if side == 'left' else 'GND')
-    sh.text(f'Handedness: PD3 {"high = left" if side == "left" else "low = right"}', 233.68, 182.88, 1.27)
+    sh.text('Reset (double-tap = bootloader) / BOOTSEL pads', 190.5, 160.02)
+    two_pin(sh, 'Device:R', 'R6', '10k', 190.5, 175.26, FP['r'], '3V3', 'RUN')
+    sh.symbol('Switch:SW_Push', 'RSW1', 'Reset', 205.74, 187.96, 0, FP['reset'], {'1': 'RUN', '2': 'GND'})
+    two_pin(sh, 'Device:R', 'R7', '1k', 223.52, 175.26, FP['r'], 'QSPI_SS', 'BOOT')
+    sh.symbol('Jumper:SolderJumper_2_Open', 'JP1', 'BOOTSEL', 236.22, 187.96, 0, FP['boot'], {'1': 'BOOT', '2': 'GND'})
+    two_pin(sh, 'Device:R', 'R1', '10k', 251.46, 175.26, FP['r'], 'HAND', '3V3' if side == 'left' else 'GND')
+    sh.text(f'Handedness: {HAND_PIN} {"high = left" if side == "left" else "low = right"}', 246.38, 190.5, 1.27)
+
+    # 3.3 V regulator
+    sh.text('3.3 V LDO', 190.5, 205.74)
+    sh.symbol('Regulator_Linear:AP2112K-3.3', 'U4', 'AP2112K-3.3', 210.82, 220.98, 0, FP['ldo'],
+              {'1': 'VCC', '3': 'VCC', '2': 'GND', '4': None, '5': '3V3'})
+    two_pin(sh, 'Device:C', 'C16', '1uF', 193.04, 228.6, FP['c'], 'VCC', 'GND')
+    two_pin(sh, 'Device:C', 'C17', '1uF', 228.6, 228.6, FP['c'], '3V3', 'GND')
 
     # USB-C
     UX, UY = 342.9, 60.96
@@ -295,8 +307,8 @@ def build(side):
     two_pin(sh, 'Device:R', 'R5', '5.1k', 391.16, 50.8, FP['r'], 'CC2', 'GND')
     sh.symbol('Power_Protection:USBLC6-2SC6', 'U2', 'USBLC6-2SC6', 381.0, 81.28, 0, FP['esd'],
               {'1': 'USB_D+', '6': 'USB_D+', '3': 'USB_D-', '4': 'USB_D-', '2': 'GND', '5': 'VBUS'})
-    sh.symbol('Device:R', 'R2', '22', 406.4, 76.2, 90, FP['r'], {'1': 'D+', '2': 'USB_D+'})
-    sh.symbol('Device:R', 'R3', '22', 406.4, 88.9, 90, FP['r'], {'1': 'D-', '2': 'USB_D-'})
+    sh.symbol('Device:R', 'R2', '27', 406.4, 76.2, 90, FP['r'], {'1': 'D+', '2': 'USB_D+'})
+    sh.symbol('Device:R', 'R3', '27', 406.4, 88.9, 90, FP['r'], {'1': 'D-', '2': 'USB_D-'})
 
     # power path: VBUS -> polyfuse -> Schottky -> VCC (no back-feed into the host / other half)
     sh.text('Power', 335.28, 109.22)
@@ -312,25 +324,25 @@ def build(side):
 
     # TRRS
     JX, JY = 342.9, 175.26
-    sh.text('Split link: TRRS 3.5 mm (QMK soft serial)', JX - 12.7, JY - 15.24)
+    sh.text('Split link: TRRS 3.5 mm (5 V + QMK serial)', JX - 12.7, JY - 15.24)
     sh.symbol('Connector_Audio:AudioJack4', 'J1', 'PJ-320D', JX, JY, 0, FP['trrs'],
               {'T': 'DATA', 'R1': None, 'R2': 'VCC', 'S': 'GND'})
 
     # OLED (0.91" SSD1306, I2C on PD0/PD1)
     OX, OY = 342.9, 215.9
-    sh.text('OLED 0.91" 128x32 (I2C, SSD1306)', OX - 12.7, OY - 15.24)
+    sh.text('OLED 0.91" 128x32 (I2C, SSD1306, 3.3 V)', OX - 12.7, OY - 15.24)
     sh.symbol('Connector_Generic:Conn_01x04', 'J3', 'OLED 128x32', OX, OY, 0, FP['oled'],
-              {'1': 'GND', '2': 'VCC', '3': 'SCL', '4': 'SDA'})
-    two_pin(sh, 'Device:R', 'R8', '4.7k', OX + 25.4, OY - 2.54, FP['r'], 'VCC', 'SCL')
-    two_pin(sh, 'Device:R', 'R9', '4.7k', OX + 35.56, OY - 2.54, FP['r'], 'VCC', 'SDA')
+              {'1': 'GND', '2': '3V3', '3': 'SCL', '4': 'SDA'})
+    two_pin(sh, 'Device:R', 'R8', '4.7k', OX + 25.4, OY - 2.54, FP['r'], '3V3', 'SCL')
+    two_pin(sh, 'Device:R', 'R9', '4.7k', OX + 35.56, OY - 2.54, FP['r'], '3V3', 'SDA')
 
     # corner thumbwheel: AS5600 under the wheel's magnet, on the I2C bus with the OLED
     AX, AY = 342.9, 254.0
-    sh.text('Thumbwheel sensor AS5600 (I2C 0x36, magnet in the wheel)', AX - 12.7, AY - 17.78)
+    sh.text('Thumbwheel sensor AS5600 (I2C 0x36, 3.3 V: VDD5V tied to VDD3V3)', AX - 12.7, AY - 17.78)
     sh.symbol('nrsk:AS5600', 'U3', 'AS5600-ASOM', AX, AY, 0, FP['angle'],
-              {'1': 'VCC', '2': 'VDD3V3', '3': None, '4': 'GND', '5': None, '6': 'SDA', '7': 'SCL', '8': 'GND'})
-    two_pin(sh, 'Device:C', 'C9', '1uF', AX + 25.4, AY, FP['c'], 'VDD3V3', 'GND')
-    two_pin(sh, 'Device:C', 'C10', '0.1uF', AX + 35.56, AY, FP['c'], 'VCC', 'GND')
+              {'1': '3V3', '2': '3V3', '3': None, '4': 'GND', '5': None, '6': 'SDA', '7': 'SCL', '8': 'GND'})
+    two_pin(sh, 'Device:C', 'C9', '1uF', AX + 25.4, AY, FP['c'], '3V3', 'GND')
+    two_pin(sh, 'Device:C', 'C10', '0.1uF', AX + 35.56, AY, FP['c'], '3V3', 'GND')
 
     path = os.path.join(HERE, '..', side, project + '.kicad_sch')
     os.makedirs(os.path.dirname(path), exist_ok=True)

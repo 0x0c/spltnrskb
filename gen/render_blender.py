@@ -40,6 +40,8 @@ SHOTS = arg('--shots', 'hero,detail,oled').split(',')
 RES = int(arg('--res', '1800'))
 OLED_H = arg('--oled-height', None)          # None = built design (cover on the plate); else variant height
 OUT_SUFFIX = arg('--suffix', '')
+SCREWS = arg('--screws', 'none')             # case screws on the plate: 'none', 'flat' (M2 countersunk, flush) or 'lowpan' (M2 low-head pan)
+TOP = arg('--top', 'acrylic')                # switch plate: 'acrylic' (clear, laser cut) or 'print' (printed, with web)
 VARIANTS = os.path.join(ROOT, 'case', 'preview', 'oled-variants')
 
 
@@ -78,12 +80,19 @@ def materials():
     MAT['metal'] = principled('metal', srgb('#d7d9dc'), 0.22, metal=1.0)
     MAT['floor'] = principled('backdrop', srgb('#f7f7f7'), 0.9)
     MAT['oled pcb'] = principled('oled pcb', srgb('#1b2a4a'), 0.5)
+    MAT['pcb'] = principled('pcb', srgb('#1f4d34'), 0.45, coat=0.5)
     MAT['oled glass'] = principled('oled glass', srgb('#050607'), 0.08, coat=1.0)
     clear = principled('clear acrylic', (1, 1, 1), 0.0)
     b = clear.node_tree.nodes['Principled BSDF']
     b.inputs['Transmission Weight'].default_value = 1.0
     b.inputs['IOR'].default_value = 1.49
     MAT['acrylic'] = clear
+    # half-mirror acrylic: dark tinted glass with a mirror coat; the OLED shows through where it lights up
+    hm = principled('half mirror', (0.18, 0.19, 0.21), 0.02, metal=0.55, coat=1.0)
+    hb = hm.node_tree.nodes['Principled BSDF']
+    hb.inputs['Transmission Weight'].default_value = 0.6
+    hb.inputs['IOR'].default_value = 1.49
+    MAT['mirror'] = hm
     glow = bpy.data.materials.new('oled pixels')
     glow.use_nodes = True
     nt = glow.node_tree
@@ -230,6 +239,45 @@ def knurled_plug(name, length=16.0, radius=3.6):
 
 
 # --- one keyboard half ------------------------------------------------------------------
+def flat_screw(name, x, y):
+    """M2 countersunk (90 deg) head flush with the plate top, with a Phillips recess."""
+    bpy.ops.mesh.primitive_cone_add(vertices=32, radius1=1.0 * MM, radius2=1.9 * MM, depth=0.9 * MM,
+                                    location=(x * MM, -y * MM, (Z_PLATE_TOP - 0.45) * MM))
+    head = bpy.context.active_object
+    head.name = name
+    head.data.materials.append(MAT['metal'])
+    for o in bpy.context.selected_objects:
+        o.select_set(False)
+    parts = [head]
+    for rot in (0, 90):
+        r = box_mesh(name + ' recess', 0.45, 2.0, 0.25, mat=MAT['switch'])
+        r.location = (x * MM, -y * MM, (Z_PLATE_TOP - 0.25) * MM)
+        r.rotation_euler = (0, 0, math.radians(rot))
+        parts.append(r)
+    return parts
+
+
+def lowpan_screw(name, x, y, d=4.0, h=0.5):
+    """M2 slim-head (low-profile pan) screw, 4.0 mm x 0.5 mm, sitting on the plate, with a Phillips recess."""
+    bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=d / 2 * MM, depth=h * MM,
+                                        location=(x * MM, -y * MM, (Z_PLATE_TOP + h / 2) * MM))
+    head = bpy.context.active_object
+    head.name = name
+    bev = head.modifiers.new('round', 'BEVEL')
+    bev.width = 0.2 * MM
+    bev.segments = 4
+    head.data.materials.append(MAT['metal'])
+    for o in bpy.context.selected_objects:
+        o.select_set(False)
+    parts = [head]
+    for rot in (0, 90):
+        r = box_mesh(name + ' recess', 0.45, 2.0, 0.2, mat=MAT['switch'])
+        r.location = (x * MM, -y * MM, (Z_PLATE_TOP + h - 0.18) * MM)
+        r.rotation_euler = (0, 0, math.radians(rot))
+        parts.append(r)
+    return parts
+
+
 def build_half(side, world):
     data = json.load(open(os.path.join(ROOT, side, 'case_data.json')))
     sys.path.insert(0, HERE)
@@ -237,15 +285,28 @@ def build_half(side, world):
     for k, src in zip(data['keys'], load(side)):   # same order as the KiCad footprints
         k['id'] = src['id']
     objs = [import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-tray.stl'), MAT['case'], f'{side} tray')]
-    plate = import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-plate.stl'), MAT['case'], f'{side} plate')
-    plate.location.z = (Z_PLATE_TOP - PLATE_T) * MM
+    if TOP == 'print':     # printed plate with its stiffening web (case/print/<side>-plate.stl)
+        plate = import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-plate.stl'), MAT['case'], f'{side} plate')
+    else:                  # clear acrylic plate (the laser-cut part, placed by make_case.py)
+        plate = import_stl(os.path.join(ROOT, 'case', 'preview', f'{side}-plate-placed.stl'), MAT['acrylic'], f'{side} plate')
+        plate.location.z = -(FLOOR + STANDOFF + PCB_T + PLATE_GAP) * MM   # the placed STL already sits at plate height
+    plate.location.z += (Z_PLATE_TOP - PLATE_T) * MM
     objs.append(plate)
+    objs.append(import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-wheel-cap.stl'), MAT['case'], f'{side} wheel cap'))
+    if TOP != 'print':     # through the clear plate the board shows: green PCB slab
+        pcb = import_stl(os.path.join(ROOT, 'case', 'preview', f'{side}-pcb.stl'), MAT['pcb'], f'{side} pcb')
+        objs.append(pcb)
     for k in data['keys']:
         objs += keycap(k, side)
+    if SCREWS in ('flat', 'lowpan'):
+        rep = json.load(open(os.path.join(ROOT, 'case', 'case_report.json')))
+        make = flat_screw if SCREWS == 'flat' else lowpan_screw
+        for i, (x, y) in enumerate(rep[side]['screws_xy']):
+            objs += make(f'{side} screw {i}', x, y)
     if OLED_H is None:
         objs += oled(data, side)
-        cover = import_stl(os.path.join(ROOT, 'case', 'preview', f'{side}-oled-cover.stl'), MAT['acrylic'], f'{side} cover')
-        cover.location.z = Z_PLATE_TOP * MM
+        cover = import_stl(os.path.join(ROOT, 'case', 'preview', f'{side}-oled-cover.stl'), MAT['mirror'], f'{side} cover')
+        cover.location.z = (Z_PLATE_TOP - 2.0) * MM    # 2 mm half-mirror inlay, top flush with the plate
         objs.append(cover)
         data['oled_module'] = None
     objs += corner_wheel(side)
@@ -331,10 +392,10 @@ def cable(name, pts, radius=2.6):
 
 
 def plug_at(name, world, mouth_xy, z, outward, length=16.0):
-    """Metal plug head sitting in the wall opening, axis along the board's +/-x."""
+    """Metal plug head sitting in the wall opening; outward = (dx, dy) in board coordinates (y down)."""
     x, y = mouth_xy
     head = knurled_plug(name, length)
-    axis = (world.to_3x3() @ Vector((outward, 0, 0))).normalized()
+    axis = (world.to_3x3() @ Vector((outward[0], -outward[1], 0))).normalized()
     start = board_point(world, x, y, z)
     head.rotation_mode = 'QUATERNION'
     head.rotation_quaternion = Vector((0, 0, 1)).rotation_difference(axis)
@@ -443,33 +504,22 @@ def main():
         for kind in ('trrs', 'usb'):
             if side == 'right' and kind == 'usb':
                 continue
-            y = d['connectors'][kind]['center'][1]
-            tail, axis = plug_at(f'{side} {kind}', W[side], (edge, y), z_conn, out, 14.0 if kind == 'trrs' else 17.0)
+            c = d['connectors'][kind]
+            if c.get('edge') == 'top':     # USB-C on the back edge
+                mouth, direction = (c['center'][0], d['outline']['y0'] - 8.5), (0, -1)
+            else:
+                mouth, direction = (edge, c['center'][1]), (out, 0)
+            tail, axis = plug_at(f'{side} {kind}', W[side], mouth, z_conn, direction, 14.0 if kind == 'trrs' else 17.0)
             ends[(side, kind)] = (tail, axis)
     (a, aa), (b, ba) = ends[('left', 'trrs')], ends[('right', 'trrs')]
     cable('trrs cable', cable_path(a, aa, b, ba, reach=0.06))
     u, ua = ends[('left', 'usb')]
-    # USB cable loops behind the left half and ends on the desk in front, plug lying free (like the photo)
-    loose = u + Vector((-0.17, -0.20, 0))
-    loose.z = 4.0 * MM
-    end_dir = Vector((0.95, 0.3, 0)).normalized()          # direction the loose plug points to
-    back = u + Vector((-0.12, 0.15, 0)); back.z = 2.6 * MM  # behind the left half
-    side = u + Vector((-0.30, -0.02, 0)); side.z = 2.6 * MM  # around its left end
-    pts = cable_path(u, ua, back, Vector((0.9, 0.2, 0)).normalized(), reach=0.08)
-    pts += cable_path(back, Vector((-0.95, -0.1, 0)).normalized(), side, Vector((0.1, 0.99, 0)).normalized(), reach=0.10)[1:]
-    pts += cable_path(side, Vector((-0.1, -0.99, 0)).normalized(), loose, -end_dir, reach=0.10)[1:]
-    for p in pts[10:]:
+    # USB cable leaves the back edge and runs off behind the keyboard (to the computer)
+    far = u + Vector((-0.06, 0.40, 0)); far.z = 2.6 * MM
+    pts = cable_path(u, ua, far, Vector((-0.1, 0.99, 0)).normalized(), reach=0.12)
+    for p in pts[6:]:
         p.z = max(p.z, 2.6 * MM)
     cable('usb cable', pts)
-    head = knurled_plug('usb loose head', 17.0)
-    head.rotation_mode = 'QUATERNION'
-    head.rotation_quaternion = Vector((0, 0, 1)).rotation_difference(end_dir)
-    head.location = loose + end_dir * 9.0 * MM + Vector((0, 0, 0.6 * MM))
-    tongue = box_mesh('usb-c tongue', 8.3, 2.5, 6.6, bevel=1.0, mat=MAT['metal'])
-    tongue.rotation_mode = 'QUATERNION'
-    tongue.rotation_quaternion = Vector((0, 0, 1)).rotation_difference(end_dir) @ \
-        Vector((0, 0, 1)).rotation_difference(Vector((0, 0, 1)))
-    tongue.location = loose + end_dir * 17.5 * MM + Vector((0, 0, 0.6 * MM))
 
     sc = bpy.context.scene
     out_dir = os.path.join(ROOT, 'docs', 'img')

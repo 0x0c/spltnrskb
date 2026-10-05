@@ -2,7 +2,7 @@
 import json
 import os
 
-from layout import HERE, ROW_PINS, COL_PINS, SERIAL_PIN, HAND_PIN, WHEEL_I2C_ADDR, N_ROWS, load
+from layout import HERE, ROW_PINS, COL_PINS, SERIAL_PIN, HAND_PIN, I2C_SDA, I2C_SCL, WHEEL_I2C_ADDR, WHEEL_DETENTS, N_ROWS, load
 
 OUT = os.path.join(HERE, '..', 'firmware', 'qmk', 'keyboards', 'nrsk')
 
@@ -53,11 +53,32 @@ bool dial_update_user(uint8_t index, bool clockwise);
 
 KB_CONFIG = r'''#pragma once
 
+// RP2040: tap reset twice quickly to enter the USB bootloader (RPI-RP2 drive)
+#define RP2040_BOOTLOADER_DOUBLE_TAP_RESET
+#define RP2040_BOOTLOADER_DOUBLE_TAP_RESET_TIMEOUT 500U
+
+// I2C1 on %s (SDA) / %s (SCL): OLED and AS5600
+#define I2C_DRIVER I2CD1
+#define I2C1_SDA_PIN %s
+#define I2C1_SCL_PIN %s
+
 // Corner thumbwheel: AS5600 magnetic angle sensor (I2C, shared with the OLED)
 #define DIAL_I2C_ADDR (0x%02X << 1)
-#define DIAL_STEP 128                 // 4096 counts per turn / 128 = 32 detents per turn
+#define DIAL_STEP %d                 // 4096 counts per turn / %d clicks of the wheel's detent
+#define DIAL_HYST 12                  // counts past the half-way crest before a step counts
 #define DIAL_POLL_MS 5
 #define SPLIT_TRANSACTION_IDS_KB RPC_ID_DIAL
+'''
+
+HALCONF = '''#pragma once
+#define HAL_USE_I2C TRUE
+#include_next <halconf.h>
+'''
+
+MCUCONF = '''#pragma once
+#include_next <mcuconf.h>
+#undef RP_I2C_USE_I2C1
+#define RP_I2C_USE_I2C1 TRUE
 '''
 
 KB_C = r'''// SPDX-License-Identifier: GPL-2.0-or-later
@@ -95,8 +116,11 @@ static int8_t dial_poll(void) {
     if (d < -2048) d += 4096;
     dial_last = a;
     dial_acc -= d;
-    int8_t steps = dial_acc / DIAL_STEP;
-    dial_acc -= steps * DIAL_STEP;
+    // the wheel rests in a detent (dial_acc ~ 0); count a step once it passes the crest half-way to the next
+    // one, with a little hysteresis so a wheel balanced on the crest does not chatter
+    int8_t steps = 0;
+    while (dial_acc >= DIAL_STEP / 2 + DIAL_HYST) { steps++; dial_acc -= DIAL_STEP; }
+    while (dial_acc <= -(DIAL_STEP / 2 + DIAL_HYST)) { steps--; dial_acc += DIAL_STEP; }
     return steps;
 }
 
@@ -192,15 +216,15 @@ def main():
         'keyboard_name': 'nrsk',
         'maintainer': 'nrsk',
         'url': '',
-        'processor': 'atmega32u4',
-        'bootloader': 'atmel-dfu',
+        'processor': 'RP2040',
+        'bootloader': 'rp2040',
         'usb': {'vid': '0xFEED', 'pid': '0x4E52', 'device_version': '1.0.0'},
         'features': {'bootmagic': True, 'extrakey': True, 'mousekey': False, 'nkro': True, 'oled': True, 'wpm': True},
         'diode_direction': 'COL2ROW',
         'matrix_pins': {'rows': ROW_PINS, 'cols': COL_PINS},
         'split': {
             'enabled': True,
-            'serial': {'driver': 'bitbang', 'pin': SERIAL_PIN},
+            'serial': {'driver': 'vendor', 'pin': SERIAL_PIN},
             'handedness': {'pin': HAND_PIN},
             'transport': {'sync': {'layer_state': True, 'led_state': True, 'wpm': True}},
         },
@@ -243,10 +267,12 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {{
         os.remove(rm)
     open(os.path.join(OUT, 'nrsk.h'), 'w').write(KB_H)
     open(os.path.join(OUT, 'nrsk.c'), 'w').write(KB_C)
-    open(os.path.join(OUT, 'config.h'), 'w').write(KB_CONFIG % WHEEL_I2C_ADDR)
+    open(os.path.join(OUT, 'config.h'), 'w').write(KB_CONFIG % (I2C_SDA, I2C_SCL, I2C_SDA, I2C_SCL, WHEEL_I2C_ADDR, 4096 // WHEEL_DETENTS, WHEEL_DETENTS))
+    open(os.path.join(OUT, 'halconf.h'), 'w').write(HALCONF)
+    open(os.path.join(OUT, 'mcuconf.h'), 'w').write(MCUCONF)
     open(os.path.join(OUT, 'rules.mk'), 'w').write('I2C_DRIVER_REQUIRED = yes\n')
     open(os.path.join(OUT, 'readme.md'), 'w').write(
-        '# nrsk\n\nSplit keyboard, ATmega32U4 on each half (Atmel DFU bootloader), TRRS soft serial.\n\n'
+        '# nrsk\n\nSplit keyboard, RP2040 on each half (UF2 bootloader: double-tap reset), TRRS PIO serial.\n\n'
         'Copy this folder to `qmk_firmware/keyboards/nrsk` and build:\n\n'
         '    qmk compile -kb nrsk -km default\n    qmk flash -kb nrsk -km default\n')
     print('wrote', OUT)

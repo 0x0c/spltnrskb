@@ -1,6 +1,6 @@
 # nrsk
 
-Split keyboard, ATmega32U4 on each half (Atmel DFU bootloader), TRRS soft serial.
+Split keyboard, RP2040 on each half (UF2 bootloader: double-tap reset), TRRS PIO serial.
 
 Copy this folder to `qmk_firmware/keyboards/nrsk` and build:
 
