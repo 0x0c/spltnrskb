@@ -48,15 +48,20 @@ def hardware(hf, variant):
     holes, screws = hf.d['holes'], hf.screws
     if variant in PRINTED:
         wall_top = z_pcb + PCB_T + PLATE_GAP
-        add('insert', [Manifold.cylinder(3.0, 1.6, 1.6, 16).translate((x, -y, wall_top - 3.0)) for x, y in screws], brass)
-        add('plate_screw', [screw(x, y, z_plate_top, 5, head_d=4.0, head_h=0.5) for x, y in screws], steel)   # low-head pan
+        if variant == 'printtop':   # B: inserts in the bosses under the printed plate, M2 x 12 from the tray bottom
+            add('insert', [Manifold.cylinder(3.0, 1.6, 1.6, 16).translate((x, -y, wall_top - 3.0)) for x, y in screws], brass)
+            add('plate_screw', [screw(x, y, mc.SCREW_CB[1], 12, up=True) for x, y in screws], steel)
+        else:                       # A: nut in the hex trap, M2 x 6 slim head from the top
+            z_nut = wall_top - mc.BOSS_POCKET[1] - mc.NUT_TRAP[1]
+            add('insert', [hexagon(x, y, z_nut, 1.6, 4.0) for x, y in screws], steel)
+            add('plate_screw', [screw(x, y, z_plate_top, 6, head_d=4.0, head_h=0.5) for x, y in screws], steel)
         add('pcb_screw', [screw(x, y, z_pcb + PCB_T, 6) for x, y in holes], steel)
         z_floor = FLOOR
     else:
         add('standoff', [hexagon(x, y, BOTTOM_T, STANDOFF, 3.5) for x, y in holes], brass)
         add('pcb_screw', [screw(x, y, z_pcb + PCB_T, 4) for x, y in holes], steel)
         add('bottom_screw', [screw(x, y, 0, 5, up=True) for x, y in holes], steel)
-        add('case_screw', [screw(x, y, z_plate_top, 20) for x, y in screws], steel)
+        add('case_screw', [screw(x, y, z_plate_top, 20) for x, y in screws], steel)   # from the top through everything
         add('nut', [hexagon(x, y, -1.6, 1.6, 4.0) for x, y in screws], steel)
         (wx, wy), _ = hf.wheel_xy()
         add('axle', [screw(wx, wy, 0, 8, head_d=5.5, head_h=1.8, d=3.0, up=True)], steel)

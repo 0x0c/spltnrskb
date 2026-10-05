@@ -293,28 +293,6 @@
    "price": "¥1,099 / 160 本"
   }
  ],
- "M2 × 20 mm なべネジ": [
-  {
-   "mpn": "OHSATO ナベ頭小ねじ M2 × 20（ステンレス）",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/1714/1900/",
-   "price": "¥329 / 50 本"
-  }
- ],
- "M2 ナット": [
-  {
-   "mpn": "大阪魂 六角ナット 1 種 M2（SUS304）",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/2876/3624/",
-   "price": "¥164 / 20 個"
-  },
-  {
-   "mpn": "廣杉計器 UNT-02",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/1148/5784/",
-   "price": "¥1,428 / 50 個"
-  }
- ],
  "M2 ヒートセットインサート": [
   {
    "mpn": "廣杉計器 HSB-203030 ビットインサート（M2 × 3、外径 3〜3.3）",
@@ -554,34 +532,70 @@
    "note": "ブロックの穴はそのまま使える（長さが 1 mm 短い）"
   }
  ],
- "M2 × 5 mm スリムヘッド小ねじ（薄頭なべ）": [
-  {
-   "mpn": "大阪魂 (+)スリムヘッド小ねじ ステンレス M2 × 5（φ4 × 0.5、注文コード 41746704）",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/4174/6704/",
-   "price": "¥593 / 7 本"
-  },
-  {
-   "mpn": "スリムヘッド小ねじ M2 × 5（鉄、三価ホワイト）A0800S2",
-   "shop": "遊舎工房",
-   "url": "https://shop.yushakobo.jp/products/a0800s2",
-   "price": "¥880 / 50 本",
-   "note": "寸法の記載なし"
-  },
-  {
-   "mpn": "MISUMI E-GCBSTSR2-5 超極低頭ボルト 六角穴（φ4 × 0.5、SUSXM7）",
-   "shop": "MISUMI",
-   "url": "https://jp.misumi-ec.com/vona2/detail/110311091879/?HissuCode=E-GCBSTSR2-5",
-   "price": "¥88 / 本",
-   "note": "六角穴 1.3 mm。推奨トルク 0.16 N·m"
-  }
- ],
  "ポートキャップ": [
   {
    "mpn": "case/print/<side>-port-caps.stl",
    "shop": "自作（3D プリント）",
    "url": "",
    "price": ""
+  }
+ ],
+ "M2 × 12 mm なべネジ（底から）": [
+  {
+   "mpn": "TRUSCO Y823-0212 ナベ頭小ねじ ステンレス M2 × 12",
+   "shop": "MonotaRO",
+   "url": "https://www.monotaro.com/p/2498/0167/",
+   "price": "¥395 / 20 本"
+  },
+  {
+   "mpn": "エスコ EA949NF-212 鍋頭小ねじ ステンレス M2 × 12",
+   "shop": "MonotaRO",
+   "url": "https://www.monotaro.com/g/02450718/",
+   "price": "¥275 / 16 本"
+  }
+ ],
+ "M2 ナット（ナット受け用）": [
+  {
+   "mpn": "大阪魂 六角ナット 1 種 M2（SUS304、対辺 4 × 厚さ 1.6）",
+   "shop": "MonotaRO",
+   "url": "https://www.monotaro.com/p/2876/3624/",
+   "price": "¥164 / 20 個"
+  },
+  {
+   "mpn": "エスコ EA949LT-720 六角ナット M2（真鍮、ニッケルめっき）",
+   "shop": "MonotaRO",
+   "url": "https://www.monotaro.com/p/5052/3646/",
+   "price": "¥798 / 80 個"
+  }
+ ],
+ "M2 ナット": [
+  {
+   "mpn": "大阪魂 六角ナット 1 種 M2（SUS304、対辺 4 × 厚さ 1.6）",
+   "shop": "MonotaRO",
+   "url": "https://www.monotaro.com/p/2876/3624/",
+   "price": "¥164 / 20 個"
+  },
+  {
+   "mpn": "エスコ EA949LT-720 六角ナット M2（真鍮、ニッケルめっき）",
+   "shop": "MonotaRO",
+   "url": "https://www.monotaro.com/p/5052/3646/",
+   "price": "¥798 / 80 個"
+  }
+ ],
+ "M2 × 6 mm スリムヘッド小ねじ": [
+  {
+   "mpn": "大阪魂 (+)スリムヘッド小ねじ ステンレス M2 × 6（φ4 × 0.5、注文コード 41746713）",
+   "shop": "MonotaRO",
+   "url": "https://www.monotaro.com/p/4174/6713/",
+   "price": "7 本入り"
+  }
+ ],
+ "M2 × 20 mm なべネジ": [
+  {
+   "mpn": "OHSATO ナベ頭小ねじ M2 × 20（ステンレス）",
+   "shop": "MonotaRO",
+   "url": "https://www.monotaro.com/p/1714/1900/",
+   "price": "¥329 / 50 本"
   }
  ]
 }

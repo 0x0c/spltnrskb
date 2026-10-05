@@ -48,16 +48,19 @@
 | 筐体共通 | 透明アクリル板 1.5 mm（プレート） | <side>-plate、左 189.6×142.3 mm / 右 216.6×142.3 mm | 1 | 1 | 2 | アクリル板 DXF 切削（図面で WEB オーダー） | はざいや（菅原工芸） | 見積 | [リンク](https://www.hazaiya.co.jp/estimate-drawing) | 3D プリント版もアクリル版もこのプレートを使う；透明 1.5 mm で注文。切断線どうしの間隔 3 mm 未満は不可 |
 | アクリル版 | マットクリア アクリル板 3 mm（枠） | 同上の外形、片側 4 枚（frame1〜4） | 4 | 4 | 8 | アクリル板キャスト 片面マットクリア（パラグラス C1 P） | はざいや（菅原工芸） | 見積 | [リンク](https://www.hazaiya.co.jp/products/detail/3481) | frame1〜3 は差込口の切り欠きあり、frame4 は切り欠きなし；2 / 3 / 5 mm。図面 WEB オーダー（https://www.hazaiya.co.jp/estimate-drawing）で DXF から切り出し |
 | アクリル版 | マットクリア アクリル板 3 mm（底板） | 同上の外形 | 1 | 1 | 2 | アクリル板キャスト 片面マットクリア（パラグラス C1 P） | はざいや（菅原工芸） | 見積 | [リンク](https://www.hazaiya.co.jp/products/detail/3481) | 2 / 3 / 5 mm。図面 WEB オーダー（https://www.hazaiya.co.jp/estimate-drawing）で DXF から切り出し |
-| アクリル版 | M2 × 20 mm なべネジ | 外周（プレート〜底板を貫通、16.5 mm + ナット） | 10 | 12 | 22 | OHSATO ナベ頭小ねじ M2 × 20（ステンレス） | MonotaRO | ¥329 / 50 本 | [リンク](https://www.monotaro.com/p/1714/1900/) |  |
-| アクリル版 | M2 ナット | 外周ネジ用 | 10 | 12 | 22 | 大阪魂 六角ナット 1 種 M2（SUS304） | MonotaRO | ¥164 / 20 個 | [リンク](https://www.monotaro.com/p/2876/3624/) |  |
-| アクリル版 | 　└ 代替 |  |  |  |  | 廣杉計器 UNT-02 | MonotaRO | ¥1,428 / 50 個 | [リンク](https://www.monotaro.com/p/1148/5784/) |  |
+| アクリル版 | M2 × 20 mm なべネジ | 外周：プレートの上から底板まで貫通（16.5 mm + ナット） | 10 | 12 | 22 | OHSATO ナベ頭小ねじ M2 × 20（ステンレス） | MonotaRO | ¥329 / 50 本 | [リンク](https://www.monotaro.com/p/1714/1900/) |  |
+| アクリル版 | M2 ナット | 外周ネジ用（底板の下） | 10 | 12 | 22 | 大阪魂 六角ナット 1 種 M2（SUS304、対辺 4 × 厚さ 1.6） | MonotaRO | ¥164 / 20 個 | [リンク](https://www.monotaro.com/p/2876/3624/) |  |
+| アクリル版 | 　└ 代替 |  |  |  |  | エスコ EA949LT-720 六角ナット M2（真鍮、ニッケルめっき） | MonotaRO | ¥798 / 80 個 | [リンク](https://www.monotaro.com/p/5052/3646/) |  |
 | アクリル版 | M2 × 5 mm なべネジ | 底板の下からスペーサーへ | 8 | 8 | 16 | なべ小ねじ M2 × 5 | 遊舎工房 | ¥220 / 50 本 | [リンク](https://shop.yushakobo.jp/products/a0800n2?variant=37665432993953) |  |
 | アクリル版 | 　└ 代替 |  |  |  |  | 大阪魂 ナベ頭小ねじ M2 × 5（ステンレス） | MonotaRO | ¥1,099 / 160 本 | [リンク](https://www.monotaro.com/p/0550/6916/) |  |
 | OLED カバー | ハーフミラー アクリル板 2 mm | <side>-oled-cover（DXF/SVG）、プレートの窓にはめ込み、上面をプレートと面一 | 1 | 1 | 2 | アクリル板キャスト ハーフミラー 30%（三菱 MRH-001T-30） | はざいや（菅原工芸） | 見積 | [リンク](https://www.hazaiya.co.jp/products/detail/3373) | OLED のガラス面に載せる。両方の筐体で共通；2 / 3 / 5 mm。図面 WEB オーダーで DXF から切り出し。1.5 mm のアクリル製ハーフミラーはメーカーにもない |
 | OLED カバー | 　└ 代替 |  |  |  |  | アクリルハーフミラー板 フリーカット（2 mm、透過 30%） | アクリ屋ドットコム | 見積 | [リンク](https://www.acry-ya.com/products/detail/113/) | 最小 10 × 10 mm から |
 | OLED カバー | 透明両面テープ 厚さ 0.5 mm | カバーと OLED のガラス面、カバーの縁が載る壁の上面に貼る |  |  |  | 3M スコッチ はがせる両面テープ 超透明 KRT-15（幅 15 × 1.5 m × 厚さ 0.5 mm） | カインズ |  | [リンク](https://www.cainz.com/g/4547452982974.html) | 少量；はがせるタイプなので OLED を交換できる |
-| 3D プリント版 | M2 ヒートセットインサート | 外径 3.2 mm × 長さ 3 mm（壁上面の穴 φ3.2 × 4 mm） | 10 | 12 | 22 | 廣杉計器 HSB-203030 ビットインサート（M2 × 3、外径 3〜3.3） | MonotaRO | ¥2,198 / 50 個 | [リンク](https://www.monotaro.com/p/1138/6698/) | 熱圧入用かはページに記載なし。下穴は現物に合わせて調整 |
-| 3D プリント版 | 　└ 代替 |  |  |  |  | Prusa Heat Set Inserts M2 short | Prusa Research | US$11.99 / 100 個 | [リンク](https://www.prusa3d.com/ja/product/heat-set-inserts-m2-short-100-pcs/) | 3D プリント用。寸法の記載なし |
+| 3D プリント版 B | M2 ヒートセットインサート | 外径 3.2 mm × 長さ 3 mm、プレート裏のボスに入れる | 10 | 12 | 22 | 廣杉計器 HSB-203030 ビットインサート（M2 × 3、外径 3〜3.3） | MonotaRO | ¥2,198 / 50 個 | [リンク](https://www.monotaro.com/p/1138/6698/) | 熱圧入用かはページに記載なし。下穴は現物に合わせて調整 |
+| 3D プリント版 B | 　└ 代替 |  |  |  |  | Prusa Heat Set Inserts M2 short | Prusa Research | US$11.99 / 100 個 | [リンク](https://www.prusa3d.com/ja/product/heat-set-inserts-m2-short-100-pcs/) | 3D プリント用。寸法の記載なし |
+| 3D プリント版 A | M2 ナット（ナット受け用） | 壁上面のくぼみの下の六角穴に入れる | 10 | 12 | 22 | 大阪魂 六角ナット 1 種 M2（SUS304、対辺 4 × 厚さ 1.6） | MonotaRO | ¥164 / 20 個 | [リンク](https://www.monotaro.com/p/2876/3624/) |  |
+| 3D プリント版 A | 　└ 代替 |  |  |  |  | エスコ EA949LT-720 六角ナット M2（真鍮、ニッケルめっき） | MonotaRO | ¥798 / 80 個 | [リンク](https://www.monotaro.com/p/5052/3646/) |  |
+| 3D プリント版 A | M2 × 6 mm スリムヘッド小ねじ | 頭 φ4.0 × 高さ 0.5 mm、透明アクリルのプレートを上から留める | 10 | 12 | 22 | 大阪魂 (+)スリムヘッド小ねじ ステンレス M2 × 6（φ4 × 0.5、注文コード 41746713） | MonotaRO | 7 本入り | [リンク](https://www.monotaro.com/p/4174/6713/) |  |
 | アクリル版 | M3 × 8 mm なべネジ | サムホイールの軸（底板の下から差し込む） | 1 | 1 | 2 | OHSATO ナベ頭小ねじ M3 × 8（ステンレス） | MonotaRO | ¥175 / 50 本 | [リンク](https://www.monotaro.com/p/1714/1988/) | 3D プリント版はトレイの軸を使う |
 | 筐体共通 | M3 ボールプランジャー | M3 × 0.5、長さ 6 mm、ボール φ1.5、ストローク 0.5 mm、後端に六角穴 | 1 | 1 | 2 | NBK PAFS-3-L（ステンレス、L 6、1 → 2 N） | MonotaRO | ¥395 | [リンク](https://www.monotaro.com/p/2212/2932/) | ホイールのクリック。ねじ込み量でクリックの重さを調整；軽め。重くしたいときは PAFS-3-M（1.5 → 2.9 N） |
 | 筐体共通 | 　└ 代替 |  |  |  |  | NBK PAFS-3-M（ステンレス、L 6、1.5 → 2.9 N） | MonotaRO | ¥395 | [リンク](https://www.monotaro.com/p/2212/2957/) |  |
@@ -65,9 +68,8 @@
 | アクリル版 | プランジャーブロック | 3D プリント（case/print/<side>-detent.stl） | 1 | 1 | 2 | case/print/<side>-detent.stl | 自作（3D プリント） |  |  | 3D プリント版はトレイと一体；PETG 推奨。M3 の穴はタップを立てるか、プランジャーでねじを切りながら入れる |
 | アクリル版 | M2 × 6 mm タッピングネジ（ブロック用） | 底板の下からプランジャーブロックへ | 2 | 2 | 4 | 大阪魂 ナベタッピンねじ 2 種 B-0 M2 × 6（ステンレス） | MonotaRO | ¥593 / 50 本 | [リンク](https://www.monotaro.com/p/4171/8022/) |  |
 | アクリル版 | 　└ 代替 |  |  |  |  | エスコ EA949AL-103 | MonotaRO | ¥435 / 40 本 | [リンク](https://www.monotaro.com/p/5065/8362/) |  |
-| 3D プリント版 | M2 × 5 mm スリムヘッド小ねじ（薄頭なべ） | 頭 φ4.0 × 高さ 0.5 mm、A・B のプレートをインサートへ固定 | 10 | 12 | 22 | 大阪魂 (+)スリムヘッド小ねじ ステンレス M2 × 5（φ4 × 0.5、注文コード 41746704） | MonotaRO | ¥593 / 7 本 | [リンク](https://www.monotaro.com/p/4174/6704/) |  |
-| 3D プリント版 | 　└ 代替 |  |  |  |  | スリムヘッド小ねじ M2 × 5（鉄、三価ホワイト）A0800S2 | 遊舎工房 | ¥880 / 50 本 | [リンク](https://shop.yushakobo.jp/products/a0800s2) | 寸法の記載なし |
-| 3D プリント版 | 　└ 代替 |  |  |  |  | MISUMI E-GCBSTSR2-5 超極低頭ボルト 六角穴（φ4 × 0.5、SUSXM7） | MISUMI | ¥88 / 本 | [リンク](https://jp.misumi-ec.com/vona2/detail/110311091879/?HissuCode=E-GCBSTSR2-5) | 六角穴 1.3 mm。推奨トルク 0.16 N·m |
+| 3D プリント版 B | M2 × 12 mm なべネジ（底から） | トレイ底の座ぐりから壁を通してプレート裏のインサートへ | 10 | 12 | 22 | TRUSCO Y823-0212 ナベ頭小ねじ ステンレス M2 × 12 | MonotaRO | ¥395 / 20 本 | [リンク](https://www.monotaro.com/p/2498/0167/) |  |
+| 3D プリント版 B | 　└ 代替 |  |  |  |  | エスコ EA949NF-212 鍋頭小ねじ ステンレス M2 × 12 | MonotaRO | ¥275 / 16 本 | [リンク](https://www.monotaro.com/g/02450718/) |  |
 | 3D プリント版 | M2 × 6 mm タッピングネジ | 基板をボス（下穴 φ1.6）へ固定 | 8 | 8 | 16 | 大阪魂 ナベタッピンねじ 2 種 B-0 M2 × 6（ステンレス） | MonotaRO | ¥593 / 50 本 | [リンク](https://www.monotaro.com/p/4171/8022/) |  |
 | 3D プリント版 | 　└ 代替 |  |  |  |  | エスコ EA949AL-103 | MonotaRO | ¥435 / 40 本 | [リンク](https://www.monotaro.com/p/5065/8362/) |  |
 | 3D プリント版 | ポートキャップ | 3D プリント（case/print/<side>-port-caps.stl、USB-C 用と TRRS 用の 2 個） | 2 | 2 | 4 | case/print/<side>-port-caps.stl | 自作（3D プリント） |  |  | トレイ、角キャップと同じ材料で印刷 |

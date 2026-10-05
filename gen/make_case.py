@@ -51,8 +51,17 @@ PORT_CAP_EXTRA = 3.0         # port cap reaches this far beyond the channel alon
 FLOOR = 2.0
 BOSS_D = 4.6         # stays clear of back-side pads (>= 2.75 mm from hole centre)
 PILOT_D = 1.6        # M2 self-tapping
-INSERT_D = 3.2       # M2 heat-set insert in the wall top
+INSERT_D = 3.2       # M2 heat-set insert (in the printed plate's bosses)
 INSERT_DEPTH = 4.0
+# plate screws (one tray for A and B):
+#   B (printed plate): M2 x 12 from the tray bottom (counterbored) up the wall into a heat-set insert in a boss under
+#     the plate, so the plate top shows no screws; the boss sits in a pocket at the wall top
+#   A (acrylic plate): M2 x 6 slim-head screw from the top into an M2 nut dropped into the hex trap under that pocket
+#   acrylic stack: M2 x 20 from the top through everything into a nut under the bottom plate
+SCREW_CB = (4.6, 1.6)        # counterbore for the pan head under the tray (diameter, depth)
+PLATE_BOSS = (5.6, 3.0)      # boss under the printed plate (diameter, height)
+BOSS_POCKET = (6.0, 3.2)     # pocket in the wall top for the boss
+NUT_TRAP = (4.15, 1.8)       # hex trap for an M2 nut under the pocket (across flats, depth)
 RESET_D = 3.0
 # 3D print: the wall above the wheel opening is a separate cap, so the wheel can be dropped in from above
 CAP_SHOULDER = 2.0           # cap's top tier overhangs the opening by this much and rests on the wall
@@ -380,9 +389,14 @@ class Half:
             boss = Manifold.cylinder(STANDOFF, BOSS_D / 2, BOSS_D / 2).translate((x, -y, FLOOR))
             body = body + boss
             body = body - Manifold.cylinder(STANDOFF + FLOOR - 0.6, PILOT_D / 2, PILOT_D / 2).translate((x, -y, 0.6))
-        for x, y in self.screws:
-            body = body - Manifold.cylinder(INSERT_DEPTH + 0.01, INSERT_D / 2, INSERT_D / 2).translate(
-                (x, -y, wall_top - INSERT_DEPTH))
+        for x, y in self.screws:     # screw from below: counterbore, clearance hole up the wall, pocket at the top
+            body = body - Manifold.cylinder(wall_top + 0.02, SCREW_D / 2, SCREW_D / 2, 24).translate((x, -y, -0.01))
+            body = body - Manifold.cylinder(SCREW_CB[1] + 0.01, SCREW_CB[0] / 2, SCREW_CB[0] / 2, 32).translate((x, -y, -0.01))
+            body = body - Manifold.cylinder(BOSS_POCKET[1] + 0.01, BOSS_POCKET[0] / 2, BOSS_POCKET[0] / 2, 32).translate(
+                (x, -y, wall_top - BOSS_POCKET[1]))
+            r_hex = NUT_TRAP[0] / math.sqrt(3)
+            body = body - Manifold.cylinder(NUT_TRAP[1] + 0.01, r_hex, r_hex, 6).translate(
+                (x, -y, wall_top - BOSS_POCKET[1] - NUT_TRAP[1]))
         (wx, wy), wr = self.wheel_xy()
         wz0 = FLOOR + WHEEL_GAP
         body = body - Manifold.extrude(self.wheel_cut(), WHEEL_T + 0.7).translate((0, 0, wz0 - 0.3))
@@ -480,7 +494,14 @@ class Half:
         web = self.inner.offset(-0.3, JoinType.Round) - keep - self.cover_shape().offset(1.0, JoinType.Round) \
             - self.holes(self.d['holes'], BOSS_D + 2.0)
         web = web.offset(-0.4, JoinType.Round).offset(0.4, JoinType.Round)
-        return self.plate3d() + Manifold.extrude(web, RIB_T).translate((0, 0, -RIB_T))
+        plate = self.plate3d() + Manifold.extrude(web, RIB_T).translate((0, 0, -RIB_T))
+        plate = plate + Manifold.extrude(self.holes(self.screws, SCREW_D + 0.4), PLATE_T)   # no holes on top: fixed from below
+        for x, y in self.screws:     # bosses with heat-set inserts (pressed in from below) for the screws from below
+            plate = plate + Manifold.cylinder(PLATE_BOSS[1], PLATE_BOSS[0] / 2, PLATE_BOSS[0] / 2, 32).translate(
+                (x, -y, -PLATE_BOSS[1]))
+            plate = plate - Manifold.cylinder(PLATE_BOSS[1] + 0.01, INSERT_D / 2, INSERT_D / 2, 24).translate(
+                (x, -y, -PLATE_BOSS[1] - 0.01))
+        return plate
 
     def pcb3d(self):
         x0, y0, x1, y1, r = self.pcb
