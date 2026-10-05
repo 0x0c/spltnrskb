@@ -74,7 +74,7 @@ TRRS の配線は Tip = DATA、Ring2 = VCC（5 V）、Sleeve = GND で、Ring1 �
 - 基板と筐体は、左右それぞれのキー配列にぴったり合わせた大きさです（左は OLED の分だけ内側を広げています）。マイコンは裏面に置いています。
 - 2 u 以上のキー（左 Shift 2.25 u、右 Backspace 2 u、右 Enter 2.25 u）には PCB マウント型スタビライザの穴があります。
 - 配線ルールは信号線 0.2 mm、電源線 0.4 mm、クリアランス 0.2 mm、ビア 0.6/0.3 mm です。最小配線幅は 0.15 mm で、USB-C の細いピンに入る部分だけで使っています。JLCPCB などの標準仕様（最小 0.127 mm）で製造できます。
-- マイコン周りの部品番号はシルクに収まらないため、Fab 層に入れています。半田付けには `fab/<side>/nrsk-<side>-assembly-back.pdf`（裏面の実装図、左右反転済み）を使ってください。
+- マイコン周りの部品番号はシルクに収まらないため、Fab 層に入れています。半田付けには `fab/<side>/nrsk-<side>-assembly-back.pdf`（裏面の実装図、左右反転済み）を使ってください。配線の確認には `fab/<side>/nrsk-<side>-copper.pdf` を使えます（1 ページ目が表面 F.Cu、2 ページ目が裏面 B.Cu で、どちらも外形付き）。
 
 ## サムホイール（角のダイヤル）
 
@@ -193,7 +193,7 @@ A と B のプレートは、壁の上面のヒートセットインサートに
 ```text
 left/, right/        KiCad プロジェクト（.kicad_pro / .kicad_sch / .kicad_pcb）、ERC と DRC のレポート
 lib/nrsk.pretty      自作フットプリント（ホットスワップ MX、1u〜2.25u）
-fab/<side>/          ガーバーとドリルの zip、BOM（CSV）、回路図（PDF）、裏面の実装図（PDF）
+fab/<side>/          ガーバーとドリルの zip、BOM（CSV）、回路図（PDF）、裏面の実装図（PDF）、両面の配線図（PDF）
 case/laser/          アクリル用 DXF と SVG（<side>-plate / frame1〜4 / bottom / oled-cover）
 case/print/          3D プリント用 STL（<side>-tray / plate）
 case/preview/        3D ビューア、重ね合わせ図、断面図

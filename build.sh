@@ -38,6 +38,9 @@ for s in $SIDES; do
   "$KC" sch export bom --fields 'Reference,Value,Footprint,${QUANTITY}' --labels 'Refs,Value,Footprint,Qty' \
     --group-by 'Value,Footprint' --ref-range-delimiter '' -o "$out/nrsk-$s-bom.csv" "$s/nrsk-$s.kicad_sch" >/dev/null 2>&1
   "$KC" sch export pdf -o "$out/nrsk-$s-schematic.pdf" "$s/nrsk-$s.kicad_sch" >/dev/null 2>&1
+  # copper check sheet: page 1 = front (F.Cu), page 2 = back (B.Cu), both with the board outline
+  "$KC" pcb export pdf --mode-multipage -l F.Cu,B.Cu --cl Edge.Cuts --include-border-title \
+    -o "$out/nrsk-$s-copper.pdf" "$s/nrsk-$s.kicad_pcb" >/dev/null 2>&1
   # assembly drawing of the back side (MCU area references live on B.Fab)
   "$KC" pcb export pdf --mode-single -l B.Fab,B.SilkS,B.Cu,Edge.Cuts --mirror \
     -o "$out/nrsk-$s-assembly-back.pdf" "$s/nrsk-$s.kicad_pcb" >/dev/null 2>&1
