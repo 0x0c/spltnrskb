@@ -40,13 +40,15 @@ BOTTOM_T = 3.0
 FRAME_T = 3.0
 N_FRAMES = 4
 # connector ports: the PCB reaches into the wall on a tongue, the connector mouth sits PORT_SKIN inside the outer
-# surface, and the wall shows only the connector outline. In the printed tray the wall above each port is a
-# removable port cap (the board is dropped in first); in the acrylic stack the frames are notched.
+# surface, and the wall shows only the connector outline. In the printed tray each port is a closed tunnel with
+# PORT_LIFT of headroom over the tongue: the board goes in front edge slightly raised and PORT_LIFT high, slides
+# tongue-first into the tunnels, then drops onto the bosses. In the acrylic stack the frames are notched.
 USB_SHELL = (8.94, 3.26)     # HRO TYPE-C-31-M-12 shell w, h (hangs under the PCB)
 TRRS_H, TRRS_NOZZLE = 5.0, 5.0   # PJ-320D body height under the PCB, nozzle diameter
 PORT_CLR = 0.2               # opening around the connector outline
-CHANNEL_CLR = 0.3            # tongue / connector body to the cap channel
-PORT_CAP_EXTRA = 3.0         # port cap reaches this far beyond the channel along the wall
+CHANNEL_CLR = 0.3            # tongue / connector body to the tunnel
+PORT_KEEP = 3.0              # case screws stay this far beyond the tunnel along the wall
+PORT_LIFT = 2.0              # tunnel headroom: the board slides in this high, clear of the bosses (needs >= 1.5)
 # print
 FLOOR = 2.0
 BOSS_D = 4.6         # stays clear of back-side pads (>= 2.75 mm from hole centre)
@@ -163,7 +165,7 @@ class Half:
             c = self.d['connectors'][name]
             edge = c.get('edge', 'inner')
             chan = (rect(*t) + rect(*c['box'])).offset(CHANNEL_CLR, JoinType.Miter) ^ self.outer.offset(-skin, JoinType.Miter)
-            e = PORT_CAP_EXTRA
+            e = PORT_KEEP
             if edge == 'top':
                 a0, a1 = t[0] - CHANNEL_CLR - e, t[2] + CHANNEL_CLR + e
                 cap = rect(a0, oy0 - 1, a1, self.pcb[1] - CLEAR + 0.01) ^ (self.outer - self.inner)
@@ -180,10 +182,10 @@ class Half:
                     full = (ox0 - 1, a0, self.pcb[0], a1)
                 out.append(dict(name=name, edge='inner', y=(t[1] + t[3]) / 2, half=(a1 - a0) / 2, full=full,
                                 chan=chan, cap=cap, along=(t[1] + t[3]) / 2))
-        # neighbouring ports on the top edge share one cap (no thin sliver of wall between two caps)
+        # neighbouring ports on the top edge share one screw-free zone
         tops = sorted((sl for sl in out if sl['edge'] == 'top'), key=lambda sl: sl['full'][0])
         for a, b in zip(tops, tops[1:]):
-            if b['full'][0] - a['full'][2] < 2 * PORT_CAP_EXTRA:
+            if b['full'][0] - a['full'][2] < 2 * PORT_KEEP:
                 full = (a['full'][0], a['full'][1], b['full'][2], a['full'][3])
                 cap = rect(full[0], full[1], full[2], self.pcb[1] - CLEAR + 0.01) ^ (self.outer - self.inner)
                 for sl in (a, b):
@@ -424,23 +426,12 @@ class Half:
         # pocket for the thicker cover
         body = body - Manifold.extrude(self.cover_shape().offset(COVER_FIT, JoinType.Round), WALL_POCKET + 0.01).translate(
             (0, 0, wall_top - WALL_POCKET))
-        # port caps: the wall above each connector, lifted out so the board (tongues and connectors) drops in
+        # port tunnels: closed above, with headroom so the board can slide in tongue-first
         z_pcb = FLOOR + STANDOFF
-        self._portcaps = []
-        groups = []        # ports sharing one cap
         for p in self.slots:
-            g = next((g for g in groups if g[0]['cap'] is p['cap']), None)
-            groups.append([p]) if g is None else g.append(p)
-        for g in groups:
-            zs = min(self.port_z(p, z_pcb)[0] for p in g) - 0.2
-            vol = Manifold.extrude(g[0]['cap'], wall_top - zs + 0.01).translate((0, 0, zs))
-            cap = body ^ vol
-            for p in g:
-                zp = self.port_z(p, z_pcb)[0] - 0.2
-                cap = cap - Manifold.extrude(p['chan'], z_pcb + PCB_T + 0.3 - zp + 0.02).translate((0, 0, zp - 0.01)) \
-                    - self.port_hole(p, z_pcb)
-            self._portcaps.append(cap)
-            body = body - vol
+            zp = self.port_z(p, z_pcb)[0] - 0.2
+            zt = z_pcb + PCB_T + CHANNEL_CLR + PORT_LIFT
+            body = body - Manifold.extrude(p['chan'], zt - zp).translate((0, 0, zp)) - self.port_hole(p, z_pcb)
         body = body + Manifold.cylinder(WHEEL_GAP + BORE_DEPTH - 0.3, POST_D / 2, POST_D / 2, 48).translate(
             (wx, -wy, FLOOR))
         rx, ry = self.d['reset']
@@ -463,14 +454,6 @@ class Half:
         out = parts[0]
         for m in parts[1:]:
             out = out + m
-        return out
-
-    def port_caps(self):
-        if not hasattr(self, '_portcaps'):
-            self.tray()
-        out = Manifold()
-        for c in self._portcaps:
-            out = out + c
         return out
 
     def wheel_cap(self):
@@ -597,7 +580,6 @@ def main(sides):
         write_stl(os.path.join(OUT, 'print', f'{side}-wheel.stl'), hf.wheel3d())
         write_stl(os.path.join(OUT, 'print', f'{side}-detent.stl'), hf.detent_part())   # acrylic variant only
         write_stl(os.path.join(OUT, 'print', f'{side}-wheel-cap.stl'), hf.wheel_cap())   # 3D-print variant
-        write_stl(os.path.join(OUT, 'print', f'{side}-port-caps.stl'), hf.port_caps())   # 3D-print variant
         write_stl(os.path.join(OUT, 'preview', f'{side}-oled-cover.stl'), Manifold.extrude(hf.cover(), COVER_T))
         # assembly preview (print variant): tray + PCB + plate in place
         z_pcb = FLOOR + STANDOFF
@@ -631,9 +613,15 @@ def check(hf, layers):
         assert (hole - hf.outer).area() > 0.5, f"{s['name']} opening does not reach the outside"
         assert (s['chan'] - hf.outer.offset(-hf.d.get('port_skin', 0.8) + 0.01)).area() < 0.01, f"{s['name']} tongue breaks the skin"
         for x, y in hf.screws:
-            assert not inside(s['cap'].offset(2.0, JoinType.Miter), (x, y)), f"screw in the {s['name']} port cap"
+            assert not inside(s['cap'].offset(2.0, JoinType.Miter), (x, y)), f"screw next to the {s['name']} port tunnel"
     for name, cs in layers.items():
         assert not cs.is_empty(), name
+    # tunnel roof stays printable (thinnest where the OLED cover's pocket lowers the wall top)
+    roof = PLATE_GAP - CHANNEL_CLR - PORT_LIFT
+    for s in hf.slots:
+        if (s['chan'] ^ hf.cover_shape().offset(COVER_FIT, JoinType.Round)).area() > 0.01:
+            roof = min(roof, PLATE_GAP - CHANNEL_CLR - PORT_LIFT - WALL_POCKET)
+    assert roof >= 0.6, f'port tunnel roof {roof:.2f} mm too thin'
 
     def area(poly):
         return abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]))) / 2

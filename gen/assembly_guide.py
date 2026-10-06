@@ -8,7 +8,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from make_case import Half, OUT, STANDOFF  # noqa: E402
+from make_case import Half, OUT, STANDOFF, PORT_LIFT  # noqa: E402
 from layout import WHEEL_DETENTS  # noqa: E402
 
 BOARD = ['board', 'smd', 'sensor', 'conn', 'diode', 'socket', 'stab', 'oled']
@@ -65,12 +65,12 @@ def steps(variant, n_screws, n_holes, n_cover):
             '上からプレートで押さえられるので、接着は要りません。',
             ['wheelcap'], 'corner', ['角キャップ（3D プリント）'])
         add('基板をトレイへ',
-            f'組み終わった基板をトレイに入れ、{n_holes} 本の M2 × 6 mm タッピングネジでボスに固定します。USB-C と TRRS は基板の舌に載っていて、壁の溝に収まります。',
-            BOARD + ['pcb_screw'], 'top', [f'M2 × 6 mm タッピングネジ × {n_holes}'])
-        add('ポートキャップ',
-            'USB-C と TRRS の上の壁は外せる部品（ポートキャップ）になっています。基板の舌とコネクタが壁の溝に収まったら、'
-            'キャップを上からはめます。コネクタの形の穴がキャップに開いていて、差込口が外面のすぐ内側に来ます。',
-            ['portcap'], 'top', ['ポートキャップ（3D プリント）'])
+            f'USB-C と TRRS は基板の舌に載っていて、奥の壁の中のトンネルに収まります。基板は手前を少し持ち上げ、ボスより {PORT_LIFT:g} mm ほど浮かせて'
+            '奥の壁に近づけ、舌を 2 つのトンネルに差し込みながら奥へ約 8 mm 滑らせます。舌が奥まで入ったら手前を下ろし、基板をボスの上に載せます。',
+            BOARD, 'top', [], frm='slide')
+        add('基板をネジ止め',
+            f'{n_holes} 本の M2 × 6 mm タッピングネジで基板をボスに固定します。差込口は外面の穴のすぐ裏に来ます。',
+            ['pcb_screw'], 'top', [f'M2 × 6 mm タッピングネジ × {n_holes}'])
         if variant == 'print':
             add('プレート',
                 f'壁の上面のくぼみの奥にある六角のナット受け（{n_plate} か所）に M2 ナットを落とし込み、透明アクリルのプレートを載せて、'
@@ -129,7 +129,7 @@ def main():
     for side in ('left', 'right'):
         (wx, wy), _ = Half(side).wheel_xy()
         focus[side] = [wx, -wy]
-    html = TEMPLATE.replace('__STEPS__', json.dumps(data, ensure_ascii=False)).replace('__FOCUS__', json.dumps(focus))
+    html = TEMPLATE.replace('__STEPS__', json.dumps(data, ensure_ascii=False)).replace('__FOCUS__', json.dumps(focus)).replace('__LIFT__', f'{PORT_LIFT:g}')
     path = os.path.join(OUT, 'preview', 'assembly.html')
     open(path, 'w').write(html)
     print('wrote', path, len(data['print']), 'print steps,', len(data['acrylic']), 'acrylic steps')
@@ -315,11 +315,11 @@ function show(i, animate = true) {
     opacityOf(g, isNew || !state.dim || fresh.size === 0 ? 1 : 0.28);
     if (isNew && animate && g.visible) {
       anim.items.push(g);
-      g.position.z += st.frm === 'bottom' ? -45 : 45;
+      if (st.frm === 'slide') g.position.add(slidePos(0)); else g.position.z += st.frm === 'bottom' ? -45 : 45;
       opacityOf(g, 0);
     }
   }
-  anim.t0 = performance.now(); anim.dur = anim.items.length ? 1100 : 0;
+  anim.t0 = performance.now(); anim.dur = anim.items.length ? (st.frm === 'slide' ? 2600 : 1100) : 0;
   view(st.view, animate);
   // card
   document.getElementById('num').textContent = `手順 ${i + 1} / ${steps.length}`;
@@ -332,11 +332,21 @@ function show(i, animate = true) {
   document.querySelectorAll('#steps li').forEach((li, k) => { li.classList.toggle('cur', k === i); li.classList.toggle('done', k < i); });
   const cur = document.querySelector('#steps li.cur'); if (cur) cur.scrollIntoView({block: 'nearest'});
 }
+// board into the port tunnels: down to just above the bosses, slide back tongue-first, then drop
+const SLIDE = 8, LIFT = __LIFT__;
+function slidePos(t) {
+  const ease = u => 1 - Math.pow(1 - Math.max(0, Math.min(1, u)), 3);
+  const a = ease(t / 0.4), b = ease((t - 0.45) / 0.35), c = ease((t - 0.85) / 0.15);
+  return new THREE.Vector3(0, -SLIDE * (1 - b), LIFT * (1 - c) + 40 * (1 - a));
+}
 function tick(now) {
   if (!anim.dur) return;
   const t = Math.min(1, (now - anim.t0) / anim.dur), e = 1 - Math.pow(1 - t, 3);
   const st = STEPS[state.v][state.step], dz = st.frm === 'bottom' ? -45 : 45;
-  for (const g of anim.items) { g.position.z = g.userData.home.z + dz * (1 - e); opacityOf(g, e); }
+  for (const g of anim.items) {
+    if (st.frm === 'slide') { g.position.copy(g.userData.home).add(slidePos(t)); opacityOf(g, Math.min(1, t * 4)); }
+    else { g.position.z = g.userData.home.z + dz * (1 - e); opacityOf(g, e); }
+  }
   if (t >= 1) anim.dur = 0;
 }
 

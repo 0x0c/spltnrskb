@@ -72,7 +72,6 @@
 | 3D プリント版 B | 　└ 代替 |  |  |  |  | エスコ EA949NF-212 鍋頭小ねじ ステンレス M2 × 12 | MonotaRO | ¥275 / 16 本 | [リンク](https://www.monotaro.com/g/02450718/) |  |
 | 3D プリント版 | M2 × 6 mm タッピングネジ | 基板をボス（下穴 φ1.6）へ固定 | 8 | 8 | 16 | 大阪魂 ナベタッピンねじ 2 種 B-0 M2 × 6（ステンレス） | MonotaRO | ¥593 / 50 本 | [リンク](https://www.monotaro.com/p/4171/8022/) |  |
 | 3D プリント版 | 　└ 代替 |  |  |  |  | エスコ EA949AL-103 | MonotaRO | ¥435 / 40 本 | [リンク](https://www.monotaro.com/p/5065/8362/) |  |
-| 3D プリント版 | ポートキャップ | 3D プリント（case/print/<side>-port-caps.stl、USB-C と TRRS 共通の 1 個） | 1 | 1 | 2 | case/print/<side>-port-caps.stl | 自作（3D プリント） |  |  | トレイ、角キャップと同じ材料で印刷 |
 | ケーブル | TRRS ケーブル（4 極、オス-オス） | 3.5 mm |  |  |  | TRRS ケーブル 0.3 m | 遊舎工房 | ¥330 | [リンク](https://shop.yushakobo.jp/products/8023) | 1 本 |
 | ケーブル | 　└ 代替 |  |  |  |  | TRRS ケーブル 0.8 m（メタル） | 遊舎工房 | ¥1,100 | [リンク](https://shop.yushakobo.jp/products/8111) |  |
 | ケーブル | USB-C ケーブル | USB 2.0 以上 |  |  |  | USB Type-C to C 1.0 m | 遊舎工房 | ¥440 | [リンク](https://shop.yushakobo.jp/products/11426) | 1 本 |

@@ -333,8 +333,6 @@ def build_half(side, world):
     plate.location.z += (Z_PLATE_TOP - PLATE_T) * MM
     objs.append(plate)
     objs.append(import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-wheel-cap.stl'), MAT['case'], f'{side} wheel cap'))
-    if not (PORTS and side == 'left'):
-        objs.append(import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-port-caps.stl'), MAT['case'], f'{side} port caps'))
     if TOP != 'print':     # through the clear plate the board shows: green PCB slab
         pcb = import_stl(os.path.join(ROOT, 'case', 'preview', f'{side}-pcb.stl'), MAT['pcb'], f'{side} pcb')
         objs.append(pcb)
