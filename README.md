@@ -193,21 +193,75 @@ B〜F は OLED を基板の外側（壁の上）へ移すため、基板のコ�
 
 ## ファイル構成
 
+入力は `kle/` のキー配列だけで、ほかのデータはすべて `gen/` のスクリプトで生成します。
+`<side>` は `left` または `right` です。
+
 ```text
-left/, right/        KiCad プロジェクト（.kicad_pro / .kicad_sch / .kicad_pcb）、ERC と DRC のレポート
-lib/nrsk.pretty      自作フットプリント（ホットスワップ MX、1u〜2.25u）
-fab/<side>/          ガーバーとドリルの zip、BOM（CSV）、回路図（PDF）、裏面の実装図（PDF）、両面の配線図（PDF）
-case/laser/          アクリル用 DXF と SVG（<side>-plate / frame1〜4 / bottom / oled-cover）
-case/print/          3D プリント用 STL（<side>-tray / plate）
-case/preview/        3D ビューア、重ね合わせ図、断面図
-docs/img/render-*    完成イメージ（gen/render_blender.py を Blender で実行して生成）
-docs/img/oled-study/ OLED の高さ・角度の比較レンダリング
-bom/                 左右合計の BOM（CSV / Markdown）
-firmware/qmk/        QMK のキーボード定義（keyboard.json）と既定のキーマップ
-gen/                 生成スクリプト（KLE の解析、回路図・基板の生成、部品の自動配置、自動配線、QMK 定義）
-build.sh             一括再生成（必要なツールは下の「環境の準備」を参照）
-tools/, .venv/       Freerouting と Python 仮想環境（Git の管理対象外）
+spltnrskb/
+├── kle/                         入力：キー配列（Keyboard Layout Editor の JSON、左右 1 つずつ）
+│   ├── left.json
+│   └── right.json
+├── left/, right/                KiCad プロジェクト（左右で同じ構成）
+│   ├── nrsk-<side>.kicad_pro    プロジェクト設定（基板ルールとネットクラス）
+│   ├── nrsk-<side>.kicad_sch    回路図
+│   ├── nrsk-<side>.kicad_pcb    配線済みの基板
+│   ├── erc.rpt, drc.rpt         ERC（回路図の検査）と DRC（基板の検査）の結果
+│   ├── case_data.json           筐体の生成に渡す基板の寸法（外形、取付穴、コネクタの位置）
+│   └── fp-lib-table, sym-lib-table  ライブラリの参照設定
+├── lib/                         左右共通の自作ライブラリ
+│   ├── nrsk.kicad_sym           回路図シンボル
+│   ├── nrsk.pretty/             フットプリント（MX ホットスワップ 1u〜2.25u、OLED）
+│   └── nrsk.3dshapes/           OLED モジュールの 3D モデル
+├── fab/<side>/                  基板の発注用データ
+│   ├── nrsk-<side>-gerber.zip   ガーバーとドリル
+│   ├── nrsk-<side>-bom.csv      片側の部品表
+│   ├── nrsk-<side>-schematic.pdf     回路図
+│   ├── nrsk-<side>-copper.pdf        配線図（1 ページ目が表、2 ページ目が裏）
+│   └── nrsk-<side>-assembly-back.pdf 裏面の実装図
+├── case/                        筐体
+│   ├── laser/                   アクリル版のレーザーカット用 DXF と SVG
+│   │                            （<side>-plate、frame1〜4、bottom、oled-cover）
+│   ├── print/                   3D プリント用 STL
+│   │                            （<side>-tray、plate、wheel、wheel-cap、port-caps、detent）
+│   ├── preview/                 確認用の出力
+│   │   ├── viewer.html          3D ビューア（GitHub Pages で公開）
+│   │   ├── assembly.html        組み立てガイド（GitHub Pages で公開）
+│   │   ├── model-data.js        上の 2 つが共有するメッシュデータ
+│   │   ├── <side>-overlay.svg   筐体と基板の重ね合わせ図
+│   │   ├── case-section.png     組み立て状態の断面図
+│   │   ├── oled-variants/       OLED の高さ・角度の比較用モデル
+│   │   └── port-variants/       USB-C・TRRS の開口の比較用モデル
+│   └── case_report.json         筐体の寸法とネジの本数（BOM とビューアが読む）
+├── bom/                         左右と筐体を合わせた部品表（CSV と Markdown）
+├── firmware/qmk/keyboards/nrsk/ QMK のキーボード定義と既定のキーマップ
+├── docs/img/                    README の画像
+│   ├── left-*.png, right-*.png  基板の 3D 表示と重ね合わせ図
+│   ├── render-*                 Blender による完成イメージ
+│   ├── oled-study/              OLED の高さ・角度の比較レンダリング
+│   └── dial-study/              サムホイールの比較レンダリング
+├── gen/                         生成スクリプト（下表）
+├── build.sh                     一括再生成
+├── .github/workflows/pages.yml  3D ビューアと組み立てガイドを GitHub Pages へ公開
+└── tools/, .venv/               Freerouting、取得した 3D モデル、Python 仮想環境（Git の管理対象外）
 ```
+
+`gen/` のスクリプトは、`build.sh` が次の順に呼び出します。
+
+| 段階 | スクリプト | 生成するもの |
+| --- | --- | --- |
+| 部品ライブラリ | `fetch_3d.sh`、`models3d.py`、`footprints.py` | 3D モデルの取得、OLED の 3D モデル、`lib/nrsk.pretty` |
+| 回路図 | `layout.py`、`make_sch.py`、`make_pro.py` | KLE の解析とピン割り当て、回路図、プロジェクト設定 |
+| 基板 | `make_pcb.py`、`route.py`、`sexpr.py` | 部品の配置、Freerouting による自動配線、KiCad ファイルの読み書き |
+| 3D 出力 | `export_3d.py`、`glb_mesh.py` | ビューア用の基板メッシュ（`build/3d/`、Git の管理対象外） |
+| ファームウェア | `make_qmk.py` | `firmware/qmk/keyboards/nrsk/` |
+| 筐体 | `make_case.py`、`case_preview.py`、`case_section.py`、`case_viewer.py`、`assembly_guide.py` | `case/` 以下のすべて |
+| 部品表 | `make_bom.py`、`bom_sources.json` | `bom/`（購入先の情報は `bom_sources.json` に手で記入） |
+| README の画像 | `doc_images.sh` | `docs/img/left-*.png`、`docs/img/right-*.png`、断面図 |
+
+次のスクリプトは `build.sh` に含まれず、必要なときに手で実行します。
+
+- 完成イメージのレンダリング：`render_blender.py`、`render_all.sh`、`render_grid.py`
+- OLED と開口の比較検討：`oled_variants.py`、`oled_study.sh`、`oled_sheet.py`、`port_variants.py`
 
 KLE を編集した場合は `./build.sh` を実行すると、回路図、基板、配線、ERC/DRC、製造データ、筐体、BOM、QMK 定義をすべて作り直します。
 行の配線とダイオード周りはスクリプトで規則的に引き、残りを Freerouting（`tools/freerouting-2.4.1.jar`）に任せています。
