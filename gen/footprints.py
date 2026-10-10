@@ -161,7 +161,7 @@ def alps_ec05e():
     s += prop('Reference', 'REF**', (0, -3.6), 'F.SilkS', size=0.8)
     s += prop('Value', name, (0, 6.2), 'F.Fab', size=0.6)
     s += prop('Footprint', '', (0, 0), 'F.Fab', hide=True)
-    s += prop('Datasheet', 'https://tech.alpsalpine.com/e/products/detail/EC05E1220401/', (0, 0), 'F.Fab', hide=True)
+    s += prop('Datasheet', '', (0, 0), 'F.Fab', hide=True)   # catalog: tech.alpsalpine.com, EC05E1220401
     s += prop('Description', '', (0, 0), 'F.Fab', hide=True)
     x0, y0, x1, y1 = ENC_BODY
     s += rect(x0, y0, x1, y1, 'F.Fab', 0.1)
