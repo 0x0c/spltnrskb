@@ -132,7 +132,8 @@ def main():
     print('wrote', path, len(data['print']), 'print steps,', len(data['acrylic']), 'acrylic steps')
 
 
-TEMPLATE = r'''<title>nrsk Assembly Guide</title>
+TEMPLATE = r'''<meta charset="utf-8">
+<title>nrsk Assembly Guide</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;600&family=IBM+Plex+Mono:wght@400&display=swap">
 <style>
 /* Full-bleed 3D stage; a toolbar at the top, the step list on the right (desktop) and the step card below */

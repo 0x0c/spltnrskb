@@ -314,16 +314,6 @@ def wheel_centre(side, w):
     return (-MARGIN + inset, -TOP + inset) if SIDES[side]['wheel'] == 'top-left' else (w - inset, -TOP + inset)
 
 
-def place_encoder(fp, x, y, rot=90):
-    """EC11 on the front with its shaft (midpoint of the two mounting tabs) at (x, y)."""
-    fp.SetOrientationDegrees(rot)
-    fp.SetPosition(mm(x, y))
-    mp = [p.GetPosition() for p in fp.Pads() if p.GetNumber() == 'MP']
-    cx, cy = (mp[0].x + mp[1].x) // 2, (mp[0].y + mp[1].y) // 2
-    target = mm(x, y)
-    fp.Move(pcbnew.VECTOR2I(target.x - cx, target.y - cy))
-
-
 # thumbwheel encoder (Alps EC05E1220401) on the back, rotor on the wheel axis, terminals toward the board inside
 # (+y): its courtyard relative to the axis in that orientation, and the Kailh socket courtyard of an unturned key
 ENC_BOX = (-4.9, -2.75, 4.9, 5.05)
