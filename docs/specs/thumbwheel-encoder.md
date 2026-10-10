@@ -151,7 +151,7 @@ GP19 と GP20 は今どこにも使っていない（`gen/layout.py:9` から `g
 | 1 | 済 | エンコーダーのフットプリントを追加し、3D モデルの取得を足す | `gen/footprints.py`、`gen/fetch_3d.sh`、`lib/nrsk.pretty/` | KiCad のフットプリントエディタで開き、Alps の寸法図とランド、穴、外形が一致する。3D ビューアで STEP の端子がランドに載る | なし |
 | 2 | 済 | 回路図の AS5600 と C9、C10 をエンコーダーに置き換え、GP19、GP20 につなぐ | `gen/make_sch.py`、`gen/layout.py`、`lib/nrsk.kicad_sym`、`left/`、`right/` の回路図 | 左右とも ERC のエラーが 0 件 | 1 |
 | 3 | 済 | 基板にエンコーダーを配置し、キーを回す条件を見直して配線する | `gen/make_pcb.py`、`left/`、`right/` の基板、`fab/` | `./build.sh` で左右とも未配線 0、DRC のエラー 0。3 mm 角の穴がガーバーの外形層に出ている | 2 |
-| 4 | 未 | ケースを変更する（ホイール、床の軸、プランジャーブロックの削除、検査） | `gen/make_case.py`、`case/` | `.venv/bin/python gen/make_case.py` の検査がすべて通る。`case/print/<side>-detent.stl` がなくなる | 3 |
+| 4 | 済 | ケースを変更する（ホイール、床の軸、プランジャーブロックの削除、検査） | `gen/make_case.py`、`case/` | `.venv/bin/python gen/make_case.py` の検査がすべて通る。`case/print/<side>-detent.stl` がなくなる | 3 |
 | 5 | 未 | ファームウェアを QMK のエンコーダー機能に置き換える | `gen/make_qmk.py`、`firmware/qmk/keyboards/nrsk/` | `qmk compile -kb nrsk -km default` が通る | 2 |
 | 6 | 未 | BOM を更新する | `gen/make_bom.py`、`gen/bom_sources.json`、`bom/` | BOM から AS5600、磁石、ボールプランジャー、プランジャーブロック、その M2 ネジが消え、EC05E1220401 が 2 個載る。1 µF と 0.1 µF のコンデンサの数が左右 1 個ずつ減る | 3、4 |
 | 7 | 未 | 組み立てガイドと 3D ビューアを更新する | `gen/assembly_guide.py`、`gen/case_viewer.py`、`case/preview/` | 組み立てガイドからセンサー、磁石、プランジャーの手順が消え、エンコーダーの半田付けとホイールの差し込みの手順が入る。ビューアでエンコーダーとホイールの位置が合っている | 4、6 |
