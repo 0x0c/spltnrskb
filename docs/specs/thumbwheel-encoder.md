@@ -146,16 +146,16 @@ GP19 と GP20 は今どこにも使っていない（`gen/layout.py:9` から `g
 
 各ステップは 1 コミットにまとめる。生成物（回路図、基板、STL、ファームウェア）は、生成スクリプトと同じコミットで再生成する。
 
-| # | やること | 触るファイル | 完了条件 | 前提 |
-| --- | --- | --- | --- | --- |
-| 1 | エンコーダーのフットプリントを追加し、3D モデルの取得を足す | `gen/footprints.py`、`gen/fetch_3d.sh`、`lib/nrsk.pretty/` | KiCad のフットプリントエディタで開き、Alps の寸法図とランド、穴、外形が一致する。3D ビューアで STEP の端子がランドに載る | なし |
-| 2 | 回路図の AS5600 と C9、C10 をエンコーダーに置き換え、GP19、GP20 につなぐ | `gen/make_sch.py`、`gen/layout.py`、`lib/nrsk.kicad_sym`、`left/`、`right/` の回路図 | 左右とも ERC のエラーが 0 件 | 1 |
-| 3 | 基板にエンコーダーを配置し、キーを回す条件を見直して配線する | `gen/make_pcb.py`、`left/`、`right/` の基板、`fab/` | `./build.sh` で左右とも未配線 0、DRC のエラー 0。3 mm 角の穴がガーバーの外形層に出ている | 2 |
-| 4 | ケースを変更する（ホイール、床の軸、プランジャーブロックの削除、検査） | `gen/make_case.py`、`case/` | `.venv/bin/python gen/make_case.py` の検査がすべて通る。`case/print/<side>-detent.stl` がなくなる | 3 |
-| 5 | ファームウェアを QMK のエンコーダー機能に置き換える | `gen/make_qmk.py`、`firmware/qmk/keyboards/nrsk/` | `qmk compile -kb nrsk -km default` が通る | 2 |
-| 6 | BOM を更新する | `gen/make_bom.py`、`gen/bom_sources.json`、`bom/` | BOM から AS5600、磁石、ボールプランジャー、プランジャーブロック、その M2 ネジが消え、EC05E1220401 が 2 個載る。1 µF と 0.1 µF のコンデンサの数が左右 1 個ずつ減る | 3、4 |
-| 7 | 組み立てガイドと 3D ビューアを更新する | `gen/assembly_guide.py`、`gen/case_viewer.py`、`case/preview/` | 組み立てガイドからセンサー、磁石、プランジャーの手順が消え、エンコーダーの半田付けとホイールの差し込みの手順が入る。ビューアでエンコーダーとホイールの位置が合っている | 4、6 |
-| 8 | README を更新し、レンダリングを作り直す。検討用のスクリプトを片付ける | `README.md`、`docs/img/`、`gen/encoder_study.py`、`gen/encoder_study.sh`、`gen/render_encoder_study.py`、`gen/encoder_sheet.py` | README のサムホイールの節が新しい構成を説明し、textlint の指摘が 0 件。`./gen/render_all.sh` が通る。検討用のスクリプトは削除し、`docs/img/encoder-study/` の画像は検討の記録として残す | 4、5、7 |
-| 9 | 実機で確かめる | なし（結果は README に追記） | 六角ピンのはめあいを試し印刷で決める。左右のホイールで、回す向き、1 クリック 1 回の送り、山の手前で戻したときに送りが出ないこと、クリックの手触りを確かめる | 3、4、5 |
+| # | 状態 | やること | 触るファイル | 完了条件 | 前提 |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 済 | エンコーダーのフットプリントを追加し、3D モデルの取得を足す | `gen/footprints.py`、`gen/fetch_3d.sh`、`lib/nrsk.pretty/` | KiCad のフットプリントエディタで開き、Alps の寸法図とランド、穴、外形が一致する。3D ビューアで STEP の端子がランドに載る | なし |
+| 2 | 未 | 回路図の AS5600 と C9、C10 をエンコーダーに置き換え、GP19、GP20 につなぐ | `gen/make_sch.py`、`gen/layout.py`、`lib/nrsk.kicad_sym`、`left/`、`right/` の回路図 | 左右とも ERC のエラーが 0 件 | 1 |
+| 3 | 未 | 基板にエンコーダーを配置し、キーを回す条件を見直して配線する | `gen/make_pcb.py`、`left/`、`right/` の基板、`fab/` | `./build.sh` で左右とも未配線 0、DRC のエラー 0。3 mm 角の穴がガーバーの外形層に出ている | 2 |
+| 4 | 未 | ケースを変更する（ホイール、床の軸、プランジャーブロックの削除、検査） | `gen/make_case.py`、`case/` | `.venv/bin/python gen/make_case.py` の検査がすべて通る。`case/print/<side>-detent.stl` がなくなる | 3 |
+| 5 | 未 | ファームウェアを QMK のエンコーダー機能に置き換える | `gen/make_qmk.py`、`firmware/qmk/keyboards/nrsk/` | `qmk compile -kb nrsk -km default` が通る | 2 |
+| 6 | 未 | BOM を更新する | `gen/make_bom.py`、`gen/bom_sources.json`、`bom/` | BOM から AS5600、磁石、ボールプランジャー、プランジャーブロック、その M2 ネジが消え、EC05E1220401 が 2 個載る。1 µF と 0.1 µF のコンデンサの数が左右 1 個ずつ減る | 3、4 |
+| 7 | 未 | 組み立てガイドと 3D ビューアを更新する | `gen/assembly_guide.py`、`gen/case_viewer.py`、`case/preview/` | 組み立てガイドからセンサー、磁石、プランジャーの手順が消え、エンコーダーの半田付けとホイールの差し込みの手順が入る。ビューアでエンコーダーとホイールの位置が合っている | 4、6 |
+| 8 | 未 | README を更新し、レンダリングを作り直す。検討用のスクリプトを片付ける | `README.md`、`docs/img/`、`gen/encoder_study.py`、`gen/encoder_study.sh`、`gen/render_encoder_study.py`、`gen/encoder_sheet.py` | README のサムホイールの節が新しい構成を説明し、textlint の指摘が 0 件。`./gen/render_all.sh` が通る。検討用のスクリプトは削除し、`docs/img/encoder-study/` の画像は検討の記録として残す | 4、5、7 |
+| 9 | 未 | 実機で確かめる | なし（結果は README に追記） | 六角ピンのはめあいを試し印刷で決める。左右のホイールで、回す向き、1 クリック 1 回の送り、山の手前で戻したときに送りが出ないこと、クリックの手触りを確かめる | 3、4、5 |
 
 ステップ 4 で `Half.detent_block` を消すと、`gen/encoder_study.py` の現在の構成を組み立てる部分が動かなくなる。検討用のスクリプトをステップ 8 で消すのはこのためである。
