@@ -45,7 +45,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 // meshes are in model-data.js (shared with assembly.html)
 const {DATA, POOL, BOARDS, SPEC} = window.NRSK;   // BOARDS: per side {pcba: {group: [[pool id, matrices]]}, switches}
 const HIDDEN = ['insert', 'plate_screw', 'pcb_screw', 'standoff', 'bottom_screw', 'case_screw', 'nut', 'axle',
-                'block_screw', 'feet'];   // hardware is shown in the assembly guide only
+                'feet'];   // hardware is shown in the assembly guide only
 const b64 = (s, T) => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new T(u.buffer); };
 const canvas = document.getElementById('view');
 const renderer = new THREE.WebGLRenderer({canvas, antialias: true}); renderer.setPixelRatio(devicePixelRatio);
@@ -65,7 +65,7 @@ scene.add(new THREE.HemisphereLight(0xffffff, 0x666666, 0.9));
 const dl = new THREE.DirectionalLight(0xffffff, 0.6); dl.position.set(200, -300, 400); scene.add(dl);
 let group = null; const state = {v: 'print', switch: true, plate: true, wheel: true, explode: false, gap: 10};
 // exploded view: each layer rises by its level x the gap set on the slider (mm)
-const LEVEL = {tray: 0, bottom: 0, wheel: 0, magnet: 0, detent: 0, plunger: 0, wheelcap: 2, frame1: 1, frame2: 2, frame3: 3, frame4: 4, pcb: 6, pcba: 6, oled: 6.5,
+const LEVEL = {tray: 0, bottom: 0, wheel: 0, wheelcap: 2, encoder: 6, frame1: 1, frame2: 2, frame3: 3, frame4: 4, pcb: 6, pcba: 6, oled: 6.5,
                plate: 9, switch: 11.5, cover: 12.5};
 const GAP = 25;   // mm between the halves
 // matte (frosted) and clear acrylic, and the half-mirror OLED cover
@@ -112,7 +112,7 @@ function build() {
   const add = (side, layer, obj, z0 = 0) => { obj.userData = {layer, z0}; place(obj); halves[side].add(obj); };
   for (const [side, name, m, color, op] of DATA[state.v]) {
     if (HIDDEN.includes(name)) continue;
-    const key = {magnet: 'wheel', detent: 'wheel', plunger: 'wheel'}[name] || name;
+    const key = name;
     if (!state[key] && (key === 'switch' || key === 'plate' || key === 'wheel')) continue;
     if (name === 'pcba') {
       add(side, 'pcba', board(Object.values(BOARDS[side].pcba).flat()), m);
