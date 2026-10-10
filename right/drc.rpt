@@ -1,34 +1,37 @@
 ** Drc report for nrsk-right.kicad_pcb **
-** Created on 2026-10-10T20:31:31 **
+** Created on 2026-10-10T22:47:50 **
 ** Report includes: Errors, Warnings, Exclusions **
 
-** Found 7 DRC violations **
+** Found 8 DRC violations **
 [via_dangling]: Via is not connected or connected on only one layer
     Local override; warning
     @(35.8000 mm, 75.8000 mm): Via [GND] on F.Cu - B.Cu
 [via_dangling]: Via is not connected or connected on only one layer
     Local override; warning
+    @(34.2000 mm, 74.2000 mm): Via [GND] on F.Cu - B.Cu
+[via_dangling]: Via is not connected or connected on only one layer
+    Local override; warning
     @(35.8000 mm, 74.2000 mm): Via [GND] on F.Cu - B.Cu
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
-    @(58.5000 mm, 17.3000 mm): Arc on Edge.Cuts
-    @(57.3000 mm, 16.4950 mm): Segment of J2 on B.Silkscreen
+    @(40.5000 mm, 13.6550 mm): Segment on Edge.Cuts
+    @(41.5000 mm, 13.7000 mm): Segment of J1 on B.Silkscreen
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
-    @(65.5000 mm, 17.3000 mm): Arc on Edge.Cuts
-    @(66.7000 mm, 16.4950 mm): Segment of J2 on B.Silkscreen
+    @(40.5000 mm, 13.6550 mm): Segment on Edge.Cuts
+    @(41.5000 mm, 15.7000 mm): Segment of J1 on B.Silkscreen
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
-    @(40.5000 mm, 14.6550 mm): Segment on Edge.Cuts
-    @(41.5000 mm, 14.7000 mm): Segment of J1 on B.Silkscreen
+    @(40.5000 mm, 13.6550 mm): Segment on Edge.Cuts
+    @(46.5000 mm, 15.7000 mm): Segment of J1 on B.Silkscreen
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
-    @(40.5000 mm, 14.6550 mm): Segment on Edge.Cuts
-    @(41.5000 mm, 16.7000 mm): Segment of J1 on B.Silkscreen
+    @(58.5000 mm, 16.3000 mm): Arc on Edge.Cuts
+    @(57.3000 mm, 15.4950 mm): Segment of J2 on B.Silkscreen
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
-    @(40.5000 mm, 14.6550 mm): Segment on Edge.Cuts
-    @(46.5000 mm, 16.7000 mm): Segment of J1 on B.Silkscreen
+    @(65.5000 mm, 16.3000 mm): Arc on Edge.Cuts
+    @(66.7000 mm, 15.4950 mm): Segment of J2 on B.Silkscreen
 
 ** Found 0 unconnected pads **
 
