@@ -190,7 +190,7 @@ LCSC で買えるものは、すべて LCSC を最初の購入先にしていま
 - **水晶振動子**：Raspberry Pi のリファレンスと同じ Abracon ABM8-272-T3（12 MHz、負荷容量 10 pF）を 15 pF のコンデンサと組み合わせます。安価な YXC X322512MSB4SI は負荷容量 20 pF なので、そのままでは合いません。
 - **QSPI Flash**：W25Q128JVSIQ は LCSC に 2 つの部品番号があり、よく使われる C97521 は確認時に在庫切れでした。BOM には在庫のある C113767 を載せています。
 - **TRRS ジャック**：基板のパッドは Qingpu WQP-PJ320D の寸法です。LCSC の 2 品（C431535、C95562）は EasyEDA のフットプリントと照合しました。固定ピンの間隔 7.0 mm が一致し、端子位置の差も 0.1 mm 以内でパッドに載ります。
-- **ロータリーエンコーダー**：Alps EC05E1220401 は LCSC（C116648）で 1 個から買えます。ホイールの六角ピンのはめあいは印刷機によって変わるので、試し印刷で確かめてください。ピンの対辺は `gen/make_case.py` の `PIN_AF` で変えられます。
+- **ロータリーエンコーダー**：Alps EC05E1220401 は LCSC（C116648）で 1 個から買えます。ホイールの六角ピンのはめあいは印刷機によって変わるので、対辺を変えた 7 本のピンを並べた `case/print/pin-coupon.stl` を印刷して確かめてください（手順は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）。ピンの対辺は `gen/make_case.py` の `PIN_AF` で変えられます。
 - **OLED**：LCSC の HS91L02W2C01 は、写真ではピン順が GND/VCC/SCL/SDA ですが、3.3 V で動くかとピンヘッダが付くかはページに書かれていません。遊舎工房の品も代替として BOM に載せています。どちらもピン順を現物で確認してください。
 
 主な部品（左右合計）は次のとおりです。
@@ -243,7 +243,7 @@ spltnrskb/
 │   ├── laser/                   アクリル版のレーザーカット用 DXF と SVG
 │   │                            （<side>-plate、frame1〜4、bottom、oled-cover）
 │   ├── print/                   3D プリント用 STL
-│   │                            （<side>-tray、plate、wheel、wheel-cap）
+│   │                            （<side>-tray、plate、wheel、wheel-cap、六角ピンの試し印刷 pin-coupon）
 │   ├── preview/                 確認用の出力
 │   │   ├── viewer.html          3D ビューア（GitHub Pages で公開）
 │   │   ├── assembly.html        組み立てガイド（GitHub Pages で公開）
@@ -256,6 +256,7 @@ spltnrskb/
 ├── bom/                         左右と筐体を合わせた部品表（CSV と Markdown）
 ├── firmware/qmk/keyboards/nrsk/ QMK のキーボード定義と既定のキーマップ
 ├── docs/specs/                  設計変更の仕様書
+├── docs/thumbwheel-check.md     サムホイールと OLED の実機確認の手順
 ├── docs/img/                    README の画像
 │   ├── left-*.png, right-*.png  基板の 3D 表示と重ね合わせ図
 │   ├── render-*                 Blender による完成イメージ
@@ -286,6 +287,7 @@ spltnrskb/
 
 - 完成イメージのレンダリング：`render_blender.py`、`render_all.sh`、`render_grid.py`、`port_slide.py`（基板の差し込み手順の断面図）
 - OLED と開口の比較検討：`oled_variants.py`、`oled_study.sh`、`oled_sheet.py`、`port_variants.py`
+- 六角ピンの試し印刷：`pin_coupon.py`（`case/print/pin-coupon.stl`。使い方は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）
 
 KLE を編集した場合は `./build.sh` を実行すると、回路図、基板、配線、ERC/DRC、製造データ、筐体、BOM、QMK 定義をすべて作り直します。
 行の配線とダイオード周りはスクリプトで規則的に引き、残りを Freerouting（`tools/freerouting-2.4.1.jar`）に任せています。
