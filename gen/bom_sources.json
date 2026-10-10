@@ -105,14 +105,6 @@
    "price": "US$0.0051"
   }
  ],
- "磁気角度センサー（サムホイール用）": [
-  {
-   "mpn": "ams OSRAM AS5600-ASOM",
-   "shop": "LCSC C79815",
-   "url": "https://www.lcsc.com/product-detail/C79815.html",
-   "price": "US$1.77"
-  }
- ],
  "タクトスイッチ（リセット）": [
   {
    "mpn": "C&K PTS810SJM250SMTRLFS",
@@ -153,15 +145,6 @@
    "url": "https://shop.yushakobo.jp/products/11952",
    "price": "¥770 / セット",
    "note": "1 セットで 2 u が 4 個分。1 セットで足りる"
-  }
- ],
- "ネオジム磁石（径方向着磁）": [
-  {
-   "mpn": "Radial Magnets 9042（φ6 × 2.5 mm、Diametric）",
-   "shop": "DigiKey",
-   "url": "https://www.digikey.jp/ja/products/detail/radial-magnets-inc/9042/5640338",
-   "price": "¥105",
-   "note": "厚さ 2.5 mm で、現在のポケット（深さ 1.6 mm）には入らない。国内で φ6 × 1.5 mm の径方向着磁品は在庫が見つからなかった"
   }
  ],
  "キーキャップ 1 u": [
@@ -220,6 +203,22 @@
    "url": "https://shop.yushakobo.jp/products/oled",
    "price": "¥825",
    "note": "商品ページにピン順の記載なし。GND/VCC/SCL/SDA であることを現物のシルクで確認"
+  }
+ ],
+ "ロータリーエンコーダー（サムホイール用）": [
+  {
+   "mpn": "Alps Alpine EC05E1220401",
+   "shop": "LCSC C116648",
+   "url": "https://www.lcsc.com/product-detail/C116648.html",
+   "price": "US$1.08",
+   "note": "2026-10-10 に確認（在庫 291 個）"
+  },
+  {
+   "mpn": "Alps Alpine EC05E1220401（4809-EC05E1220401CT-ND、カットテープ）",
+   "shop": "DigiKey",
+   "url": "https://www.digikey.jp/ja/products/result?keywords=EC05E1220401",
+   "price": "¥462",
+   "note": "2026-10-10 に確認（在庫 2,835 個）"
   }
  ],
  "TRRS ケーブル（4 極、オス-オス）": [
@@ -485,51 +484,6 @@
    "url": "https://www.hazaiya.co.jp/estimate-drawing",
    "price": "見積",
    "note": "透明 1.5 mm で注文。切断線どうしの間隔 3 mm 未満は不可"
-  }
- ],
- "M2 × 6 mm タッピングネジ（ブロック用）": [
-  {
-   "mpn": "大阪魂 ナベタッピンねじ 2 種 B-0 M2 × 6（ステンレス）",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/4171/8022/",
-   "price": "¥593 / 50 本"
-  },
-  {
-   "mpn": "エスコ EA949AL-103",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/5065/8362/",
-   "price": "¥435 / 40 本"
-  }
- ],
- "プランジャーブロック": [
-  {
-   "mpn": "case/print/<side>-detent.stl",
-   "shop": "自作（3D プリント）",
-   "url": "",
-   "price": "",
-   "note": "PETG 推奨。M3 の穴はタップを立てるか、プランジャーでねじを切りながら入れる"
-  }
- ],
- "M3 ボールプランジャー": [
-  {
-   "mpn": "NBK PAFS-3-L（ステンレス、L 6、1 → 2 N）",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/2212/2932/",
-   "price": "¥395",
-   "note": "軽め。重くしたいときは PAFS-3-M（1.5 → 2.9 N）"
-  },
-  {
-   "mpn": "NBK PAFS-3-M（ステンレス、L 6、1.5 → 2.9 N）",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/2212/2957/",
-   "price": "¥395"
-  },
-  {
-   "mpn": "MISUMI BPK3（ショートタイプ、L 5、ボール φ2、1 → 2 N）",
-   "shop": "MISUMI",
-   "url": "https://jp.misumi-ec.com/vona2/detail/110302018310/",
-   "price": "¥627",
-   "note": "ブロックの穴はそのまま使える（長さが 1 mm 短い）"
   }
  ],
  "M2 × 12 mm なべネジ（底から）": [

@@ -15,15 +15,16 @@
 | 保護 | ショットキーダイオード | B5819W（40 V 1 A）, SOD-123 | 1 | 1 | 2 | JSCJ B5819W SL | LCSC C8598 | US$0.03 | [リンク](https://www.lcsc.com/product-detail/C8598.html) |  |
 | マトリクス | スイッチングダイオード | 1N4148W, SOD-123 | 44 | 48 | 92 | 1N4148W（SOD-123） | LCSC C81598 | US$0.012 | [リンク](https://www.lcsc.com/product-detail/C81598.html) |  |
 | 受動部品 | コンデンサ 15 pF | 0805 C0G 50 V（水晶の負荷容量） | 2 | 2 | 4 | YAGEO CC0805JRNPO9BN150 | LCSC C107110 | US$0.0096 | [リンク](https://www.lcsc.com/product-detail/C107110.html) |  |
-| 受動部品 | コンデンサ 0.1 µF | 0805 X7R 50 V | 12 | 12 | 24 | YAGEO CC0805KRX7R9BB104 | LCSC C49678 | US$0.019 | [リンク](https://www.lcsc.com/product-detail/C49678.html) |  |
-| 受動部品 | コンデンサ 1 µF | 0805 X7R 25 V 以上（LDO、RP2040 の内蔵レギュレータ、AS5600） | 5 | 5 | 10 | Samsung CL21B105KBFNNNE（50 V） | LCSC C28323 | US$0.04 | [リンク](https://www.lcsc.com/product-detail/C28323.html) |  |
+| 受動部品 | コンデンサ 0.1 µF | 0805 X7R 50 V | 11 | 11 | 22 | YAGEO CC0805KRX7R9BB104 | LCSC C49678 | US$0.019 | [リンク](https://www.lcsc.com/product-detail/C49678.html) |  |
+| 受動部品 | コンデンサ 1 µF | 0805 X7R 25 V 以上（LDO、RP2040 の内蔵レギュレータ） | 4 | 4 | 8 | Samsung CL21B105KBFNNNE（50 V） | LCSC C28323 | US$0.04 | [リンク](https://www.lcsc.com/product-detail/C28323.html) |  |
 | 受動部品 | コンデンサ 10 µF | 0805 X5R 10 V 以上 | 1 | 1 | 2 | Samsung CL21A106KAYNNNE（X5R 25 V） | LCSC C15850 | US$0.066 | [リンク](https://www.lcsc.com/product-detail/C15850.html) |  |
 | 受動部品 | 抵抗 10 kΩ | 0805 1% | 2 | 2 | 4 | UNI-ROYAL 0805W8F1002T5E | LCSC C17414 | US$0.0034 | [リンク](https://www.lcsc.com/product-detail/C17414.html) |  |
 | 受動部品 | 抵抗 27 Ω | 0805 1%（USB D+/D−） | 2 | 2 | 4 | YAGEO RC0805FR-0727RL | LCSC C163408 | US$0.0078 | [リンク](https://www.lcsc.com/product-detail/C163408.html) | 確認時の在庫 4,900 |
 | 受動部品 | 抵抗 1 kΩ | 0805 1%（水晶の XOUT 直列、BOOTSEL） | 2 | 2 | 4 | UNI-ROYAL 0805W8F1001T5E | LCSC C17513 | US$0.0041 | [リンク](https://www.lcsc.com/product-detail/C17513.html) |  |
 | 受動部品 | 抵抗 5.1 kΩ | 0805 1%（USB-C CC） | 2 | 2 | 4 | UNI-ROYAL 0805W8F5101T5E | LCSC C27834 | US$0.0056 | [リンク](https://www.lcsc.com/product-detail/C27834.html) |  |
 | 表示 | OLED モジュール 0.91 インチ | 128×32、SSD1306、I2C、3.3 V、ピン順 GND/VCC/SCL/SDA（ガラス上面を基板から 2.5 mm に） | 1 | 1 | 2 | OLED モジュール（0.91 インチ 128×32、SSD1306、ピンソケット付き） | 遊舎工房 | ¥825 | [リンク](https://shop.yushakobo.jp/products/oled) | 商品ページにピン順の記載なし。GND/VCC/SCL/SDA であることを現物のシルクで確認 |
-| 入力 | 磁気角度センサー（サムホイール用） | ams OSRAM AS5600-ASOM、SOIC-8、I2C 0x36、3.3 V | 1 | 1 | 2 | ams OSRAM AS5600-ASOM | LCSC C79815 | US$1.77 | [リンク](https://www.lcsc.com/product-detail/C79815.html) |  |
+| 入力 | ロータリーエンコーダー（サムホイール用） | Alps Alpine EC05E1220401、中空シャフト（六角穴 対辺 1.72 mm）、12 クリック / 12 パルス、表面実装、基板の裏に付ける | 1 | 1 | 2 | Alps Alpine EC05E1220401 | LCSC C116648 | US$1.08 | [リンク](https://www.lcsc.com/product-detail/C116648.html) | 2026-10-10 に確認（在庫 291 個） |
+| 入力 | 　└ 代替 |  |  |  |  | Alps Alpine EC05E1220401（4809-EC05E1220401CT-ND、カットテープ） | DigiKey | ¥462 | [リンク](https://www.digikey.jp/ja/products/result?keywords=EC05E1220401) | 2026-10-10 に確認（在庫 2,835 個） |
 | 受動部品 | 抵抗 4.7 kΩ | 0805 1%（I2C プルアップ） | 2 | 2 | 4 | UNI-ROYAL 0805W8F4701T5E | LCSC C17673 | US$0.0051 | [リンク](https://www.lcsc.com/product-detail/C17673.html) |  |
 | スイッチ | タクトスイッチ（リセット） | C&K PTS810 SJM 250 SMTR LFS（2 回押しで書き込みモード） | 1 | 1 | 2 | C&K PTS810SJM250SMTRLFS | LCSC C116501 | US$0.58 | [リンク](https://www.lcsc.com/product-detail/C116501.html) |  |
 | スイッチ | BOOTSEL パッド | 基板のはんだジャンパー（部品なし）。ピンセットで短絡しながら USB を挿すと書き込みモード | 1 | 1 | 2 | 部品なし（基板のはんだジャンパー） | — |  |  |  |
@@ -31,8 +32,7 @@
 | キースイッチ | 　└ 代替 |  |  |  |  | Kailh Super Speed Silver（リニア、3 ピン） | 遊舎工房 | ¥1,540 / 35 個 | [リンク](https://shop.yushakobo.jp/products/4280) | 在庫少 |
 | キースイッチ | ホットスワップソケット | Kailh CPG151101S11（MX 用） | 44 | 48 | 92 | Kailh CPG151101S11-16（スイッチソケット MX 型） | 遊舎工房 | ¥187 / 10 個 | [リンク](https://shop.yushakobo.jp/products/a01ps) | 「MX 型」を選ぶ（Choc 型と取り違えない）。10 パック |
 | キースイッチ | スタビライザ 2 u（PCB マウント） | ネジ止め式推奨 | 1 | 2 | 3 | GDK-02 Pre-lubed PCB Mount Stabilizer | 遊舎工房 | ¥770 / セット | [リンク](https://shop.yushakobo.jp/products/11952) | 左 Shift、右 Backspace、右 Enter；1 セットで 2 u が 4 個分。1 セットで足りる |
-| 入力 | サムホイール | 直径 29.2 mm × 厚さ 4.1 mm、外周に 32 山のクリック用の歯（case/print/<side>-wheel.stl） | 1 | 1 | 2 | case/print/<side>-wheel.stl | 自作（3D プリント） |  |  | 3D プリントか、アルミ削り出しで外注 |
-| 入力 | ネオジム磁石（径方向着磁） | 直径 6 mm × 厚さ 1.5 mm、ホイール上面のポケットに接着 | 1 | 1 | 2 | Radial Magnets 9042（φ6 × 2.5 mm、Diametric） | DigiKey | ¥105 | [リンク](https://www.digikey.jp/ja/products/detail/radial-magnets-inc/9042/5640338) | 必ず径方向（diametric）着磁のもの；厚さ 2.5 mm で、現在のポケット（深さ 1.6 mm）には入らない。国内で φ6 × 1.5 mm の径方向着磁品は在庫が見つからなかった |
+| 入力 | サムホイール | 直径 29.2 mm × 厚さ 4.1 mm、外周に 32 山のすべり止め、上面にエンコーダーを回す六角ピン（対辺 1.66 mm）（case/print/<side>-wheel.stl） | 1 | 1 | 2 | case/print/<side>-wheel.stl | 自作（3D プリント） |  |  | 六角ピンのはめあいは試し印刷で調整する |
 | キーキャップ | キーキャップ 1 u |  |  |  | 81 | DSA 無刻印キーキャップ 1 u（PBT、22 色） | 遊舎工房 | ¥55 | [リンク](https://shop.yushakobo.jp/products/dsa-blank-keycaps) |  |
 | キーキャップ | キーキャップ 1.25 u |  |  |  | 5 | Signature Plastics DSA 1.25 u | spkeyboards.com（米国） | US$3.50 | [リンク](https://spkeyboards.com/products/dsa-1-25-space) | 国内で DSA 1.25 u が見つからなかったため海外通販。輸入時に関税・消費税 |
 | キーキャップ | キーキャップ 1.5 u |  |  |  | 2 | DSA 無刻印キーキャップ 1.5 u（白・黒・灰・緑・赤） | 遊舎工房 | ¥220 | [リンク](https://shop.yushakobo.jp/products/10731) |  |
@@ -62,12 +62,6 @@
 | 3D プリント版 A | 　└ 代替 |  |  |  |  | エスコ EA949LT-720 六角ナット M2（真鍮、ニッケルめっき） | MonotaRO | ¥798 / 80 個 | [リンク](https://www.monotaro.com/p/5052/3646/) |  |
 | 3D プリント版 A | M2 × 6 mm スリムヘッド小ねじ | 頭 φ4.0 × 高さ 0.5 mm、透明アクリルのプレートを上から留める | 10 | 11 | 21 | 大阪魂 (+)スリムヘッド小ねじ ステンレス M2 × 6（φ4 × 0.5、注文コード 41746713） | MonotaRO | 7 本入り | [リンク](https://www.monotaro.com/p/4174/6713/) |  |
 | アクリル版 | M3 × 8 mm なべネジ | サムホイールの軸（底板の下から差し込む） | 1 | 1 | 2 | OHSATO ナベ頭小ねじ M3 × 8（ステンレス） | MonotaRO | ¥175 / 50 本 | [リンク](https://www.monotaro.com/p/1714/1988/) | 3D プリント版はトレイの軸を使う |
-| 筐体共通 | M3 ボールプランジャー | M3 × 0.5、長さ 6 mm、ボール φ1.5、ストローク 0.5 mm、後端に六角穴 | 1 | 1 | 2 | NBK PAFS-3-L（ステンレス、L 6、1 → 2 N） | MonotaRO | ¥395 | [リンク](https://www.monotaro.com/p/2212/2932/) | ホイールのクリック。ねじ込み量でクリックの重さを調整；軽め。重くしたいときは PAFS-3-M（1.5 → 2.9 N） |
-| 筐体共通 | 　└ 代替 |  |  |  |  | NBK PAFS-3-M（ステンレス、L 6、1.5 → 2.9 N） | MonotaRO | ¥395 | [リンク](https://www.monotaro.com/p/2212/2957/) |  |
-| 筐体共通 | 　└ 代替 |  |  |  |  | MISUMI BPK3（ショートタイプ、L 5、ボール φ2、1 → 2 N） | MISUMI | ¥627 | [リンク](https://jp.misumi-ec.com/vona2/detail/110302018310/) | ブロックの穴はそのまま使える（長さが 1 mm 短い） |
-| アクリル版 | プランジャーブロック | 3D プリント（case/print/<side>-detent.stl） | 1 | 1 | 2 | case/print/<side>-detent.stl | 自作（3D プリント） |  |  | 3D プリント版はトレイと一体；PETG 推奨。M3 の穴はタップを立てるか、プランジャーでねじを切りながら入れる |
-| アクリル版 | M2 × 6 mm タッピングネジ（ブロック用） | 底板の下からプランジャーブロックへ | 2 | 2 | 4 | 大阪魂 ナベタッピンねじ 2 種 B-0 M2 × 6（ステンレス） | MonotaRO | ¥593 / 50 本 | [リンク](https://www.monotaro.com/p/4171/8022/) |  |
-| アクリル版 | 　└ 代替 |  |  |  |  | エスコ EA949AL-103 | MonotaRO | ¥435 / 40 本 | [リンク](https://www.monotaro.com/p/5065/8362/) |  |
 | 3D プリント版 B | M2 × 12 mm なべネジ（底から） | トレイ底の座ぐりから壁を通してプレート裏のインサートへ | 10 | 11 | 21 | TRUSCO Y823-0212 ナベ頭小ねじ ステンレス M2 × 12 | MonotaRO | ¥395 / 20 本 | [リンク](https://www.monotaro.com/p/2498/0167/) |  |
 | 3D プリント版 B | 　└ 代替 |  |  |  |  | エスコ EA949NF-212 鍋頭小ねじ ステンレス M2 × 12 | MonotaRO | ¥275 / 16 本 | [リンク](https://www.monotaro.com/g/02450718/) |  |
 | 3D プリント版 | M2 × 6 mm タッピングネジ | 基板をボス（下穴 φ1.6）へ固定 | 8 | 8 | 16 | 大阪魂 ナベタッピンねじ 2 種 B-0 M2 × 6（ステンレス） | MonotaRO | ¥593 / 50 本 | [リンク](https://www.monotaro.com/p/4171/8022/) |  |
