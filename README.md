@@ -311,7 +311,8 @@ spltnrskb/
 
 次のスクリプトは `build.sh` に含まれず、必要なときに手で実行します。
 
-- 完成イメージのレンダリング：`render_blender.py`、`render_all.sh`、`render_grid.py`、`port_slide.py`（基板の差し込み手順の断面図）
+- 完成イメージのレンダリング：`render_blender.py`、`render_all.sh`、`render_grid.py`
+- A と B の比較画像、差込口、基板の差し込み手順の断面図：`render_compare.sh`、`compare_ab.py`、`port_slide.py`
 - OLED と開口の比較検討：`oled_variants.py`、`oled_study.sh`、`oled_sheet.py`、`port_variants.py`
 - 六角ピンの試し印刷：`pin_coupon.py`（`case/print/pin-coupon.stl`。使い方は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）
 
