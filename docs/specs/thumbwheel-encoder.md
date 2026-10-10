@@ -166,7 +166,7 @@ GP19 と GP20 は今どこにも使っていない（`gen/layout.py:9` から `g
 | 6 | 済 | BOM を更新する | `gen/make_bom.py`、`gen/bom_sources.json`、`bom/` | BOM から AS5600、磁石、ボールプランジャー、プランジャーブロック、その M2 ネジが消え、EC05E1220401 が 2 個載る。1 µF と 0.1 µF のコンデンサの数が左右 1 個ずつ減る | 3、4 |
 | 7 | 済 | 組み立てガイドと 3D ビューアを更新する | `gen/assembly_guide.py`、`gen/case_viewer.py`、`case/preview/` | 組み立てガイドからセンサー、磁石、プランジャーの手順が消え、エンコーダーの半田付けとホイールの差し込みの手順が入る。ビューアでエンコーダーとホイールの位置が合っている | 4、6 |
 | 8 | 済 | BOM の購入先を LCSC にそろえる | `gen/bom_sources.json`、`gen/make_bom.py`、`bom/` | LCSC で買える部品は、先頭の購入先がすべて LCSC の製品ページになっている。LCSC にない部品は備考に明記されている。載せた製品ページはすべて開いて確かめてある | 6 |
-| 9 | 未 | README を更新し、レンダリングを作り直す。検討用のスクリプトを片付ける | `README.md`、`docs/img/`、`gen/encoder_study.py`、`gen/encoder_study.sh`、`gen/render_encoder_study.py`、`gen/encoder_sheet.py` | README のサムホイールの節が新しい構成を説明し、textlint の指摘が 0 件。`./gen/render_all.sh` が通る。検討用のスクリプトは削除し、`docs/img/encoder-study/` の画像は検討の記録として残す | 4、5、7、8 |
+| 9 | 済 | README を更新し、レンダリングを作り直す。検討用のスクリプトを片付ける | `README.md`、`docs/img/`、`gen/encoder_study.py`、`gen/encoder_study.sh`、`gen/render_encoder_study.py`、`gen/encoder_sheet.py` | README のサムホイールの節が新しい構成を説明し、textlint の指摘が 0 件。`./gen/render_all.sh` が通る。検討用のスクリプトは削除し、`docs/img/encoder-study/` の画像は検討の記録として残す | 4、5、7、8 |
 | 10 | 未 | 実機で確かめる | なし（結果は README に追記） | 六角ピンのはめあいを試し印刷で決める。左右のホイールで、回す向き、1 クリック 1 回の送り、山の手前で戻したときに送りが出ないこと、クリックの手触りを確かめる | 3、4、5 |
 
 ステップ 4 で `Half.detent_block` を消すと、`gen/encoder_study.py` の現在の構成を組み立てる部分が動かなくなる。検討用のスクリプトをステップ 9 で消すのはこのためである。

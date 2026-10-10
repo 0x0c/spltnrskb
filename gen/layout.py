@@ -12,7 +12,6 @@ SERIAL_PIN = 'GP1'  # QMK split serial (PIO, half duplex) on the TRRS tip
 HAND_PIN = 'GP0'    # 10k to 3V3 on left / GND on right
 I2C_SDA, I2C_SCL = 'GP2', 'GP3'   # I2C1: OLED
 WHEEL_PIN_A, WHEEL_PIN_B = 'GP19', 'GP20'   # corner thumbwheel encoder (common to GND, internal pull-ups)
-WHEEL_DETENTS = 12   # clicks (= pulses) per turn of the thumbwheel encoder, Alps EC05E1220401
 N_ROWS, N_COLS = len(ROW_PINS), len(COL_PINS)
 
 
