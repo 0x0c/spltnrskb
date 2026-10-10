@@ -172,7 +172,8 @@ def main():
     print('wrote', path, 'and', js, f'{os.path.getsize(js) / 1e6:.1f} MB')
 
 
-TEMPLATE = r'''<title>nrsk Case Viewer</title>
+TEMPLATE = r'''<meta charset="utf-8">
+<title>nrsk Case Viewer</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;600&family=IBM+Plex+Mono:wght@400&display=swap">
 <style>
 /* Layout: full-bleed WebGL canvas, one control panel and one spec card floating on it */
