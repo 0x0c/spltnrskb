@@ -57,7 +57,7 @@ Alps EC05E1220401 の仕様は、Alps のカタログ（Drawing No.3）と製品
 | 実装面からの高さ | 2.7 mm |
 | シャフト穴 | 六角、対辺 1.72 mm（基板側の面）と 1.73 mm（反対の面）、長さ 2.7 mm。基板と反対の面から差し込む |
 | 基板の加工 | 回転部の下に 3 mm 角の穴（角に R0.5 の逃げ）、位置決め用の直径 0.62 mm の穴 2 つ |
-| ランド | 側面の金具用に 1.7 × 2.6 mm を 2 つ（内側の間隔 5.9 mm）、端子 A、C、B を 1.5 mm 間隔で 3 つ |
+| ランド | 側面の金具用に 1.7 × 2.6 mm を 2 つ（内側の間隔 5.9 mm）、端子 A、C、B 用に 1.5 × 1.3 mm を 2.0 mm 間隔で 3 つ |
 
 メーカーの最小発注数は 8,000 個だが、element14（Farnell）は 1 個から扱っている。発注前に在庫を確認する。
 
@@ -149,7 +149,7 @@ GP19 と GP20 は今どこにも使っていない（`gen/layout.py:9` から `g
 | # | 状態 | やること | 触るファイル | 完了条件 | 前提 |
 | --- | --- | --- | --- | --- | --- |
 | 1 | 済 | エンコーダーのフットプリントを追加し、3D モデルの取得を足す | `gen/footprints.py`、`gen/fetch_3d.sh`、`lib/nrsk.pretty/` | KiCad のフットプリントエディタで開き、Alps の寸法図とランド、穴、外形が一致する。3D ビューアで STEP の端子がランドに載る | なし |
-| 2 | 未 | 回路図の AS5600 と C9、C10 をエンコーダーに置き換え、GP19、GP20 につなぐ | `gen/make_sch.py`、`gen/layout.py`、`lib/nrsk.kicad_sym`、`left/`、`right/` の回路図 | 左右とも ERC のエラーが 0 件 | 1 |
+| 2 | 済 | 回路図の AS5600 と C9、C10 をエンコーダーに置き換え、GP19、GP20 につなぐ | `gen/make_sch.py`、`gen/layout.py`、`lib/nrsk.kicad_sym`、`left/`、`right/` の回路図 | 左右とも ERC のエラーが 0 件 | 1 |
 | 3 | 未 | 基板にエンコーダーを配置し、キーを回す条件を見直して配線する | `gen/make_pcb.py`、`left/`、`right/` の基板、`fab/` | `./build.sh` で左右とも未配線 0、DRC のエラー 0。3 mm 角の穴がガーバーの外形層に出ている | 2 |
 | 4 | 未 | ケースを変更する（ホイール、床の軸、プランジャーブロックの削除、検査） | `gen/make_case.py`、`case/` | `.venv/bin/python gen/make_case.py` の検査がすべて通る。`case/print/<side>-detent.stl` がなくなる | 3 |
 | 5 | 未 | ファームウェアを QMK のエンコーダー機能に置き換える | `gen/make_qmk.py`、`firmware/qmk/keyboards/nrsk/` | `qmk compile -kb nrsk -km default` が通る | 2 |

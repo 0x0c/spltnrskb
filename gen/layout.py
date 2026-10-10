@@ -10,7 +10,8 @@ ROW_PINS = ['GP4', 'GP5', 'GP6', 'GP7', 'GP8', 'GP9']
 COL_PINS = ['GP10', 'GP11', 'GP12', 'GP13', 'GP14', 'GP16', 'GP17', 'GP18']   # GP15 skipped: corner pin next to TESTEN/XIN
 SERIAL_PIN = 'GP1'  # QMK split serial (PIO, half duplex) on the TRRS tip
 HAND_PIN = 'GP0'    # 10k to 3V3 on left / GND on right
-I2C_SDA, I2C_SCL = 'GP2', 'GP3'   # I2C1: OLED and the AS5600 of the corner thumbwheel
+I2C_SDA, I2C_SCL = 'GP2', 'GP3'   # I2C1: OLED
+WHEEL_PIN_A, WHEEL_PIN_B = 'GP19', 'GP20'   # corner thumbwheel encoder (common to GND, internal pull-ups)
 WHEEL_I2C_ADDR = 0x36
 WHEEL_DETENTS = 32   # mechanical clicks per turn = firmware steps per turn
 N_ROWS, N_COLS = len(ROW_PINS), len(COL_PINS)
