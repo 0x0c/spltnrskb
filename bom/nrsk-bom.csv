@@ -16,7 +16,8 @@ MCU,　└ 代替,,,,,Winbond W25Q16JVSSIQ（2 MB、同じ 208 mil）,LCSC C8231
 受動部品,コンデンサ 1 µF,0805 X7R 25 V 以上（LDO、RP2040 の内蔵レギュレータ）,4,4,8,Samsung CL21B105KBFNNNE（50 V）,LCSC C28323,US$0.04,https://www.lcsc.com/product-detail/C28323.html,
 受動部品,コンデンサ 10 µF,0805 X5R 10 V 以上,1,1,2,Samsung CL21A106KAYNNNE（X5R 25 V）,LCSC C15850,US$0.066,https://www.lcsc.com/product-detail/C15850.html,
 受動部品,抵抗 10 kΩ,0805 1%,2,2,4,UNI-ROYAL 0805W8F1002T5E,LCSC C17414,US$0.0034,https://www.lcsc.com/product-detail/C17414.html,
-受動部品,抵抗 27 Ω,0805 1%（USB D+/D−）,2,2,4,YAGEO RC0805FR-0727RL,LCSC C163408,US$0.0078,https://www.lcsc.com/product-detail/C163408.html,"確認時の在庫 4,900"
+受動部品,抵抗 27 Ω,0805 1%（USB D+/D−）,2,2,4,UNI-ROYAL 0805W8F270JT5E,LCSC C17594,US$0.0029（100 個単位）,https://www.lcsc.com/product-detail/C17594.html,"2026-10-10 に確認（在庫 195,300）。JLCPCB の部品実装の推奨部品（Preferred）で、在庫は約 4 万個"
+受動部品,　└ 代替,,,,,YAGEO RC0805FR-0727RL,LCSC C163408,US$0.0078,https://www.lcsc.com/product-detail/C163408.html,"代替。JLCPCB の部品実装の在庫が 5 個しかない（2026-10-10、LCSC の在庫は別で 4,900）"
 受動部品,抵抗 1 kΩ,0805 1%（水晶の XOUT 直列、BOOTSEL）,2,2,4,UNI-ROYAL 0805W8F1001T5E,LCSC C17513,US$0.0041,https://www.lcsc.com/product-detail/C17513.html,
 受動部品,抵抗 5.1 kΩ,0805 1%（USB-C CC）,2,2,4,UNI-ROYAL 0805W8F5101T5E,LCSC C27834,US$0.0056,https://www.lcsc.com/product-detail/C27834.html,
 表示,OLED モジュール 0.91 インチ,128×32、SSD1306、I2C、3.3 V、ピン順 GND/VCC/SCL/SDA（ガラス上面を基板から 2.5 mm に）,1,1,2,HS HS91L02W2C01（0.91 インチ 128×32、SSD1306、I2C）,LCSC C5248081,US$2.26,https://www.lcsc.com/product-detail/C5248081.html,"2026-10-10 に確認（在庫 3,017）。写真のピン順は GND/VCC/SCL/SDA。3.3 V で動くか、ピンヘッダが付くかはページに記載なし"

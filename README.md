@@ -185,12 +185,14 @@ LCSC で買えるものは、すべて LCSC を最初の購入先にしていま
 
 購入先は [gen/bom_sources.json](gen/bom_sources.json) にまとめてあり、価格や在庫は変わるので発注前に確認してください。
 
+注文先ごとの手順と数量（筐体の版ごとのネジやアクリルを含む）は [docs/ordering.md](docs/ordering.md) にまとめています。
+
 次の部品は、発注前に特に確認してください。
 
 - **水晶振動子**：Raspberry Pi のリファレンスと同じ Abracon ABM8-272-T3（12 MHz、負荷容量 10 pF）を 15 pF のコンデンサと組み合わせます。安価な YXC X322512MSB4SI は負荷容量 20 pF なので、そのままでは合いません。
 - **QSPI Flash**：W25Q128JVSIQ は LCSC に 2 つの部品番号があり、よく使われる C97521 は確認時に在庫切れでした。BOM には在庫のある C113767 を載せています。
 - **TRRS ジャック**：基板のパッドは Qingpu WQP-PJ320D の寸法です。LCSC の 2 品（C431535、C95562）は EasyEDA のフットプリントと照合しました。固定ピンの間隔 7.0 mm が一致し、端子位置の差も 0.1 mm 以内でパッドに載ります。
-- **ロータリーエンコーダー**：Alps EC05E1220401 は LCSC（C116648）で 1 個から買えます。ホイールの六角ピンのはめあいは印刷機によって変わるので、試し印刷で確かめてください。ピンの対辺は `gen/make_case.py` の `PIN_AF` で変えられます。
+- **ロータリーエンコーダー**：Alps EC05E1220401 は LCSC（C116648）で 1 個から買えます。ホイールの六角ピンのはめあいは印刷機によって変わるので、対辺を変えた 7 本のピンを並べた `case/print/pin-coupon.stl` を印刷して確かめてください（手順は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）。ピンの対辺は `gen/make_case.py` の `PIN_AF` で変えられます。
 - **OLED**：LCSC の HS91L02W2C01 は、写真ではピン順が GND/VCC/SCL/SDA ですが、3.3 V で動くかとピンヘッダが付くかはページに書かれていません。遊舎工房の品も代替として BOM に載せています。どちらもピン順を現物で確認してください。
 
 主な部品（左右合計）は次のとおりです。
@@ -211,6 +213,26 @@ LCSC で買えるものは、すべて LCSC を最初の購入先にしていま
 | 2 u スタビライザー | 3 |
 | 0805 の抵抗とコンデンサ | 抵抗 20、コンデンサ 36 |
 | M2 ネジ類 | 外周 21 本、基板固定 16 か所 |
+
+### JLCPCB での基板製造と部品実装
+
+基板の電子部品は、すべて裏面に載っています。JLCPCB の部品実装サービスに、左右を別々の注文として出します。実装用のファイルは `gen/make_jlc.py` が作ります。
+
+- `fab/<side>/nrsk-<side>-jlc-bom.csv`：JLCPCB の形式の部品表（`Comment`、`Designator`、`Footprint`、`LCSC Part #`）
+- `fab/<side>/nrsk-<side>-jlc-cpl.csv`：部品の位置と回転（`Designator`、`Mid X`、`Mid Y`、`Layer`、`Rotation`）
+
+実装を頼むのは 21 種類（左 83 個、右 87 個）です。OLED、ホットスワップソケット、キースイッチは手で付けます。OLED はガラスの高さを合わせて半田付けする必要があり、ソケットは表面のフットプリントに属しているので、実装ファイルから外しています。
+
+注文の手順は次のとおりです。
+
+1. JLCPCB の基板の注文画面で `fab/<side>/nrsk-<side>-gerber.zip` をアップロードします（2 層、厚さ 1.6 mm）。
+2. 部品実装（PCB Assembly）を選び、実装面を裏面（Bottom）にします。JLCPCB の部品実装は 1 つの設計につき 2 枚からです。
+3. 部品表に `nrsk-<side>-jlc-bom.csv`、配置に `nrsk-<side>-jlc-cpl.csv` を渡します。
+4. 配置のプレビューで、RP2040 と Flash の 1 番ピン、ダイオードの向き、USB-C と TRRS ジャックの向き（差込口が基板の端を向く）、エンコーダーの位置を確かめます。
+
+JLCPCB は、部品ごとに自社の部品ライブラリ（EasyEDA）のフットプリントで配置します。KiCad のフットプリントと回転や原点が違う部品は、`make_jlc.py` で補正しています。補正の値は、EasyEDA のフットプリントを基板のパッドに重ね合わせて求めました。CPL どおりに置いた EasyEDA のフットプリントでは、どの部品もすべてのパッドが同じ名前の基板のパッドに載ります（中心のずれは最大 0.46 mm で、水晶の手半田用のパッドが長いため）。USB-C だけは、実績を集めた補正表（JLCKicadTools）が 180° の補正を指定しています。しかし今の EasyEDA のフットプリントは KiCad と同じ向きなので、補正を入れていません。プレビューで差込口が基板の内側を向いていたら、`make_jlc.py` の `JLC_FIX` で USB-C の回転を 180 にしてください。
+
+JLCPCB の部品の在庫は 2026-10-10 に確かめました（JLCPCB の部品一覧を写した非公式の検索サービス jlcsearch による）。拡張部品（Extended）は 10 種類で、種類ごとに追加料金がかかります。エンコーダー EC05E1220401 は在庫が 41 個と少ないので、注文前に確認してください。USB の 27 Ω 抵抗は、在庫が 5 個しかなかった YAGEO の品から、推奨部品の UNI-ROYAL 0805W8F270JT5E（C17594）に替えています。
 
 ## ファイル構成
 
@@ -236,6 +258,8 @@ spltnrskb/
 ├── fab/<side>/                  基板の発注用データ
 │   ├── nrsk-<side>-gerber.zip   ガーバーとドリル
 │   ├── nrsk-<side>-bom.csv      片側の部品表
+│   ├── nrsk-<side>-jlc-bom.csv  JLCPCB の部品実装用の部品表
+│   ├── nrsk-<side>-jlc-cpl.csv  JLCPCB の部品実装用の配置（位置と回転）
 │   ├── nrsk-<side>-schematic.pdf     回路図
 │   ├── nrsk-<side>-copper.pdf        配線図（1 ページ目が表、2 ページ目が裏）
 │   └── nrsk-<side>-assembly-back.pdf 裏面の実装図
@@ -243,7 +267,7 @@ spltnrskb/
 │   ├── laser/                   アクリル版のレーザーカット用 DXF と SVG
 │   │                            （<side>-plate、frame1〜4、bottom、oled-cover）
 │   ├── print/                   3D プリント用 STL
-│   │                            （<side>-tray、plate、wheel、wheel-cap）
+│   │                            （<side>-tray、plate、wheel、wheel-cap、六角ピンの試し印刷 pin-coupon）
 │   ├── preview/                 確認用の出力
 │   │   ├── viewer.html          3D ビューア（GitHub Pages で公開）
 │   │   ├── assembly.html        組み立てガイド（GitHub Pages で公開）
@@ -256,6 +280,8 @@ spltnrskb/
 ├── bom/                         左右と筐体を合わせた部品表（CSV と Markdown）
 ├── firmware/qmk/keyboards/nrsk/ QMK のキーボード定義と既定のキーマップ
 ├── docs/specs/                  設計変更の仕様書
+├── docs/ordering.md            発注の手順（注文先ごとの部品と数量）
+├── docs/thumbwheel-check.md     サムホイールと OLED の実機確認の手順
 ├── docs/img/                    README の画像
 │   ├── left-*.png, right-*.png  基板の 3D 表示と重ね合わせ図
 │   ├── render-*                 Blender による完成イメージ
@@ -280,12 +306,14 @@ spltnrskb/
 | ファームウェア | `make_qmk.py` | `firmware/qmk/keyboards/nrsk/` |
 | 筐体 | `make_case.py`、`case_preview.py`、`case_section.py`、`case_viewer.py`、`assembly_guide.py` | `case/` 以下のすべて |
 | 部品表 | `make_bom.py`、`bom_sources.json` | `bom/`（購入先の情報は `bom_sources.json` に手で記入） |
+| JLCPCB の実装データ | `make_jlc.py` | `fab/<side>/nrsk-<side>-jlc-bom.csv`、`fab/<side>/nrsk-<side>-jlc-cpl.csv` |
 | README の画像 | `doc_images.sh` | `docs/img/left-*.png`、`docs/img/right-*.png`、断面図 |
 
 次のスクリプトは `build.sh` に含まれず、必要なときに手で実行します。
 
 - 完成イメージのレンダリング：`render_blender.py`、`render_all.sh`、`render_grid.py`、`port_slide.py`（基板の差し込み手順の断面図）
 - OLED と開口の比較検討：`oled_variants.py`、`oled_study.sh`、`oled_sheet.py`、`port_variants.py`
+- 六角ピンの試し印刷：`pin_coupon.py`（`case/print/pin-coupon.stl`。使い方は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）
 
 KLE を編集した場合は `./build.sh` を実行すると、回路図、基板、配線、ERC/DRC、製造データ、筐体、BOM、QMK 定義をすべて作り直します。
 行の配線とダイオード周りはスクリプトで規則的に引き、残りを Freerouting（`tools/freerouting-2.4.1.jar`）に任せています。
@@ -389,7 +417,7 @@ KLE で刻印のないキー（左右の内側の列、計 12 キー）は `KC_N
 
 ## 発注・組み立て前の確認事項
 
-- DRC の警告は片側 7〜8 件です。うち 5 件は、TRRS ジャックと USB-C の差込口が基板端に掛かっていることによるシルクの警告で、差込口を基板の端に合わせるための意図的な配置です。残りの 2〜3 件は、自動配線が残した GND のビアのうち片側の層にしかつながっていないもので、件数は配線のたびに変わります。どれも動作には影響しません。
+- DRC の警告は片側 7〜8 件です。うち 5 件は、TRRS ジャックと USB-C の差込口が基板端に掛かっていることによるシルクの警告で、差込口を基板の端に合わせるための意図的な配置です。残りの 2〜3 件は、RP2040 の裏のサーマルパッドの中にある GND のビアが片側の層にしかつながっていないという警告で、件数は自動配線のたびに変わります。どれも動作には影響しません。
 - RP2040 は 0.4 mm ピッチの QFN で、裏面のサーマルパッドも GND に半田付けする必要があります。手半田はホットエアかリフローが前提なので、JLCPCB などの部品実装サービスを使うのがおすすめです（BOM の LCSC 部品番号がそのまま使えます）。USB-C（0.5 mm ピッチ）も同様です。
 - ホットスワップソケットのフットプリントは、一般的な Kailh CPG151101S11 の寸法で作った自作品です。1 枚目は実物のソケットと照合してください。
 - TRRS ケーブルは、USB を接続したまま抜き差ししないでください。電源ピンが一瞬ショートして、マイコンを壊すおそれがあります。
