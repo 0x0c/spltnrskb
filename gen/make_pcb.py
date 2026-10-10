@@ -15,7 +15,8 @@ STD_FP = KICAD + '/SharedSupport/footprints'
 ROOT = os.path.abspath(os.path.join(HERE, '..'))
 ORIGIN = (30.0, 30.0)          # board placement on the page [mm]
 MARGIN = 3.0                   # board edge outside the key grid [mm]
-TOP = MARGIN + 5.0             # top edge: 5 mm more, so the OLED's half-mirror cover has room above and below
+TOP = MARGIN + 6.0             # top edge: 6 mm more: room above and below the OLED's half-mirror cover, and the
+                               # wheel encoder moved up clear of the left Esc socket, so no key needs turning
 # connector tongues: the board reaches into the case wall under each connector so its mouth sits PORT_SKIN
 # inside the outer surface; the opening in the wall is then just the connector outline
 CASE_WALL = 0.5 + 8.0          # PCB edge to case outer surface (make_case CLEAR + WALL)
