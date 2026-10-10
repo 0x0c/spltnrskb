@@ -20,9 +20,12 @@ v2 では Pro Micro などのマイコンボードをやめ、RP2040 と QSPI Fl
 | ホイール | 左上と右上の角にサムホイール（ロータリーエンコーダー Alps EC05E1220401 で読み取り、1 回転 12 クリック）。高さは増えない |
 | 3D ビューア | http://www.0x0c.me/spltnrskb/ 、組み立てガイドは http://www.0x0c.me/spltnrskb/assembly.html （GitHub Pages、`main` への Push で自動更新） |
 
-![左基板](docs/img/left-top.png)
-![右基板](docs/img/right-top.png)
-![右基板の裏面](docs/img/right-bottom.png)
+基板の表と裏です（KiCad の 3D 表示）。裏面は裏から見た向きなので、左右が反転して見えます。
+
+| | 左 | 右 |
+| --- | --- | --- |
+| 表 | ![左基板の表](docs/img/left-top.png) | ![右基板の表](docs/img/right-top.png) |
+| 裏 | ![左基板の裏](docs/img/left-bottom.png) | ![右基板の裏](docs/img/right-bottom.png) |
 
 完成イメージ（Blender でレンダリング）です。筐体は 2 つの 3D プリント版を採用しています。左が A（3D プリントのトレイ + 透明アクリルのプレート）、右が B（プレートも 3D プリント）です。A はプレートを上からスリムヘッドの小ねじで、B は底からネジで留めます（B の上面にはネジが見えません）。
 
