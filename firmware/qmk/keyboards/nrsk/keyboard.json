@@ -12,6 +12,7 @@
     },
     "features": {
         "bootmagic": true,
+        "encoder": true,
         "extrakey": true,
         "mousekey": false,
         "nkro": true,
@@ -39,8 +40,26 @@
             "GP18"
         ]
     },
+    "encoder": {
+        "rotary": [
+            {
+                "pin_a": "GP20",
+                "pin_b": "GP19"
+            }
+        ]
+    },
     "split": {
         "enabled": true,
+        "encoder": {
+            "right": {
+                "rotary": [
+                    {
+                        "pin_a": "GP20",
+                        "pin_b": "GP19"
+                    }
+                ]
+            }
+        },
         "serial": {
             "driver": "vendor",
             "pin": "GP1"
