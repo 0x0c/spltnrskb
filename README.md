@@ -212,6 +212,26 @@ LCSC で買えるものは、すべて LCSC を最初の購入先にしていま
 | 0805 の抵抗とコンデンサ | 抵抗 20、コンデンサ 36 |
 | M2 ネジ類 | 外周 21 本、基板固定 16 か所 |
 
+### JLCPCB での基板製造と部品実装
+
+基板の電子部品は、すべて裏面に載っています。JLCPCB の部品実装サービスに、左右を別々の注文として出します。実装用のファイルは `gen/make_jlc.py` が作ります。
+
+- `fab/<side>/nrsk-<side>-jlc-bom.csv`：JLCPCB の形式の部品表（`Comment`、`Designator`、`Footprint`、`LCSC Part #`）
+- `fab/<side>/nrsk-<side>-jlc-cpl.csv`：部品の位置と回転（`Designator`、`Mid X`、`Mid Y`、`Layer`、`Rotation`）
+
+実装を頼むのは 21 種類（左 83 個、右 87 個）です。OLED、ホットスワップソケット、キースイッチは手で付けます。OLED はガラスの高さを合わせて半田付けする必要があり、ソケットは表面のフットプリントに属しているので、実装ファイルから外しています。
+
+注文の手順は次のとおりです。
+
+1. JLCPCB の基板の注文画面で `fab/<side>/nrsk-<side>-gerber.zip` をアップロードします（2 層、厚さ 1.6 mm）。
+2. 部品実装（PCB Assembly）を選び、実装面を裏面（Bottom）にします。JLCPCB の部品実装は 1 つの設計につき 2 枚からです。
+3. 部品表に `nrsk-<side>-jlc-bom.csv`、配置に `nrsk-<side>-jlc-cpl.csv` を渡します。
+4. 配置のプレビューで、RP2040 と Flash の 1 番ピン、ダイオードの向き、USB-C と TRRS ジャックの向き（差込口が基板の端を向く）、エンコーダーの位置を確かめます。
+
+JLCPCB は、部品ごとに自社の部品ライブラリ（EasyEDA）のフットプリントで配置します。KiCad のフットプリントと回転や原点が違う部品は、`make_jlc.py` で補正しています。補正の値は、EasyEDA のフットプリントを基板のパッドに重ね合わせて求めました。CPL どおりに置いた EasyEDA のフットプリントでは、どの部品もすべてのパッドが同じ名前の基板のパッドに載ります（中心のずれは最大 0.46 mm で、水晶の手半田用のパッドが長いため）。USB-C だけは、実績を集めた補正表（JLCKicadTools）が 180° の補正を指定しています。しかし今の EasyEDA のフットプリントは KiCad と同じ向きなので、補正を入れていません。プレビューで差込口が基板の内側を向いていたら、`make_jlc.py` の `JLC_FIX` で USB-C の回転を 180 にしてください。
+
+JLCPCB の部品の在庫は 2026-10-10 に確かめました（JLCPCB の部品一覧を写した非公式の検索サービス jlcsearch による）。拡張部品（Extended）は 10 種類で、種類ごとに追加料金がかかります。エンコーダー EC05E1220401 は在庫が 41 個と少ないので、注文前に確認してください。USB の 27 Ω 抵抗は、在庫が 5 個しかなかった YAGEO の品から、推奨部品の UNI-ROYAL 0805W8F270JT5E（C17594）に替えています。
+
 ## ファイル構成
 
 入力は `kle/` のキー配列だけで、ほかのデータはすべて `gen/` のスクリプトで生成します。
@@ -236,6 +256,8 @@ spltnrskb/
 ├── fab/<side>/                  基板の発注用データ
 │   ├── nrsk-<side>-gerber.zip   ガーバーとドリル
 │   ├── nrsk-<side>-bom.csv      片側の部品表
+│   ├── nrsk-<side>-jlc-bom.csv  JLCPCB の部品実装用の部品表
+│   ├── nrsk-<side>-jlc-cpl.csv  JLCPCB の部品実装用の配置（位置と回転）
 │   ├── nrsk-<side>-schematic.pdf     回路図
 │   ├── nrsk-<side>-copper.pdf        配線図（1 ページ目が表、2 ページ目が裏）
 │   └── nrsk-<side>-assembly-back.pdf 裏面の実装図
@@ -281,6 +303,7 @@ spltnrskb/
 | ファームウェア | `make_qmk.py` | `firmware/qmk/keyboards/nrsk/` |
 | 筐体 | `make_case.py`、`case_preview.py`、`case_section.py`、`case_viewer.py`、`assembly_guide.py` | `case/` 以下のすべて |
 | 部品表 | `make_bom.py`、`bom_sources.json` | `bom/`（購入先の情報は `bom_sources.json` に手で記入） |
+| JLCPCB の実装データ | `make_jlc.py` | `fab/<side>/nrsk-<side>-jlc-bom.csv`、`fab/<side>/nrsk-<side>-jlc-cpl.csv` |
 | README の画像 | `doc_images.sh` | `docs/img/left-*.png`、`docs/img/right-*.png`、断面図 |
 
 次のスクリプトは `build.sh` に含まれず、必要なときに手で実行します。

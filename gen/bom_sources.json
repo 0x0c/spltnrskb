@@ -436,11 +436,18 @@
  ],
  "抵抗 27 Ω": [
   {
+   "mpn": "UNI-ROYAL 0805W8F270JT5E",
+   "shop": "LCSC C17594",
+   "url": "https://www.lcsc.com/product-detail/C17594.html",
+   "price": "US$0.0029（100 個単位）",
+   "note": "2026-10-10 に確認（在庫 195,300）。JLCPCB の部品実装の推奨部品（Preferred）で、在庫は約 4 万個"
+  },
+  {
    "mpn": "YAGEO RC0805FR-0727RL",
    "shop": "LCSC C163408",
    "url": "https://www.lcsc.com/product-detail/C163408.html",
    "price": "US$0.0078",
-   "note": "確認時の在庫 4,900"
+   "note": "代替。JLCPCB の部品実装の在庫が 5 個しかない（2026-10-10、LCSC の在庫は別で 4,900）"
   }
  ],
  "BOOTSEL パッド": [
