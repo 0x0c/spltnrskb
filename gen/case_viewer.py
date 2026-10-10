@@ -20,7 +20,7 @@ import glb_mesh  # noqa: E402
 import make_case as mc  # noqa: E402
 from make_case import (Half, OUT, FLOOR, STANDOFF, PCB_T, PLATE_GAP, BOTTOM_T, FRAME_T,  # noqa: E402
                        N_FRAMES, PLATE_T, COVER_T, WHEEL_GAP, TRAY_FILLET, TRAY_TOP_FILLET,
-                       WHEEL_T, MAGNET_D, MAGNET_DEPTH)
+                       )
 
 
 def screw(x, y, z_head, length, head_d=3.8, head_h=1.3, d=2.0, up=False):
@@ -39,7 +39,7 @@ def hexagon(x, y, z0, h, af):
 
 
 def hardware(hf, variant):
-    """Screws, inserts, standoffs, plunger and feet as [(name, mesh, colour)]."""
+    """Screws, inserts, standoffs and feet as [(name, mesh, colour)]."""
     out = []
     steel, brass, rubber = '#a9adb3', '#c8a24a', '#2a2d31'
     add = lambda name, ms, c: out.append((name, sum(ms[1:], ms[0]) if ms else None, c))
@@ -56,7 +56,6 @@ def hardware(hf, variant):
             add('insert', [hexagon(x, y, z_nut, 1.6, 4.0) for x, y in screws], steel)
             add('plate_screw', [screw(x, y, z_plate_top, 6, head_d=4.0, head_h=0.5) for x, y in screws], steel)
         add('pcb_screw', [screw(x, y, z_pcb + PCB_T, 6) for x, y in holes], steel)
-        z_floor = FLOOR
     else:
         add('standoff', [hexagon(x, y, BOTTOM_T, STANDOFF, 3.5) for x, y in holes], brass)
         add('pcb_screw', [screw(x, y, z_pcb + PCB_T, 4) for x, y in holes], steel)
@@ -65,16 +64,6 @@ def hardware(hf, variant):
         add('nut', [hexagon(x, y, -1.6, 1.6, 4.0) for x, y in screws], steel)
         (wx, wy), _ = hf.wheel_xy()
         add('axle', [screw(wx, wy, 0, 8, head_d=5.5, head_h=1.8, d=3.0, up=True)], steel)
-        add('block_screw', [screw(x, y, 0, 6, up=True) for x, y in hf.detent_screws_xy()], steel)
-        z_floor = BOTTOM_T
-    # ball plunger in the block, ball on the wheel's teeth
-    block, zc = hf.detent_block(z_floor)
-    (qx, qy), (ux, uy), _ = hf._detent_frame()
-    ang = math.degrees(math.atan2(uy, ux))
-    # NBK PAFS-3 (M3, L 6, ball 1.5, stroke 0.5): front face just clear of the crests, ball in a valley
-    body = Manifold.cylinder(6.0, 1.5, 1.5, 20).rotate((0, 90, 0)).translate((0.05, 0, zc))
-    ball = Manifold.sphere(0.75, 16).translate((0.3, 0, zc))
-    add('plunger', [(body + ball).rotate((0, 0, ang)).translate((qx, qy, 0))], steel)
     x0, y0, x1, y1, _ = hf.outer_box
     feet = [(x0 + 14, y0 + 14), (x1 - 14, y0 + 14), (x0 + 14, y1 - 14), (x1 - 14, y1 - 14)]
     z_bottom = 0.0 if variant in PRINTED else -1.6
@@ -124,11 +113,9 @@ def main():
                 z_pcb = FLOOR + STANDOFF
                 parts.append((side, 'tray', pack(hf.tray()), '#d9d4c7', 1.0))
                 parts.append((side, 'wheelcap', pack(hf.wheel_cap()), '#d9d4c7', 1.0))
-                parts.append((side, 'portcap', pack(hf.port_caps()), '#d9d4c7', 1.0))
             else:
                 z_pcb = BOTTOM_T + STANDOFF
                 parts.append((side, 'bottom', pack(Manifold.extrude(hf.bottom(), BOTTOM_T)), 'matte', 0.6))
-                parts.append((side, 'detent', pack(hf.detent_part()), '#d9d4c7', 1.0))   # printed plunger block
                 for i in range(N_FRAMES):
                     f = Manifold.extrude(hf.frame(i), FRAME_T).translate((0, 0, BOTTOM_T + i * FRAME_T))
                     parts.append((side, f'frame{i + 1}', pack(f), 'matte', 0.6))
@@ -148,11 +135,8 @@ def main():
                 parts.append((side, 'oled', pack(oled), '#11151a', 1.0))
             z_floor = FLOOR if variant in PRINTED else BOTTOM_T
             parts.append((side, 'wheel', pack(hf.wheel3d().translate((0, 0, z_floor + WHEEL_GAP))), '#c9ccd1', 1.0))
-            # diametric magnet in the wheel's top pocket, read by the AS5600 (U3) on the PCB back right above it
-            (mx, my), _ = hf.wheel_xy()
-            magnet = Manifold.cylinder(MAGNET_DEPTH, (MAGNET_D - 0.1) / 2, (MAGNET_D - 0.1) / 2, 48).translate(
-                (mx, -my, z_floor + WHEEL_GAP + WHEEL_T - MAGNET_DEPTH + 0.01))
-            parts.append((side, 'magnet', pack(magnet), '#7a2630', 1.0))
+            if not boards:   # KiCad's board export carries the encoder (ENC1) with Alps' model
+                parts.append((side, 'encoder', pack(hf.encoder3d(z_floor)), '#202225', 1.0))
             for name, m, color in hardware(hf, variant):
                 if m is not None:
                     parts.append((side, name, pack(m), color, 1.0))
@@ -166,18 +150,18 @@ def main():
         'print': dict(title='A：3D プリントのトレイ + 透明アクリルのプレート', rows=[
             ['外形 mm', size], ['高さ', f"{FLOOR + STANDOFF + PCB_T + PLATE_GAP + PLATE_T:g} mm（プレート上面まで）"],
             ['床 / 壁', f'{FLOOR:g} mm / 幅 8 mm'], ['基板の高さ', f'床から {STANDOFF:g} mm（ボス φ4.6）'],
-            ['プレート', '透明アクリル 1.5 mm、M2 ヒートセットインサートで固定'], ['トレイの角', f'外周の下端 R{TRAY_FILLET:g}・上端 R{TRAY_TOP_FILLET:g} のフィレット'], ['コネクタ', '基板裏面。プレートは切り欠きなし'], ['ホイール', '角にサムホイール × 2（AS5600）'],
+            ['プレート', '透明アクリル 1.5 mm、M2 ヒートセットインサートで固定'], ['トレイの角', f'外周の下端 R{TRAY_FILLET:g}・上端 R{TRAY_TOP_FILLET:g} のフィレット'], ['コネクタ', '基板裏面。プレートは切り欠きなし'], ['ホイール', '角にサムホイール × 2（ロータリーエンコーダー Alps EC05E1220401）'],
             ['OLED', 'ハーフミラーアクリル 2 mm の角丸長方形、両面テープで固定（プレートと面一）']]),
         'printtop': dict(title='B：全部 3D プリント（プレートも印刷）', rows=[
             ['外形 mm', size], ['高さ', f"{FLOOR + STANDOFF + PCB_T + PLATE_GAP + PLATE_T:g} mm（プレート上面まで）"],
             ['プレート', f'3D プリント 1.5 mm + 裏の補強 {mc.RIB_T:g} mm（スイッチの周りだけ 1.5 mm）'],
             ['トレイの角', f'外周の下端 R{TRAY_FILLET:g}・上端 R{TRAY_TOP_FILLET:g} のフィレット'],
-            ['ホイール', '角にサムホイール × 2（AS5600）、壁の上は外せる角キャップ'],
+            ['ホイール', '角にサムホイール × 2（ロータリーエンコーダー Alps EC05E1220401）、壁の上は外せる角キャップ'],
             ['OLED', 'ハーフミラーアクリル 2 mm の角丸長方形、両面テープで固定（プレートと面一）']]),
         'acrylic': dict(title='アクリル版（積層サンドイッチ）', rows=[
             ['外形 mm', size], ['材料', '枠と底板はマットクリア 3 mm、プレートは透明 1.5 mm、OLED カバーはハーフミラー 2 mm'], ['積層', f'底板 {BOTTOM_T:g} + 枠 {FRAME_T:g} × {N_FRAMES} + プレート {PLATE_T:g} mm'],
             ['高さ', f'{BOTTOM_T + N_FRAMES * FRAME_T + PLATE_T:g} mm'], ['基板の固定', f'M2 スペーサー {STANDOFF:g} mm × 8'], ['コネクタ', '基板裏面。プレートと最上段の枠は切り欠きなし'],
-            ['外周', 'M2 × 20 mm + ナット'], ['ホイール', '角にサムホイール × 2（AS5600）'], ['OLED', '0.91 インチ × 2、プレートと面一のハーフミラーアクリル 2 mm']]),
+            ['外周', 'M2 × 20 mm + ナット'], ['ホイール', '角にサムホイール × 2（ロータリーエンコーダー Alps EC05E1220401）'], ['OLED', '0.91 インチ × 2、プレートと面一のハーフミラーアクリル 2 mm']]),
     }
     z = {v: {'pcb': (FLOOR if v in PRINTED else BOTTOM_T) + STANDOFF} for v in VARIANTS}
     data = dict(DATA=scenes, POOL=pool, BOARDS=boards, SPEC=spec_data, Z=z)
@@ -235,7 +219,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 // meshes are in model-data.js (shared with assembly.html)
 const {DATA, POOL, BOARDS, SPEC} = window.NRSK;   // BOARDS: per side {pcba: {group: [[pool id, matrices]]}, switches}
 const HIDDEN = ['insert', 'plate_screw', 'pcb_screw', 'standoff', 'bottom_screw', 'case_screw', 'nut', 'axle',
-                'block_screw', 'feet'];   // hardware is shown in the assembly guide only
+                'feet'];   // hardware is shown in the assembly guide only
 const b64 = (s, T) => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new T(u.buffer); };
 const canvas = document.getElementById('view');
 const renderer = new THREE.WebGLRenderer({canvas, antialias: true}); renderer.setPixelRatio(devicePixelRatio);
@@ -255,7 +239,7 @@ scene.add(new THREE.HemisphereLight(0xffffff, 0x666666, 0.9));
 const dl = new THREE.DirectionalLight(0xffffff, 0.6); dl.position.set(200, -300, 400); scene.add(dl);
 let group = null; const state = {v: 'print', switch: true, plate: true, wheel: true, explode: false, gap: 10};
 // exploded view: each layer rises by its level x the gap set on the slider (mm)
-const LEVEL = {tray: 0, bottom: 0, wheel: 0, magnet: 0, detent: 0, plunger: 0, wheelcap: 2, portcap: 8, frame1: 1, frame2: 2, frame3: 3, frame4: 4, pcb: 6, pcba: 6, oled: 6.5,
+const LEVEL = {tray: 0, bottom: 0, wheel: 0, wheelcap: 2, encoder: 6, frame1: 1, frame2: 2, frame3: 3, frame4: 4, pcb: 6, pcba: 6, oled: 6.5,
                plate: 9, switch: 11.5, cover: 12.5};
 const GAP = 25;   // mm between the halves
 // matte (frosted) and clear acrylic, and the half-mirror OLED cover
@@ -302,7 +286,7 @@ function build() {
   const add = (side, layer, obj, z0 = 0) => { obj.userData = {layer, z0}; place(obj); halves[side].add(obj); };
   for (const [side, name, m, color, op] of DATA[state.v]) {
     if (HIDDEN.includes(name)) continue;
-    const key = {magnet: 'wheel', detent: 'wheel', plunger: 'wheel'}[name] || name;
+    const key = name;
     if (!state[key] && (key === 'switch' || key === 'plate' || key === 'wheel')) continue;
     if (name === 'pcba') {
       add(side, 'pcba', board(Object.values(BOARDS[side].pcba).flat()), m);

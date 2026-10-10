@@ -20,7 +20,6 @@ import struct
 import sys
 
 from manifold3d import CrossSection, JoinType, Manifold, set_circular_segments
-from layout import WHEEL_DETENTS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..'))
@@ -40,13 +39,15 @@ BOTTOM_T = 3.0
 FRAME_T = 3.0
 N_FRAMES = 4
 # connector ports: the PCB reaches into the wall on a tongue, the connector mouth sits PORT_SKIN inside the outer
-# surface, and the wall shows only the connector outline. In the printed tray the wall above each port is a
-# removable port cap (the board is dropped in first); in the acrylic stack the frames are notched.
+# surface, and the wall shows only the connector outline. In the printed tray each port is a closed tunnel with
+# PORT_LIFT of headroom over the tongue: the board goes in front edge slightly raised and PORT_LIFT high, slides
+# tongue-first into the tunnels, then drops onto the bosses. In the acrylic stack the frames are notched.
 USB_SHELL = (8.94, 3.26)     # HRO TYPE-C-31-M-12 shell w, h (hangs under the PCB)
 TRRS_H, TRRS_NOZZLE = 5.0, 5.0   # PJ-320D body height under the PCB, nozzle diameter
 PORT_CLR = 0.2               # opening around the connector outline
-CHANNEL_CLR = 0.3            # tongue / connector body to the cap channel
-PORT_CAP_EXTRA = 3.0         # port cap reaches this far beyond the channel along the wall
+CHANNEL_CLR = 0.3            # tongue / connector body to the tunnel
+PORT_KEEP = 3.0              # case screws stay this far beyond the tunnel along the wall
+PORT_LIFT = 2.0              # tunnel headroom: the board slides in this high, clear of the bosses (needs >= 1.5)
 # print
 FLOOR = 2.0
 BOSS_D = 4.6         # stays clear of back-side pads (>= 2.75 mm from hole centre)
@@ -86,25 +87,27 @@ WALL_POCKET = 0.5            # 3D print: wall top lowered under the cover (cover
 TAPE_T = 0.5                 # clear double-sided tape between glass and cover
 OLED_GLASS_TOP = PLATE_GAP + PLATE_T - COVER_T - TAPE_T   # = 2.5: glass top above the PCB top
 SWITCH_TOP_KEEPOUT = 8.4     # half size of an MX top housing (15.6 mm) + 0.6 mm
-# corner thumbwheel: lies under the PCB, rim out of the corner; magnet (6 x 1.5 mm, diametric) on top,
-# read through the air gap by the AS5600 on the PCB back
+# corner thumbwheel: lies under the PCB, rim out of the corner. An Alps EC05E1220401 (hollow-shaft encoder,
+# 12 detents) hangs from the PCB back on the wheel axis; a hex pin on the wheel top drives its rotor, and the
+# clicks come from the encoder. The thumb's side force is taken by the floor post (acrylic: an M3 screw), which
+# has radial play, so the board-to-tray tolerance does not bind the wheel between post and encoder.
 WHEEL_T = 4.1
 WHEEL_GAP = 0.3              # wheel bottom above the floor / bottom plate
 WHEEL_CUT = 0.6              # radial clearance of the wall opening
-BORE_D, BORE_DEPTH = 4.0, 2.0          # axle bore from below
-MAGNET_D, MAGNET_DEPTH = 6.1, 1.6      # magnet pocket from the top
-POST_D = 3.8                 # printed axle post (3D print variant)
-AXLE_HOLE_D = 3.2            # M3 axle screw through the bottom plate (acrylic variant)
-# tactile detent: the rim carries WHEEL_DETENTS rounded teeth (also the grip); inside the case an M3 ball
-# plunger (steel spring + ball) is screwed sideways into a solid block and presses on the teeth, so the wheel
-# clicks once per firmware step. The force is radial and taken by the axle, so the wheel is not lifted, and
-# nothing printed has to flex. How far the plunger is screwed in sets the click force.
+WHEEL_KNURLS = 32            # rounded teeth on the rim: the grip
 TOOTH_DEPTH = 0.5            # valley depth of the rim teeth
-BLOCK_GAP = 0.4              # block face to the tooth crests
-BLOCK_W, BLOCK_L = 8.0, 9.0  # plunger block across / along the plunger (NBK PAFS-3: L 6 + ball 0.5, hex 1.5 at the rear)
-PLUNGER_TAP_D = 2.5          # M3 tapping hole (tap it, or let the plunger cut its own thread in PETG)
-PLUNGER_WALL = 1.0           # material above the tapped hole
-BLOCK_SCREWS = (-2.5, 2.5)   # acrylic variant: two M2 screws from below, across the block
+BORE_D, BORE_DEPTH = 4.0, 2.0          # axle bore from below
+POST_D = 3.6                 # printed axle post (3D print variant): 0.2 mm radial play in the bore
+AXLE_HOLE_D = 3.2            # M3 axle screw through the bottom plate (acrylic variant)
+# Alps EC05E1220401 (catalog drawing No.3): body 5.7 wide (7.6 over the side tabs), 2.5 / 3.7 from the rotor
+# axis, 2.7 below the PCB back; hex hole 1.72 A/F through the rotor, entered from the wheel side
+ENC_W, ENC_TAB_W, ENC_UP, ENC_DOWN, ENC_H = 5.7, 7.6, 2.5, 3.7, 2.7
+ENC_HEX_AF, ENC_ROTOR_D = 1.72, 2.2
+HUB_R = 6.0                  # wheel top lowered within this radius: clears the body, tabs and terminals
+HUB_CLEAR = 0.3              # encoder body to the lowered hub
+PIN_AF = 1.66                # hex pin across flats: tune on a test print (play vs. fit)
+PIN_ENGAGE = 2.0             # pin length inside the rotor
+PIN_CHAMFER = 0.25
 STAB_CUT = (7.0, 15.4, 0.5)   # w, h, centre y offset (down) of each stabilizer housing cut-out
 STAB_X = 11.938
 
@@ -129,6 +132,13 @@ def inside(cs, p):
 
 def circle(x, y, d):
     return CrossSection.circle(d / 2).translate((x, -y))
+
+
+def hexagon(af, h):
+    """Hexagonal prism (across flats af), axis on z from 0 to h."""
+    r = af / math.sqrt(3)
+    return Manifold.extrude(CrossSection([[(r * math.cos(math.radians(60 * i)), r * math.sin(math.radians(60 * i)))
+                                            for i in range(6)]]), h)
 
 
 class Half:
@@ -163,7 +173,7 @@ class Half:
             c = self.d['connectors'][name]
             edge = c.get('edge', 'inner')
             chan = (rect(*t) + rect(*c['box'])).offset(CHANNEL_CLR, JoinType.Miter) ^ self.outer.offset(-skin, JoinType.Miter)
-            e = PORT_CAP_EXTRA
+            e = PORT_KEEP
             if edge == 'top':
                 a0, a1 = t[0] - CHANNEL_CLR - e, t[2] + CHANNEL_CLR + e
                 cap = rect(a0, oy0 - 1, a1, self.pcb[1] - CLEAR + 0.01) ^ (self.outer - self.inner)
@@ -180,10 +190,10 @@ class Half:
                     full = (ox0 - 1, a0, self.pcb[0], a1)
                 out.append(dict(name=name, edge='inner', y=(t[1] + t[3]) / 2, half=(a1 - a0) / 2, full=full,
                                 chan=chan, cap=cap, along=(t[1] + t[3]) / 2))
-        # neighbouring ports on the top edge share one cap (no thin sliver of wall between two caps)
+        # neighbouring ports on the top edge share one screw-free zone
         tops = sorted((sl for sl in out if sl['edge'] == 'top'), key=lambda sl: sl['full'][0])
         for a, b in zip(tops, tops[1:]):
-            if b['full'][0] - a['full'][2] < 2 * PORT_CAP_EXTRA:
+            if b['full'][0] - a['full'][2] < 2 * PORT_KEEP:
                 full = (a['full'][0], a['full'][1], b['full'][2], a['full'][3])
                 cap = rect(full[0], full[1], full[2], self.pcb[1] - CLEAR + 0.01) ^ (self.outer - self.inner)
                 for sl in (a, b):
@@ -329,67 +339,7 @@ class Half:
     def bottom(self):
         (wx, wy), _ = self.wheel_xy()
         return (self.outer - self.holes(self.screws, SCREW_D) - self.holes(self.d['holes'], SCREW_D)
-                - circle(*self.d['reset'], RESET_D) - circle(wx, wy, AXLE_HOLE_D)
-                - self.holes(self.detent_screws_xy(), SCREW_D))
-
-    # tactile detent -------------------------------------------------------------------
-    def _detent_frame(self, turn=None):
-        """Tip point on the rim (3D frame: x, -y), radial unit u (outward) and tangent v. The plunger points at
-        the wheel from inside the case: toward the board centre, turned by the smallest angle that keeps the
-        block clear of the standoffs and the reset hole."""
-        (wx, wy), r = self.wheel_xy()
-        if turn is None:
-            turn = self._detent_turn()
-        x0, y0, x1, y1, _ = self.pcb
-        base = math.atan2(-((y0 + y1) / 2 - wy), (x0 + x1) / 2 - wx) + math.radians(turn)
-        ux, uy = math.cos(base), math.sin(base)
-        return (wx + r * ux, -wy + r * uy), (ux, uy), (-uy, ux)
-
-    def _detent_turn(self):
-        if not hasattr(self, '_turn'):
-            for t in sorted(range(-60, 61, 2), key=abs):
-                self._turn = t
-                foot = self.detent_block(FLOOR)[0].project()
-                inside = (foot - self.inner.offset(-0.5, JoinType.Round)).area() < 0.01
-                clear = all((foot ^ circle(x, y, BOSS_D + 1.0)).area() < 0.01
-                            for x, y in self.d['holes'] + [tuple(self.d['reset'])])
-                if inside and clear:
-                    break
-            else:
-                raise AssertionError('no room for the plunger block')
-        return self._turn
-
-    def _box(self, a0, a1, b0, b1, z0, z1):
-        (qx, qy), (ux, uy), (vx, vy) = self._detent_frame()
-        pts = [(qx + a * vx + b * ux, qy + a * vy + b * uy) for a, b in ((a0, b0), (a1, b0), (a1, b1), (a0, b1))]
-        cs = CrossSection([pts])
-        if cs.area() < 1e-6:
-            cs = CrossSection([pts[::-1]])
-        return Manifold.extrude(cs, z1 - z0).translate((0, 0, z0))
-
-    def detent_block(self, z_base):
-        """Solid plunger block on the floor (z_base) with the M3 hole aimed at the wheel centre."""
-        (qx, qy), (ux, uy), _ = self._detent_frame()
-        top = z_base + WHEEL_GAP + WHEEL_T - 0.3
-        zc = top - PLUNGER_WALL - PLUNGER_TAP_D / 2
-        block = self._box(-BLOCK_W / 2, BLOCK_W / 2, BLOCK_GAP, BLOCK_GAP + BLOCK_L, z_base, top)
-        ang = math.degrees(math.atan2(uy, ux))
-        hole = Manifold.cylinder(BLOCK_L + 2, PLUNGER_TAP_D / 2, PLUNGER_TAP_D / 2, 24).rotate((0, 90, 0)).translate(
-            (BLOCK_GAP - 1, 0, zc)).rotate((0, 0, ang)).translate((qx, qy, 0))
-        return block - hole, zc
-
-    def detent_screws_xy(self):
-        """Board coordinates of the two M2 screws holding the separate block (acrylic variant)."""
-        (qx, qy), (ux, uy), (vx, vy) = self._detent_frame()
-        b = BLOCK_GAP + BLOCK_L / 2
-        return [(qx + a * vx + b * ux, -(qy + a * vy + b * uy)) for a in BLOCK_SCREWS]
-
-    def detent_part(self):
-        """Separate printed plunger block for the acrylic variant: sits on the bottom plate, 2 x M2 from below."""
-        block, _ = self.detent_block(BOTTOM_T)
-        for x, y in self.detent_screws_xy():
-            block = block - Manifold.cylinder(2.0, PILOT_D / 2, PILOT_D / 2, 24).translate((x, -y, BOTTOM_T - 0.01))
-        return block
+                - circle(*self.d['reset'], RESET_D) - circle(wx, wy, AXLE_HOLE_D))
 
     # 3D print -------------------------------------------------------------------------
     def tray(self):
@@ -424,28 +374,17 @@ class Half:
         # pocket for the thicker cover
         body = body - Manifold.extrude(self.cover_shape().offset(COVER_FIT, JoinType.Round), WALL_POCKET + 0.01).translate(
             (0, 0, wall_top - WALL_POCKET))
-        # port caps: the wall above each connector, lifted out so the board (tongues and connectors) drops in
+        # port tunnels: closed above, with headroom so the board can slide in tongue-first
         z_pcb = FLOOR + STANDOFF
-        self._portcaps = []
-        groups = []        # ports sharing one cap
         for p in self.slots:
-            g = next((g for g in groups if g[0]['cap'] is p['cap']), None)
-            groups.append([p]) if g is None else g.append(p)
-        for g in groups:
-            zs = min(self.port_z(p, z_pcb)[0] for p in g) - 0.2
-            vol = Manifold.extrude(g[0]['cap'], wall_top - zs + 0.01).translate((0, 0, zs))
-            cap = body ^ vol
-            for p in g:
-                zp = self.port_z(p, z_pcb)[0] - 0.2
-                cap = cap - Manifold.extrude(p['chan'], z_pcb + PCB_T + 0.3 - zp + 0.02).translate((0, 0, zp - 0.01)) \
-                    - self.port_hole(p, z_pcb)
-            self._portcaps.append(cap)
-            body = body - vol
+            zp = self.port_z(p, z_pcb)[0] - 0.2
+            zt = z_pcb + PCB_T + CHANNEL_CLR + PORT_LIFT
+            body = body - Manifold.extrude(p['chan'], zt - zp).translate((0, 0, zp)) - self.port_hole(p, z_pcb)
         body = body + Manifold.cylinder(WHEEL_GAP + BORE_DEPTH - 0.3, POST_D / 2, POST_D / 2, 48).translate(
             (wx, -wy, FLOOR))
         rx, ry = self.d['reset']
         body = body - Manifold.cylinder(FLOOR + 0.02, RESET_D / 2, RESET_D / 2).translate((rx, -ry, -0.01))
-        return body + self.detent_block(FLOOR)[0]
+        return body
 
     def _filleted(self, top):
         """Outer block of the tray with filleted bottom and top outer edges (stacked offset slices)."""
@@ -465,33 +404,53 @@ class Half:
             out = out + m
         return out
 
-    def port_caps(self):
-        if not hasattr(self, '_portcaps'):
-            self.tray()
-        out = Manifold()
-        for c in self._portcaps:
-            out = out + c
-        return out
-
     def wheel_cap(self):
         if not hasattr(self, '_cap'):
             self.tray()
         return self._cap
 
     def wheel3d(self):
-        """Knurled thumbwheel (printable or machined): bore from below, magnet pocket on top."""
+        """Knurled thumbwheel (printable): bore from below; on top a lowered hub under the encoder and the hex pin
+        that drives the encoder's rotor. z = 0 is the wheel bottom."""
         (x, y), r = self.wheel_xy()
         pts = []
-        n = WHEEL_DETENTS * 12
+        n = WHEEL_KNURLS * 12
         for i in range(n):
             a = 2 * math.pi * i / n
-            rr = r - TOOTH_DEPTH * (1 - math.cos(WHEEL_DETENTS * a)) / 2      # rounded teeth, crests at r
+            rr = r - TOOTH_DEPTH * (1 - math.cos(WHEEL_KNURLS * a)) / 2      # rounded teeth, crests at r
             pts.append((x + rr * math.cos(a), y + rr * math.sin(a)))
         rim = cs_poly(pts)
         w = Manifold.extrude(rim, WHEEL_T)
         w = w - Manifold.cylinder(BORE_DEPTH, BORE_D / 2, BORE_D / 2, 48).translate((x, -y, 0))
-        w = w - Manifold.cylinder(MAGNET_DEPTH + 0.01, MAGNET_D / 2, MAGNET_D / 2, 48).translate((x, -y, WHEEL_T - MAGNET_DEPTH))
-        return w
+        hub, pin_len = self.hub_top() - WHEEL_GAP, PIN_ENGAGE + HUB_CLEAR
+        w = w - Manifold.cylinder(WHEEL_T, HUB_R, HUB_R, 96).translate((x, -y, hub))
+        corner = PIN_AF / math.sqrt(3)
+        pin = hexagon(PIN_AF, pin_len) ^ Manifold.cylinder(pin_len, corner, PIN_AF / 2 - PIN_CHAMFER, 24)
+        return w + pin.translate((x, -y, hub))
+
+    @staticmethod
+    def enc_bottom():
+        """Encoder's wheel-side face (rotor hole entrance) above the floor / bottom plate."""
+        return STANDOFF - ENC_H
+
+    def hub_top(self):
+        return self.enc_bottom() - HUB_CLEAR
+
+    def encoder3d(self, z_base):
+        """EC05E1220401 hanging from the PCB back (floor / bottom plate top at z_base), terminals toward the board
+        inside (board +y), as placed by make_pcb.py. A few boxes, for the checks and the viewer."""
+        (x, y), _ = self.wheel_xy()
+        body = CrossSection.circle(ENC_W / 2) ^ CrossSection.square((ENC_W, ENC_UP * 2), center=True)
+        body = body + CrossSection.square((ENC_W, ENC_DOWN)).translate((-ENC_W / 2, -ENC_DOWN))
+        m = Manifold.extrude(body, ENC_H - 0.15).translate((0, 0, 0.15))
+        for sx in (-1, 1):   # metal side tabs, soldered to the big lands
+            m = m + Manifold.cube(((ENC_TAB_W - ENC_W) / 2, 1.6, ENC_H - 0.6)).translate(
+                (ENC_W / 2 if sx > 0 else -ENC_TAB_W / 2, -0.8, 0.6))
+        m = m + Manifold.cylinder(ENC_H, ENC_ROTOR_D / 2 + 0.25, ENC_ROTOR_D / 2 + 0.25, 48)
+        m = m - hexagon(ENC_HEX_AF, ENC_H + 0.2).translate((0, 0, -0.1))
+        for i in (-1, 0, 1):  # A, C, B terminals
+            m = m + Manifold.cube((0.5, 0.9, 0.2)).translate((i * 2.0 - 0.25, -ENC_DOWN - 0.9, ENC_H - 0.2))
+        return m.translate((x, -y, z_base + self.enc_bottom()))
 
     def plate3d(self):
         return Manifold.extrude(self.plate(), PLATE_T)
@@ -595,9 +554,7 @@ def main(sides):
         write_stl(os.path.join(OUT, 'print', f'{side}-tray.stl'), tray)
         write_stl(os.path.join(OUT, 'print', f'{side}-plate.stl'), hf.plate3d_printed())   # all-printed variant
         write_stl(os.path.join(OUT, 'print', f'{side}-wheel.stl'), hf.wheel3d())
-        write_stl(os.path.join(OUT, 'print', f'{side}-detent.stl'), hf.detent_part())   # acrylic variant only
         write_stl(os.path.join(OUT, 'print', f'{side}-wheel-cap.stl'), hf.wheel_cap())   # 3D-print variant
-        write_stl(os.path.join(OUT, 'print', f'{side}-port-caps.stl'), hf.port_caps())   # 3D-print variant
         write_stl(os.path.join(OUT, 'preview', f'{side}-oled-cover.stl'), Manifold.extrude(hf.cover(), COVER_T))
         # assembly preview (print variant): tray + PCB + plate in place
         z_pcb = FLOOR + STANDOFF
@@ -631,9 +588,15 @@ def check(hf, layers):
         assert (hole - hf.outer).area() > 0.5, f"{s['name']} opening does not reach the outside"
         assert (s['chan'] - hf.outer.offset(-hf.d.get('port_skin', 0.8) + 0.01)).area() < 0.01, f"{s['name']} tongue breaks the skin"
         for x, y in hf.screws:
-            assert not inside(s['cap'].offset(2.0, JoinType.Miter), (x, y)), f"screw in the {s['name']} port cap"
+            assert not inside(s['cap'].offset(2.0, JoinType.Miter), (x, y)), f"screw next to the {s['name']} port tunnel"
     for name, cs in layers.items():
         assert not cs.is_empty(), name
+    # tunnel roof stays printable (thinnest where the OLED cover's pocket lowers the wall top)
+    roof = PLATE_GAP - CHANNEL_CLR - PORT_LIFT
+    for s in hf.slots:
+        if (s['chan'] ^ hf.cover_shape().offset(COVER_FIT, JoinType.Round)).area() > 0.01:
+            roof = min(roof, PLATE_GAP - CHANNEL_CLR - PORT_LIFT - WALL_POCKET)
+    assert roof >= 0.6, f'port tunnel roof {roof:.2f} mm too thin'
 
     def area(poly):
         return abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]))) / 2
@@ -655,15 +618,15 @@ def check(hf, layers):
     for x, y in hf.screws:
         assert math.hypot(x - wx, y - wy) > wr + WHEEL_CUT + SCREW_D / 2 + 0.8, 'wheel hits a case screw'
     assert (hf.wheel_cut(0) - hf.outer).area() > 20, 'wheel does not stick out of the corner'
-    # plunger block: inside the cavity, clear of the standoffs, the reset hole and the wheel; hole within the teeth band
-    block, zc = hf.detent_block(FLOOR)
-    foot = block.project()
-    assert (foot - hf.inner.offset(-0.5, JoinType.Round)).area() < 0.01, 'plunger block leaves the floor'
-    for x, y in hf.d['holes'] + [tuple(hf.d['reset'])]:
-        assert (foot ^ circle(x, y, BOSS_D + 1.0)).area() < 0.01, 'plunger block hits a standoff / reset hole'
+    # encoder: the lowered hub clears it, the hex pin reaches PIN_ENGAGE into the rotor
     wheel = hf.wheel3d().translate((0, 0, FLOOR + WHEEL_GAP))
-    assert (wheel ^ block).volume() < 1e-3, 'plunger block collides with the wheel'
-    assert FLOOR + WHEEL_GAP + 0.8 < zc < FLOOR + WHEEL_GAP + WHEEL_T - 0.8, 'plunger misses the teeth'
+    enc = hf.encoder3d(FLOOR)
+    assert (wheel ^ enc).volume() < 1e-3, 'wheel hits the encoder'
+    assert hf.hub_top() + HUB_CLEAR <= hf.enc_bottom() + 1e-6, 'hub too high for the encoder'
+    pin_top = float(wheel.bounding_box()[5])
+    assert abs(pin_top - (FLOOR + hf.enc_bottom() + PIN_ENGAGE)) < 1e-6, 'pin does not reach into the rotor'
+    assert pin_top < FLOOR + STANDOFF - 0.3, 'pin reaches the PCB'
+    assert FLOOR + WHEEL_GAP + WHEEL_T > FLOOR + hf.enc_bottom(), 'rim no longer overlaps the encoder (hub not needed)'
 
     # the switch plate and the top frame must keep an unbroken outer edge (no connector notches)
     for name in ('plate', f'frame{N_FRAMES}'):

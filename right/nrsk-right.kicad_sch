@@ -5133,60 +5133,95 @@
 		)
 		(embedded_fonts no)
 	)
-		(symbol "nrsk:AS5600"
+		(symbol "Device:RotaryEncoder"
 		(pin_names
-			(offset 1.016)
+			(offset 0.254)
+			(hide yes)
 		)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
-		(property "Reference" "U"
-			(at 0 7.62 0)
+		(in_pos_files yes)
+		(duplicate_pin_numbers_are_jumpers no)
+		(property "Reference" "SW"
+			(at 0 6.604 0)
+			(show_name no)
+			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Value" "AS5600"
-			(at 0 -7.62 0)
+		(property "Value" "RotaryEncoder"
+			(at 0 -6.604 0)
+			(show_name no)
+			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Footprint" "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm"
+		(property "Footprint" ""
+			(at -3.81 4.064 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 6.604 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Rotary encoder, dual channel, incremental quadrate outputs"
 			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://ams-osram.com/products/sensor-solutions/position-sensors/ams-as5600-position-sensor"
+		(property "ki_keywords" "rotary switch encoder"
 			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
 			)
 		)
-		(property "Description" "12-bit magnetic rotary position sensor, I2C 0x36"
+		(property "ki_fp_filters" "RotaryEncoder*"
 			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
-				(hide yes)
 			)
 		)
-		(symbol "AS5600_0_1"
+		(symbol "RotaryEncoder_0_1"
 			(rectangle
-				(start -7.62 6.35)
-				(end 7.62 -6.35)
+				(start -5.08 5.08)
+				(end 5.08 -5.08)
 				(stroke
 					(width 0.254)
 					(type default)
@@ -5195,19 +5230,178 @@
 					(type background)
 				)
 			)
+			(polyline
+				(pts
+					(xy -5.08 2.54)
+					(xy -3.81 2.54)
+					(xy -3.81 2.032)
+				)
+				(stroke
+					(width 0)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(polyline
+				(pts
+					(xy -5.08 0)
+					(xy -3.81 0)
+					(xy -3.81 -1.016)
+					(xy -3.302 -2.032)
+				)
+				(stroke
+					(width 0)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(polyline
+				(pts
+					(xy -5.08 -2.54)
+					(xy -3.81 -2.54)
+					(xy -3.81 -2.032)
+				)
+				(stroke
+					(width 0)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(polyline
+				(pts
+					(xy -4.318 0)
+					(xy -3.81 0)
+					(xy -3.81 1.016)
+					(xy -3.302 2.032)
+				)
+				(stroke
+					(width 0)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(circle
+				(center -3.81 0)
+				(radius 0.254)
+				(stroke
+					(width 0)
+					(type default)
+				)
+				(fill
+					(type outline)
+				)
+			)
+			(polyline
+				(pts
+					(xy -0.635 -1.778)
+					(xy -0.635 1.778)
+				)
+				(stroke
+					(width 0.254)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(circle
+				(center -0.381 0)
+				(radius 1.905)
+				(stroke
+					(width 0.254)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(polyline
+				(pts
+					(xy -0.381 -1.778)
+					(xy -0.381 1.778)
+				)
+				(stroke
+					(width 0.254)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(arc
+				(start -0.381 -2.794)
+				(mid -3.0988 -0.0635)
+				(end -0.381 2.667)
+				(stroke
+					(width 0.254)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(polyline
+				(pts
+					(xy -0.127 1.778)
+					(xy -0.127 -1.778)
+				)
+				(stroke
+					(width 0.254)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(polyline
+				(pts
+					(xy 0.254 2.921)
+					(xy -0.508 2.667)
+					(xy 0.127 2.286)
+				)
+				(stroke
+					(width 0.254)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(polyline
+				(pts
+					(xy 0.254 -3.048)
+					(xy -0.508 -2.794)
+					(xy 0.127 -2.413)
+				)
+				(stroke
+					(width 0.254)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
 		)
-		(symbol "AS5600_1_1"
-			(pin power_in line
-				(at -10.16 3.81 0)
+		(symbol "RotaryEncoder_1_1"
+			(pin passive line
+				(at -7.62 2.54 0)
 				(length 2.54)
-				(name "VDD5V"
+				(name "A"
 					(effects
 						(font
 							(size 1.27 1.27)
 						)
 					)
 				)
-				(number "1"
+				(number "A"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -5216,16 +5410,16 @@
 				)
 			)
 			(pin passive line
-				(at -10.16 1.27 0)
+				(at -7.62 -2.54 0)
 				(length 2.54)
-				(name "VDD3V3"
+				(name "B"
 					(effects
 						(font
 							(size 1.27 1.27)
 						)
 					)
 				)
-				(number "2"
+				(number "B"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -5233,107 +5427,17 @@
 					)
 				)
 			)
-			(pin output line
-				(at -10.16 -1.27 0)
+			(pin passive line
+				(at -7.62 0 0)
 				(length 2.54)
-				(name "OUT"
+				(name "C"
 					(effects
 						(font
 							(size 1.27 1.27)
 						)
 					)
 				)
-				(number "3"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-			(pin power_in line
-				(at -10.16 -3.81 0)
-				(length 2.54)
-				(name "GND"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(number "4"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-			(pin input line
-				(at 10.16 -3.81 180)
-				(length 2.54)
-				(name "PGO"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(number "5"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-			(pin bidirectional line
-				(at 10.16 -1.27 180)
-				(length 2.54)
-				(name "SDA"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(number "6"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-			(pin input line
-				(at 10.16 1.27 180)
-				(length 2.54)
-				(name "SCL"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(number "7"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-			(pin input line
-				(at 10.16 3.81 180)
-				(length 2.54)
-				(name "DIR"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(number "8"
+				(number "C"
 					(effects
 						(font
 							(size 1.27 1.27)
@@ -5342,6 +5446,7 @@
 				)
 			)
 		)
+		(embedded_fonts no)
 	)
 	)
 	(text "Key matrix (right half, COL2ROW, 48 keys)" (exclude_from_sim no) (at 27.94 38.10 0) (effects (font (size 2.0 2.0) (bold yes)) (justify left bottom)) (uuid "c2152135-364f-576b-8684-53b9c4e92e2f"))
@@ -6515,8 +6620,8 @@
 	(label "COL5" (at 304.80 119.38 0) (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "9bf4effd-5c62-55b8-acac-9e0187a90d4b"))
 	(label "COL6" (at 304.80 121.92 0) (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "679263bd-e5fc-5401-b68a-e7b2a89abdb0"))
 	(label "COL7" (at 304.80 124.46 0) (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "f872223f-bf8d-5767-b7f0-1d0f7fe5ef3e"))
-	(no_connect (at 304.80 127.00) (uuid "bbac88d5-2914-542f-87c5-9d80acc51f26"))
-	(no_connect (at 304.80 129.54) (uuid "6b12b4ad-49e7-5a44-bf09-972d12f653c4"))
+	(label "ENC_A" (at 304.80 127.00 0) (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "ac43fa8a-2fd8-5247-bd15-370d88c47f38"))
+	(label "ENC_B" (at 304.80 129.54 0) (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "044f1a13-6330-55ef-9f29-95acd487ced8"))
 	(no_connect (at 304.80 132.08) (uuid "5983fe6e-eeef-5d8d-b34d-e351fd584f11"))
 	(no_connect (at 304.80 134.62) (uuid "a6508637-faa2-5bd3-b8aa-36667d706296"))
 	(no_connect (at 304.80 137.16) (uuid "acfcdd4f-a418-574f-8c70-83ca7c4dadb9"))
@@ -7378,83 +7483,27 @@
 	)
 	(label "3V3" (at 378.46 209.55 90) (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "9b8881d4-50f5-58c0-a813-256fe2b1eda4"))
 	(label "SDA" (at 378.46 217.17 270) (effects (font (size 1.27 1.27)) (justify right bottom)) (uuid "b2bfa000-0035-574c-9bfc-a0f08dd2f3be"))
-	(text "Thumbwheel sensor AS5600 (I2C 0x36, 3.3 V: VDD5V tied to VDD3V3)" (exclude_from_sim no) (at 330.20 236.22 0) (effects (font (size 2.0 2.0) (bold yes)) (justify left bottom)) (uuid "47c7acd2-503e-55fb-82c3-0798df5110ce"))
-	(symbol (lib_id "nrsk:AS5600") (at 342.90 254.00 0) (unit 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no) (uuid "10b119e0-bed8-59ed-89ba-4920669482f0")
-	  (property "Reference" "U3" (at 345.44 251.46 0) (effects (font (size 1.27 1.27)) (justify left)))
-	  (property "Value" "AS5600-ASOM" (at 345.44 256.54 0) (effects (font (size 1.27 1.27)) (justify left)))
-	  (property "Footprint" "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" (at 342.90 254.00 0) (effects (font (size 1.27 1.27)) (hide yes)))
+	(text "Thumbwheel encoder Alps EC05E1220401 (12 detents / 12 pulses, C = common)" (exclude_from_sim no) (at 330.20 241.30 0) (effects (font (size 2.0 2.0) (bold yes)) (justify left bottom)) (uuid "334418b9-312a-56fd-968e-ae6245aad3d4"))
+	(symbol (lib_id "Device:RotaryEncoder") (at 342.90 254.00 0) (unit 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no) (uuid "7f050e40-d056-5385-b8d3-2399e2acfc95")
+	  (property "Reference" "ENC1" (at 345.44 251.46 0) (effects (font (size 1.27 1.27)) (justify left)))
+	  (property "Value" "EC05E1220401" (at 345.44 256.54 0) (effects (font (size 1.27 1.27)) (justify left)))
+	  (property "Footprint" "nrsk:Alps_EC05E1220401" (at 342.90 254.00 0) (effects (font (size 1.27 1.27)) (hide yes)))
 	  (property "Datasheet" "" (at 342.90 254.00 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (pin "1" (uuid "f37e16fe-0964-5e74-9254-6081da4c47f6"))
-	  (pin "2" (uuid "464ee0d3-4de1-51c1-abaf-a7bfed7782a7"))
-	  (pin "3" (uuid "410245a1-7bed-5ece-a7b6-ee23369033f2"))
-	  (pin "4" (uuid "7d6d534c-999d-558b-856e-61cebfbf847a"))
-	  (pin "5" (uuid "2f081451-abfd-5fc3-bfa5-063bbe93e906"))
-	  (pin "6" (uuid "164c4431-8040-5772-9f48-785d96bd4860"))
-	  (pin "7" (uuid "94f8222e-6709-51dc-8132-db271b9850b4"))
-	  (pin "8" (uuid "a9e4a3ca-85cb-5c20-afd6-cbc2e6298837"))
-	  (instances (project "nrsk-right" (path "/ed20d8a8-6cf2-52f9-90d9-bd3277b2df44" (reference "U3") (unit 1))))
+	  (pin "A" (uuid "6a822651-1d29-59e4-818c-5ff678f5ca21"))
+	  (pin "B" (uuid "a38d27cd-179e-5952-8aab-58ea79ad41ad"))
+	  (pin "C" (uuid "22a5f235-0500-57ba-acca-8d4dca40db65"))
+	  (instances (project "nrsk-right" (path "/ed20d8a8-6cf2-52f9-90d9-bd3277b2df44" (reference "ENC1") (unit 1))))
 	)
-	(label "3V3" (at 332.74 250.19 180) (effects (font (size 1.27 1.27)) (justify right bottom)) (uuid "cc02b88c-aa78-55a9-bcfd-1043fb3e5a4e"))
-	(label "3V3" (at 332.74 252.73 180) (effects (font (size 1.27 1.27)) (justify right bottom)) (uuid "589b0002-5a13-5745-bc37-fd30e238f91f"))
-	(no_connect (at 332.74 255.27) (uuid "6ce36a91-26e5-5ff2-b21f-b2668e04f401"))
-	(wire (pts (xy 332.74 257.81) (xy 327.66 257.81)) (stroke (width 0) (type default)) (uuid "f1086e90-768d-5d12-97e5-00f1d99999ae"))
-	(symbol (lib_id "power:GND") (at 327.66 257.81 270) (unit 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "f144be15-8065-58bc-9196-9611ae15428b")
-	  (property "Reference" "#PWR044" (at 327.66 257.81 0) (effects (font (size 1.27 1.27)) (justify left) (hide yes)))
-	  (property "Value" "GND" (at 327.66 261.62 0) (effects (font (size 1.27 1.27)) (justify left)))
-	  (property "Footprint" "" (at 327.66 257.81 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (property "Datasheet" "" (at 327.66 257.81 0) (effects (font (size 1.27 1.27)) (hide yes)))
+	(label "ENC_A" (at 335.28 251.46 180) (effects (font (size 1.27 1.27)) (justify right bottom)) (uuid "8b929517-76a4-5178-868f-0b9d8fbcb5de"))
+	(label "ENC_B" (at 335.28 256.54 180) (effects (font (size 1.27 1.27)) (justify right bottom)) (uuid "73ea5fb9-6f87-592f-aa42-870c7f0bb5d3"))
+	(wire (pts (xy 335.28 254.00) (xy 330.20 254.00)) (stroke (width 0) (type default)) (uuid "638b959e-2e93-551c-8346-b3f82e11843c"))
+	(symbol (lib_id "power:GND") (at 330.20 254.00 270) (unit 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "f144be15-8065-58bc-9196-9611ae15428b")
+	  (property "Reference" "#PWR044" (at 330.20 254.00 0) (effects (font (size 1.27 1.27)) (justify left) (hide yes)))
+	  (property "Value" "GND" (at 330.20 257.81 0) (effects (font (size 1.27 1.27)) (justify left)))
+	  (property "Footprint" "" (at 330.20 254.00 0) (effects (font (size 1.27 1.27)) (hide yes)))
+	  (property "Datasheet" "" (at 330.20 254.00 0) (effects (font (size 1.27 1.27)) (hide yes)))
 	  (pin "1" (uuid "7e37ef48-785f-5170-a13c-ae2656330ba7"))
 	  (instances (project "nrsk-right" (path "/ed20d8a8-6cf2-52f9-90d9-bd3277b2df44" (reference "#PWR044") (unit 1))))
-	)
-	(no_connect (at 353.06 257.81) (uuid "773d1aa8-a989-505f-a3f2-19e1ca102620"))
-	(label "SDA" (at 353.06 255.27 0) (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "5e656fe1-f10e-5382-9735-ef6066bfac24"))
-	(label "SCL" (at 353.06 252.73 0) (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "97c251ce-0e66-5f74-8a71-4d85a361918a"))
-	(wire (pts (xy 353.06 250.19) (xy 358.14 250.19)) (stroke (width 0) (type default)) (uuid "f77fd1c0-d6c7-54a4-9d7e-939163a0066e"))
-	(symbol (lib_id "power:GND") (at 358.14 250.19 90) (unit 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "7028b842-8b00-5d04-98d0-c075b0716c27")
-	  (property "Reference" "#PWR045" (at 358.14 250.19 0) (effects (font (size 1.27 1.27)) (justify left) (hide yes)))
-	  (property "Value" "GND" (at 358.14 254.00 0) (effects (font (size 1.27 1.27)) (justify left)))
-	  (property "Footprint" "" (at 358.14 250.19 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (property "Datasheet" "" (at 358.14 250.19 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (pin "1" (uuid "abcd64ab-bbd7-5b44-bdfe-c64514455252"))
-	  (instances (project "nrsk-right" (path "/ed20d8a8-6cf2-52f9-90d9-bd3277b2df44" (reference "#PWR045") (unit 1))))
-	)
-	(symbol (lib_id "Device:C") (at 368.30 254.00 0) (unit 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no) (uuid "b75d4dea-5dcf-5d92-a87d-e34f82703eca")
-	  (property "Reference" "C9" (at 370.84 251.46 0) (effects (font (size 1.27 1.27)) (justify left)))
-	  (property "Value" "1uF" (at 370.84 256.54 0) (effects (font (size 1.27 1.27)) (justify left)))
-	  (property "Footprint" "Capacitor_SMD:C_0805_2012Metric" (at 368.30 254.00 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (property "Datasheet" "" (at 368.30 254.00 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (pin "1" (uuid "e314f6ab-9957-59c5-b271-8403264523e0"))
-	  (pin "2" (uuid "37ed78c6-5ff5-5eb2-bf27-f7ad17da8a33"))
-	  (instances (project "nrsk-right" (path "/ed20d8a8-6cf2-52f9-90d9-bd3277b2df44" (reference "C9") (unit 1))))
-	)
-	(label "3V3" (at 368.30 250.19 90) (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "dbab8983-858e-594c-9eb5-c7d65d7b4d67"))
-	(wire (pts (xy 368.30 257.81) (xy 368.30 262.89)) (stroke (width 0) (type default)) (uuid "ca7d300e-0012-5fdb-8d96-bf00c5fa4d33"))
-	(symbol (lib_id "power:GND") (at 368.30 262.89 0) (unit 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "0e4b6259-f31d-512e-a7c3-7dfa2cac504d")
-	  (property "Reference" "#PWR046" (at 368.30 262.89 0) (effects (font (size 1.27 1.27)) (justify left) (hide yes)))
-	  (property "Value" "GND" (at 368.30 266.70 0) (effects (font (size 1.27 1.27)) (justify left)))
-	  (property "Footprint" "" (at 368.30 262.89 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (property "Datasheet" "" (at 368.30 262.89 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (pin "1" (uuid "c7f43d0f-30ab-5f22-b13b-0c29dda7447e"))
-	  (instances (project "nrsk-right" (path "/ed20d8a8-6cf2-52f9-90d9-bd3277b2df44" (reference "#PWR046") (unit 1))))
-	)
-	(symbol (lib_id "Device:C") (at 378.46 254.00 0) (unit 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no) (uuid "a4de48ec-9c97-5aca-bcdf-2d8290370874")
-	  (property "Reference" "C10" (at 381.00 251.46 0) (effects (font (size 1.27 1.27)) (justify left)))
-	  (property "Value" "0.1uF" (at 381.00 256.54 0) (effects (font (size 1.27 1.27)) (justify left)))
-	  (property "Footprint" "Capacitor_SMD:C_0805_2012Metric" (at 378.46 254.00 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (property "Datasheet" "" (at 378.46 254.00 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (pin "1" (uuid "1610c551-d36b-5fbc-9e82-8cd96e94a963"))
-	  (pin "2" (uuid "0b7a259d-8238-521d-aa4e-b131ff97f012"))
-	  (instances (project "nrsk-right" (path "/ed20d8a8-6cf2-52f9-90d9-bd3277b2df44" (reference "C10") (unit 1))))
-	)
-	(label "3V3" (at 378.46 250.19 90) (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "0a889c58-0933-55d7-b8b5-73092c48d19d"))
-	(wire (pts (xy 378.46 257.81) (xy 378.46 262.89)) (stroke (width 0) (type default)) (uuid "3423aee1-d99e-51af-989a-64d3c16fa3c9"))
-	(symbol (lib_id "power:GND") (at 378.46 262.89 0) (unit 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "c77295ad-d7c8-5a09-82ce-50ec39262ddb")
-	  (property "Reference" "#PWR047" (at 378.46 262.89 0) (effects (font (size 1.27 1.27)) (justify left) (hide yes)))
-	  (property "Value" "GND" (at 378.46 266.70 0) (effects (font (size 1.27 1.27)) (justify left)))
-	  (property "Footprint" "" (at 378.46 262.89 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (property "Datasheet" "" (at 378.46 262.89 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (pin "1" (uuid "82cd113f-1dda-5dad-970b-be7f67133bb6"))
-	  (instances (project "nrsk-right" (path "/ed20d8a8-6cf2-52f9-90d9-bd3277b2df44" (reference "#PWR047") (unit 1))))
 	)
 	(sheet_instances (path "/" (page "1")))
 	(embedded_fonts no)

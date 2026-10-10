@@ -105,14 +105,6 @@
    "price": "US$0.0051"
   }
  ],
- "磁気角度センサー（サムホイール用）": [
-  {
-   "mpn": "ams OSRAM AS5600-ASOM",
-   "shop": "LCSC C79815",
-   "url": "https://www.lcsc.com/product-detail/C79815.html",
-   "price": "US$1.77"
-  }
- ],
  "タクトスイッチ（リセット）": [
   {
    "mpn": "C&K PTS810SJM250SMTRLFS",
@@ -122,6 +114,13 @@
   }
  ],
  "MX 互換キースイッチ": [
+  {
+   "mpn": "Kailh（HanElectricity）CPG151101D05 赤軸（リニア、45 gf）",
+   "shop": "LCSC C49234236",
+   "url": "https://www.lcsc.com/product-detail/C49234236.html",
+   "price": "US$0.108（5 個単位）",
+   "note": "2026-10-10 に確認（在庫 1,210）。3 ピンか 5 ピンかはページに記載なし（どちらでも基板に付く）"
+  },
   {
    "mpn": "Kailh Box V2 Red（リニア、5 ピン）",
    "shop": "遊舎工房",
@@ -139,11 +138,11 @@
  ],
  "ホットスワップソケット": [
   {
-   "mpn": "Kailh CPG151101S11-16（スイッチソケット MX 型）",
-   "shop": "遊舎工房",
-   "url": "https://shop.yushakobo.jp/products/a01ps",
-   "price": "¥187 / 10 個",
-   "note": "「MX 型」を選ぶ（Choc 型と取り違えない）。10 パック"
+   "mpn": "Kailh（HanElectricity）CPG151101S11-16",
+   "shop": "LCSC C41430893",
+   "url": "https://www.lcsc.com/product-detail/C41430893.html",
+   "price": "US$0.043（10 個単位）",
+   "note": "2026-10-10 に確認（在庫 217,980）"
   }
  ],
  "スタビライザ 2 u（PCB マウント）": [
@@ -152,16 +151,7 @@
    "shop": "遊舎工房",
    "url": "https://shop.yushakobo.jp/products/11952",
    "price": "¥770 / セット",
-   "note": "1 セットで 2 u が 4 個分。1 セットで足りる"
-  }
- ],
- "ネオジム磁石（径方向着磁）": [
-  {
-   "mpn": "Radial Magnets 9042（φ6 × 2.5 mm、Diametric）",
-   "shop": "DigiKey",
-   "url": "https://www.digikey.jp/ja/products/detail/radial-magnets-inc/9042/5640338",
-   "price": "¥105",
-   "note": "厚さ 2.5 mm で、現在のポケット（深さ 1.6 mm）には入らない。国内で φ6 × 1.5 mm の径方向着磁品は在庫が見つからなかった"
+   "note": "LCSC に該当品なし；1 セットで 2 u が 4 個分。1 セットで足りる"
   }
  ],
  "キーキャップ 1 u": [
@@ -169,7 +159,8 @@
    "mpn": "DSA 無刻印キーキャップ 1 u（PBT、22 色）",
    "shop": "遊舎工房",
    "url": "https://shop.yushakobo.jp/products/dsa-blank-keycaps",
-   "price": "¥55"
+   "price": "¥55",
+   "note": "LCSC に該当品なし"
   }
  ],
  "キーキャップ 1.5 u": [
@@ -177,7 +168,8 @@
    "mpn": "DSA 無刻印キーキャップ 1.5 u（白・黒・灰・緑・赤）",
    "shop": "遊舎工房",
    "url": "https://shop.yushakobo.jp/products/10731",
-   "price": "¥220"
+   "price": "¥220",
+   "note": "LCSC に該当品なし"
   }
  ],
  "キーキャップ 2 u": [
@@ -185,7 +177,8 @@
    "mpn": "DSA 無刻印キーキャップ 2 u（白・黒）",
    "shop": "遊舎工房",
    "url": "https://shop.yushakobo.jp/products/11443",
-   "price": "¥220"
+   "price": "¥220",
+   "note": "LCSC に該当品なし"
   }
  ],
  "キーキャップ 1.25 u": [
@@ -194,7 +187,7 @@
    "shop": "spkeyboards.com（米国）",
    "url": "https://spkeyboards.com/products/dsa-1-25-space",
    "price": "US$3.50",
-   "note": "国内で DSA 1.25 u が見つからなかったため海外通販。輸入時に関税・消費税"
+   "note": "LCSC に該当品なし；国内で DSA 1.25 u が見つからなかったため海外通販。輸入時に関税・消費税"
   }
  ],
  "キーキャップ 1.75 u": [
@@ -202,7 +195,8 @@
    "mpn": "Signature Plastics DSA 1.75 u",
    "shop": "spkeyboards.com（米国）",
    "url": "https://spkeyboards.com/collections/individual-keys/products/sp-dsa-1-75-space",
-   "price": "US$3.50"
+   "price": "US$3.50",
+   "note": "LCSC に該当品なし"
   }
  ],
  "キーキャップ 2.25 u": [
@@ -210,10 +204,18 @@
    "mpn": "Signature Plastics DSA 2.25 u（スタビ対応）",
    "shop": "spkeyboards.com（米国）",
    "url": "https://spkeyboards.com/products/sp-dsa-2-25-space-single-keycap",
-   "price": "US$4.00"
+   "price": "US$4.00",
+   "note": "LCSC に該当品なし"
   }
  ],
  "OLED モジュール 0.91 インチ": [
+  {
+   "mpn": "HS HS91L02W2C01（0.91 インチ 128×32、SSD1306、I2C）",
+   "shop": "LCSC C5248081",
+   "url": "https://www.lcsc.com/product-detail/C5248081.html",
+   "price": "US$2.26",
+   "note": "2026-10-10 に確認（在庫 3,017）。写真のピン順は GND/VCC/SCL/SDA。3.3 V で動くか、ピンヘッダが付くかはページに記載なし"
+  },
   {
    "mpn": "OLED モジュール（0.91 インチ 128×32、SSD1306、ピンソケット付き）",
    "shop": "遊舎工房",
@@ -222,12 +224,22 @@
    "note": "商品ページにピン順の記載なし。GND/VCC/SCL/SDA であることを現物のシルクで確認"
   }
  ],
+ "ロータリーエンコーダー（サムホイール用）": [
+  {
+   "mpn": "Alps Alpine EC05E1220401",
+   "shop": "LCSC C116648",
+   "url": "https://www.lcsc.com/product-detail/C116648.html",
+   "price": "US$1.08",
+   "note": "2026-10-10 に確認（在庫 291 個）"
+  }
+ ],
  "TRRS ケーブル（4 極、オス-オス）": [
   {
    "mpn": "TRRS ケーブル 0.3 m",
    "shop": "遊舎工房",
    "url": "https://shop.yushakobo.jp/products/8023",
-   "price": "¥330"
+   "price": "¥330",
+   "note": "LCSC に該当品なし"
   },
   {
    "mpn": "TRRS ケーブル 0.8 m（メタル）",
@@ -238,45 +250,41 @@
  ],
  "USB-C ケーブル": [
   {
+   "mpn": "Ckmtw S100920007（USB-A to C、データ用、1 m）",
+   "shop": "LCSC C430908",
+   "url": "https://www.lcsc.com/product-detail/C430908.html",
+   "price": "US$2.12",
+   "note": "2026-10-10 に確認（在庫 110）"
+  },
+  {
    "mpn": "USB Type-C to C 1.0 m",
    "shop": "遊舎工房",
    "url": "https://shop.yushakobo.jp/products/11426",
    "price": "¥440"
-  },
-  {
-   "mpn": "USB Type-A to C 1.0 m",
-   "shop": "遊舎工房",
-   "url": "https://shop.yushakobo.jp/products/8283",
-   "price": "¥330"
   }
  ],
  "M2 スペーサー 7 mm（メス-メス）": [
+  {
+   "mpn": "XHHD 303HZ20007（ステンレス、対辺 4 mm）",
+   "shop": "LCSC C52976405",
+   "url": "https://www.lcsc.com/product-detail/C52976405.html",
+   "price": "US$0.28 / 10 個（10 個単位）",
+   "note": "2026-10-10 に確認（在庫 500）"
+  },
   {
    "mpn": "廣杉計器 ASB-2007E（黄銅、両メネジ）",
    "shop": "MonotaRO",
    "url": "https://www.monotaro.com/p/1111/2937/",
    "price": "¥1,978 / 50 個"
-  },
-  {
-   "mpn": "黄銅スペーサー（六角）M2 7 mm",
-   "shop": "遊舎工房",
-   "url": "https://shop.yushakobo.jp/products/a0800r2?variant=37665434042529",
-   "price": "¥385 / 10 個",
-   "note": "少量向け"
   }
  ],
  "M2 × 4 mm なべネジ": [
   {
-   "mpn": "なべ小ねじ M2 × 4",
-   "shop": "遊舎工房",
-   "url": "https://shop.yushakobo.jp/products/a0800n2?variant=37665432961185",
-   "price": "¥220 / 50 本"
-  },
-  {
-   "mpn": "大阪魂 ナベ頭小ねじ M2 × 4（ステンレス）",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/0550/6907/",
-   "price": "¥1,099 / 160 本"
+   "mpn": "Shuntian PM2X4nie（ニッケルめっき、頭 φ3.3 × 1.3）",
+   "shop": "LCSC C357393",
+   "url": "https://www.lcsc.com/product-detail/C357393.html",
+   "price": "US$0.19 / 100 本（100 本単位）",
+   "note": "2026-10-10 に確認（在庫 11,700）"
   }
  ],
  "M2 × 5 mm なべネジ": [
@@ -284,7 +292,8 @@
    "mpn": "なべ小ねじ M2 × 5",
    "shop": "遊舎工房",
    "url": "https://shop.yushakobo.jp/products/a0800n2?variant=37665432993953",
-   "price": "¥220 / 50 本"
+   "price": "¥220 / 50 本",
+   "note": "LCSC は在庫切れ（C357529）"
   },
   {
    "mpn": "大阪魂 ナベ頭小ねじ M2 × 5（ステンレス）",
@@ -295,11 +304,11 @@
  ],
  "M2 ヒートセットインサート": [
   {
-   "mpn": "廣杉計器 HSB-203030 ビットインサート（M2 × 3、外径 3〜3.3）",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/1138/6698/",
-   "price": "¥2,198 / 50 個",
-   "note": "熱圧入用かはページに記載なし。下穴は現物に合わせて調整"
+   "mpn": "XHHD SZTB1063（真鍮、両ローレット）",
+   "shop": "LCSC C51938879",
+   "url": "https://www.lcsc.com/product-detail/C51938879.html",
+   "price": "US$0.51 / 50 個（50 個単位）",
+   "note": "2026-10-10 に確認（在庫 9,300）。寸法（M2、長さ 3 mm、外径 3.2 mm）は品名 M2*3*3.2 から読んだもの"
   },
   {
    "mpn": "Prusa Heat Set Inserts M2 short",
@@ -311,24 +320,20 @@
  ],
  "M2 × 6 mm タッピングネジ": [
   {
-   "mpn": "大阪魂 ナベタッピンねじ 2 種 B-0 M2 × 6（ステンレス）",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/4171/8022/",
-   "price": "¥593 / 50 本"
-  },
-  {
-   "mpn": "エスコ EA949AL-103",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/5065/8362/",
-   "price": "¥435 / 40 本"
+   "mpn": "Shuntian PA2X6nie（なべ、頭 φ3.5、ニッケルめっき）",
+   "shop": "LCSC C357360",
+   "url": "https://www.lcsc.com/product-detail/C357360.html",
+   "price": "US$0.16 / 100 本（100 本単位）",
+   "note": "2026-10-10 に確認（在庫 2,900）"
   }
  ],
  "M3 × 8 mm なべネジ": [
   {
-   "mpn": "OHSATO ナベ頭小ねじ M3 × 8（ステンレス）",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/1714/1988/",
-   "price": "¥175 / 50 本"
+   "mpn": "Shuntian PM3X8（ニッケルめっき）",
+   "shop": "LCSC C357544",
+   "url": "https://www.lcsc.com/product-detail/C357544.html",
+   "price": "US$0.23 / 100 本（100 本単位）",
+   "note": "2026-10-10 に確認（在庫 27,500）"
   }
  ],
  "ゴム足": [
@@ -336,7 +341,8 @@
    "mpn": "3M クッションゴム 丸形 CS-02（φ9.5 × 3.8 mm）",
    "shop": "MonotaRO",
    "url": "https://www.monotaro.com/p/4525/7232/",
-   "price": "¥483 / 18 個"
+   "price": "¥483 / 18 個",
+   "note": "LCSC に該当品なし"
   },
   {
    "mpn": "栃木屋 クリアバンポン TM-180-303（φ11.2 × 5.1 mm）",
@@ -350,7 +356,8 @@
    "mpn": "case/print/<side>-wheel.stl",
    "shop": "自作（3D プリント）",
    "url": "",
-   "price": ""
+   "price": "",
+   "note": "LCSC に該当品なし（自作の 3D プリント部品）"
   }
  ],
  "プリント基板（2 層、1.6 mm）": [
@@ -367,7 +374,7 @@
    "shop": "カインズ",
    "url": "https://www.cainz.com/g/4547452982974.html",
    "price": "",
-   "note": "はがせるタイプなので OLED を交換できる"
+   "note": "LCSC に該当品なし；はがせるタイプなので OLED を交換できる"
   }
  ],
  "マイコン RP2040": [
@@ -450,7 +457,7 @@
    "shop": "はざいや（菅原工芸）",
    "url": "https://www.hazaiya.co.jp/products/detail/3373",
    "price": "見積",
-   "note": "2 / 3 / 5 mm。図面 WEB オーダーで DXF から切り出し。1.5 mm のアクリル製ハーフミラーはメーカーにもない"
+   "note": "LCSC に該当品なし；2 / 3 / 5 mm。図面 WEB オーダーで DXF から切り出し。1.5 mm のアクリル製ハーフミラーはメーカーにもない"
   },
   {
    "mpn": "アクリルハーフミラー板 フリーカット（2 mm、透過 30%）",
@@ -466,7 +473,7 @@
    "shop": "はざいや（菅原工芸）",
    "url": "https://www.hazaiya.co.jp/products/detail/3481",
    "price": "見積",
-   "note": "2 / 3 / 5 mm。図面 WEB オーダー（https://www.hazaiya.co.jp/estimate-drawing）で DXF から切り出し"
+   "note": "LCSC に該当品なし；2 / 3 / 5 mm。図面 WEB オーダー（https://www.hazaiya.co.jp/estimate-drawing）で DXF から切り出し"
   }
  ],
  "マットクリア アクリル板 3 mm（底板）": [
@@ -475,7 +482,7 @@
    "shop": "はざいや（菅原工芸）",
    "url": "https://www.hazaiya.co.jp/products/detail/3481",
    "price": "見積",
-   "note": "2 / 3 / 5 mm。図面 WEB オーダー（https://www.hazaiya.co.jp/estimate-drawing）で DXF から切り出し"
+   "note": "LCSC に該当品なし；2 / 3 / 5 mm。図面 WEB オーダー（https://www.hazaiya.co.jp/estimate-drawing）で DXF から切り出し"
   }
  ],
  "透明アクリル板 1.5 mm（プレート）": [
@@ -484,60 +491,7 @@
    "shop": "はざいや（菅原工芸）",
    "url": "https://www.hazaiya.co.jp/estimate-drawing",
    "price": "見積",
-   "note": "透明 1.5 mm で注文。切断線どうしの間隔 3 mm 未満は不可"
-  }
- ],
- "M2 × 6 mm タッピングネジ（ブロック用）": [
-  {
-   "mpn": "大阪魂 ナベタッピンねじ 2 種 B-0 M2 × 6（ステンレス）",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/4171/8022/",
-   "price": "¥593 / 50 本"
-  },
-  {
-   "mpn": "エスコ EA949AL-103",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/5065/8362/",
-   "price": "¥435 / 40 本"
-  }
- ],
- "プランジャーブロック": [
-  {
-   "mpn": "case/print/<side>-detent.stl",
-   "shop": "自作（3D プリント）",
-   "url": "",
-   "price": "",
-   "note": "PETG 推奨。M3 の穴はタップを立てるか、プランジャーでねじを切りながら入れる"
-  }
- ],
- "M3 ボールプランジャー": [
-  {
-   "mpn": "NBK PAFS-3-L（ステンレス、L 6、1 → 2 N）",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/2212/2932/",
-   "price": "¥395",
-   "note": "軽め。重くしたいときは PAFS-3-M（1.5 → 2.9 N）"
-  },
-  {
-   "mpn": "NBK PAFS-3-M（ステンレス、L 6、1.5 → 2.9 N）",
-   "shop": "MonotaRO",
-   "url": "https://www.monotaro.com/p/2212/2957/",
-   "price": "¥395"
-  },
-  {
-   "mpn": "MISUMI BPK3（ショートタイプ、L 5、ボール φ2、1 → 2 N）",
-   "shop": "MISUMI",
-   "url": "https://jp.misumi-ec.com/vona2/detail/110302018310/",
-   "price": "¥627",
-   "note": "ブロックの穴はそのまま使える（長さが 1 mm 短い）"
-  }
- ],
- "ポートキャップ": [
-  {
-   "mpn": "case/print/<side>-port-caps.stl",
-   "shop": "自作（3D プリント）",
-   "url": "",
-   "price": ""
+   "note": "LCSC に該当品なし；透明 1.5 mm で注文。切断線どうしの間隔 3 mm 未満は不可"
   }
  ],
  "M2 × 12 mm なべネジ（底から）": [
@@ -545,7 +499,8 @@
    "mpn": "TRUSCO Y823-0212 ナベ頭小ねじ ステンレス M2 × 12",
    "shop": "MonotaRO",
    "url": "https://www.monotaro.com/p/2498/0167/",
-   "price": "¥395 / 20 本"
+   "price": "¥395 / 20 本",
+   "note": "LCSC に該当品なし"
   },
   {
    "mpn": "エスコ EA949NF-212 鍋頭小ねじ ステンレス M2 × 12",
@@ -559,7 +514,8 @@
    "mpn": "大阪魂 六角ナット 1 種 M2（SUS304、対辺 4 × 厚さ 1.6）",
    "shop": "MonotaRO",
    "url": "https://www.monotaro.com/p/2876/3624/",
-   "price": "¥164 / 20 個"
+   "price": "¥164 / 20 個",
+   "note": "LCSC に該当品なし"
   },
   {
    "mpn": "エスコ EA949LT-720 六角ナット M2（真鍮、ニッケルめっき）",
@@ -573,7 +529,8 @@
    "mpn": "大阪魂 六角ナット 1 種 M2（SUS304、対辺 4 × 厚さ 1.6）",
    "shop": "MonotaRO",
    "url": "https://www.monotaro.com/p/2876/3624/",
-   "price": "¥164 / 20 個"
+   "price": "¥164 / 20 個",
+   "note": "LCSC に該当品なし"
   },
   {
    "mpn": "エスコ EA949LT-720 六角ナット M2（真鍮、ニッケルめっき）",
@@ -587,7 +544,8 @@
    "mpn": "大阪魂 (+)スリムヘッド小ねじ ステンレス M2 × 6（φ4 × 0.5、注文コード 41746713）",
    "shop": "MonotaRO",
    "url": "https://www.monotaro.com/p/4174/6713/",
-   "price": "7 本入り"
+   "price": "7 本入り",
+   "note": "LCSC に該当品なし（頭の低い M2 は皿ネジだけ）"
   }
  ],
  "M2 × 20 mm なべネジ": [
@@ -595,7 +553,8 @@
    "mpn": "OHSATO ナベ頭小ねじ M2 × 20（ステンレス）",
    "shop": "MonotaRO",
    "url": "https://www.monotaro.com/p/1714/1900/",
-   "price": "¥329 / 50 本"
+   "price": "¥329 / 50 本",
+   "note": "LCSC に該当品なし"
   }
  ]
 }

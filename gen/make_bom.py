@@ -27,15 +27,16 @@ ELEC = {
     ('1N4148W', 'Diode_SMD:D_SOD-123'): ('マトリクス', 'スイッチングダイオード', '1N4148W, SOD-123'),
     ('15pF', 'Capacitor_SMD:C_0805_2012Metric'): ('受動部品', 'コンデンサ 15 pF', '0805 C0G 50 V（水晶の負荷容量）'),
     ('0.1uF', 'Capacitor_SMD:C_0805_2012Metric'): ('受動部品', 'コンデンサ 0.1 µF', '0805 X7R 50 V'),
-    ('1uF', 'Capacitor_SMD:C_0805_2012Metric'): ('受動部品', 'コンデンサ 1 µF', '0805 X7R 25 V 以上（LDO、RP2040 の内蔵レギュレータ、AS5600）'),
+    ('1uF', 'Capacitor_SMD:C_0805_2012Metric'): ('受動部品', 'コンデンサ 1 µF', '0805 X7R 25 V 以上（LDO、RP2040 の内蔵レギュレータ）'),
     ('10uF', 'Capacitor_SMD:C_0805_2012Metric'): ('受動部品', 'コンデンサ 10 µF', '0805 X5R 10 V 以上'),
     ('10k', 'Resistor_SMD:R_0805_2012Metric'): ('受動部品', '抵抗 10 kΩ', '0805 1%'),
     ('27', 'Resistor_SMD:R_0805_2012Metric'): ('受動部品', '抵抗 27 Ω', '0805 1%（USB D+/D−）'),
     ('1k', 'Resistor_SMD:R_0805_2012Metric'): ('受動部品', '抵抗 1 kΩ', '0805 1%（水晶の XOUT 直列、BOOTSEL）'),
     ('5.1k', 'Resistor_SMD:R_0805_2012Metric'): ('受動部品', '抵抗 5.1 kΩ', '0805 1%（USB-C CC）'),
     ('OLED 128x32', 'nrsk:OLED_0.91in_128x32_I2C'): ('表示', 'OLED モジュール 0.91 インチ', '128×32、SSD1306、I2C、3.3 V、ピン順 GND/VCC/SCL/SDA（ガラス上面を基板から 2.5 mm に）'),
-    ('AS5600-ASOM', 'Package_SO:SOIC-8_3.9x4.9mm_P1.27mm'):
-        ('入力', '磁気角度センサー（サムホイール用）', 'ams OSRAM AS5600-ASOM、SOIC-8、I2C 0x36、3.3 V'),
+    ('EC05E1220401', 'nrsk:Alps_EC05E1220401'):
+        ('入力', 'ロータリーエンコーダー（サムホイール用）',
+         'Alps Alpine EC05E1220401、中空シャフト（六角穴 対辺 1.72 mm）、12 クリック / 12 パルス、表面実装、基板の裏に付ける'),
     ('4.7k', 'Resistor_SMD:R_0805_2012Metric'): ('受動部品', '抵抗 4.7 kΩ', '0805 1%（I2C プルアップ）'),
     ('Reset', 'Button_Switch_SMD:SW_SPST_PTS810'): ('スイッチ', 'タクトスイッチ（リセット）', 'C&K PTS810 SJM 250 SMTR LFS（2 回押しで書き込みモード）'),
     ('BOOTSEL', 'Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm'):
@@ -78,10 +79,8 @@ def main():
     stabs = [sum(1 for k in json.load(open(os.path.join(ROOT, s, 'case_data.json')))['keys'] if k['w'] >= 2) for s in SIDES]
     out.append(('キースイッチ', 'スタビライザ 2 u（PCB マウント）', 'ネジ止め式推奨', stabs[0], stabs[1], sum(stabs),
                 '左 Shift、右 Backspace、右 Enter'))
-    out.append(('入力', 'サムホイール', '直径 29.2 mm × 厚さ 4.1 mm、外周に 32 山のクリック用の歯（case/print/<side>-wheel.stl）', 1, 1, 2,
-                '3D プリントか、アルミ削り出しで外注'))
-    out.append(('入力', 'ネオジム磁石（径方向着磁）', '直径 6 mm × 厚さ 1.5 mm、ホイール上面のポケットに接着', 1, 1, 2,
-                '必ず径方向（diametric）着磁のもの'))
+    out.append(('入力', 'サムホイール', '直径 29.2 mm × 厚さ 4.1 mm、外周に 32 山のすべり止め、上面にエンコーダーを回す六角ピン'
+                '（対辺 1.66 mm）（case/print/<side>-wheel.stl）', 1, 1, 2, '六角ピンのはめあいは試し印刷で調整する'))
     for w in sorted(widths):
         out.append(('キーキャップ', f'キーキャップ {w:g} u', '', '', '', widths[w], ''))
 
@@ -93,7 +92,7 @@ def main():
     def add(cat, part, spec, l, r, note=''):
         out.append((cat, part, spec, l, r, l + r, note))
 
-    add('アクリル版', 'M2 スペーサー 7 mm（メス-メス）', '六角 対辺 3.5〜4 mm、真鍮またはナイロン', std[0], std[1], '基板と底板の間')
+    add('アクリル版', 'M2 スペーサー 7 mm（メス-メス）', '六角 対辺 3.5〜4 mm、真鍮、ステンレスまたはナイロン', std[0], std[1], '基板と底板の間')
     add('アクリル版', 'M2 × 4 mm なべネジ', '基板の上からスペーサーへ', std[0], std[1], '')
     add('筐体共通', 'ゴム足', '直径 8〜10 mm、高さ 3 mm 以上', 4, 4, '底面に出るネジ先・ナットより高いもの')
     add('筐体共通', '透明アクリル板 1.5 mm（プレート）', f'<side>-plate、左 {size["left"]} mm / 右 {size["right"]} mm', 1, 1,
@@ -110,13 +109,8 @@ def main():
     add('3D プリント版 A', 'M2 ナット（ナット受け用）', '壁上面のくぼみの下の六角穴に入れる', scr[0], scr[1], '')
     add('3D プリント版 A', 'M2 × 6 mm スリムヘッド小ねじ', '頭 φ4.0 × 高さ 0.5 mm、透明アクリルのプレートを上から留める', scr[0], scr[1], '')
     add('アクリル版', 'M3 × 8 mm なべネジ', 'サムホイールの軸（底板の下から差し込む）', 1, 1, '3D プリント版はトレイの軸を使う')
-    add('筐体共通', 'M3 ボールプランジャー', 'M3 × 0.5、長さ 6 mm、ボール φ1.5、ストローク 0.5 mm、後端に六角穴', 1, 1,
-        'ホイールのクリック。ねじ込み量でクリックの重さを調整')
-    add('アクリル版', 'プランジャーブロック', '3D プリント（case/print/<side>-detent.stl）', 1, 1, '3D プリント版はトレイと一体')
-    add('アクリル版', 'M2 × 6 mm タッピングネジ（ブロック用）', '底板の下からプランジャーブロックへ', 2, 2, '')
     add('3D プリント版 B', 'M2 × 12 mm なべネジ（底から）', 'トレイ底の座ぐりから壁を通してプレート裏のインサートへ', scr[0], scr[1], '')
     add('3D プリント版', 'M2 × 6 mm タッピングネジ', '基板をボス（下穴 φ1.6）へ固定', std[0], std[1], '')
-    add('3D プリント版', 'ポートキャップ', '3D プリント（case/print/<side>-port-caps.stl、USB-C と TRRS 共通の 1 個）', 1, 1, 'トレイ、角キャップと同じ材料で印刷')
     add('ケーブル', 'TRRS ケーブル（4 極、オス-オス）', '3.5 mm', '', '', '1 本')
     add('ケーブル', 'USB-C ケーブル', 'USB 2.0 以上', '', '', '1 本')
     add('基板', 'プリント基板（2 層、1.6 mm）', 'fab/<side>/nrsk-<side>-gerber.zip', 1, 1, '')

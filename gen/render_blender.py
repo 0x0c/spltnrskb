@@ -45,6 +45,7 @@ TOP = arg('--top', 'acrylic')
 PORTS = arg('--ports', None)                 # USB-C/TRRS opening study style (case/preview/port-variants), left half only
 NO_CABLES = '--no-cables' in args                # switch plate: 'acrylic' (clear, laser cut) or 'print' (printed, with web)
 VARIANTS = os.path.join(ROOT, 'case', 'preview', 'oled-variants')
+WHEEL_STL = arg('--wheel-stl', None)          # corner wheel study: path pattern with {side} (default: case/print)
 
 
 # --- materials -----------------------------------------------------------------------
@@ -248,7 +249,8 @@ def oled(data, side, module=None, glass_top=None):
 
 def corner_wheel(side):
     """Knurled thumbwheel lying under the PCB at the case corner (geometry from case/print)."""
-    w = import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-wheel.stl'), MAT['metal'], f'{side} wheel')
+    path = WHEEL_STL.format(side=side) if WHEEL_STL else os.path.join(ROOT, 'case', 'print', f'{side}-wheel.stl')
+    w = import_stl(path, MAT['metal'], f'{side} wheel')
     w.location.z = (FLOOR + 0.3) * MM
     return [w]
 
@@ -333,8 +335,6 @@ def build_half(side, world):
     plate.location.z += (Z_PLATE_TOP - PLATE_T) * MM
     objs.append(plate)
     objs.append(import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-wheel-cap.stl'), MAT['case'], f'{side} wheel cap'))
-    if not (PORTS and side == 'left'):
-        objs.append(import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-port-caps.stl'), MAT['case'], f'{side} port caps'))
     if TOP != 'print':     # through the clear plate the board shows: green PCB slab
         pcb = import_stl(os.path.join(ROOT, 'case', 'preview', f'{side}-pcb.stl'), MAT['pcb'], f'{side} pcb')
         objs.append(pcb)

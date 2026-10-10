@@ -50,7 +50,7 @@
    ]
   ],
   "pcb_holes": 8,
-  "tray_volume_cm3": 105.2,
+  "tray_volume_cm3": 106.4,
   "plate_genus": 57,
   "tray_status": "Error.NoError"
  },
@@ -109,7 +109,7 @@
    ]
   ],
   "pcb_holes": 8,
-  "tray_volume_cm3": 117.9,
+  "tray_volume_cm3": 119.1,
   "plate_genus": 64,
   "tray_status": "Error.NoError"
  }

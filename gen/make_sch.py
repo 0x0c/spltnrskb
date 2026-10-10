@@ -9,7 +9,8 @@ import uuid
 
 import sexpr
 import make_pro
-from layout import HERE, ROW_PINS, COL_PINS, SERIAL_PIN, HAND_PIN, I2C_SDA, I2C_SCL, N_ROWS, N_COLS, load
+from layout import (HERE, ROW_PINS, COL_PINS, SERIAL_PIN, HAND_PIN, I2C_SDA, I2C_SCL, WHEEL_PIN_A, WHEEL_PIN_B,
+                    N_ROWS, N_COLS, load)
 from footprints import WIDTHS
 
 KI_SYM = os.path.expanduser('~/Applications/KiCad/KiCad.app/Contents/SharedSupport/symbols/')
@@ -29,7 +30,7 @@ FP = {
     'fuse': 'Fuse:Fuse_1206_3216Metric',
     'reset': 'Button_Switch_SMD:SW_SPST_PTS810',
     'oled': 'nrsk:OLED_0.91in_128x32_I2C',
-    'angle': 'Package_SO:SOIC-8_3.9x4.9mm_P1.27mm',
+    'encoder': 'nrsk:Alps_EC05E1220401',
 }
 
 # RP2040 QFN-56: GPIO number -> pin
@@ -37,27 +38,7 @@ RP_GPIO = {g: p for g, p in zip(range(16), [2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 
 RP_GPIO.update({g: p for g, p in zip(range(16, 30), [27, 28, 29, 30, 31, 32, 34, 35, 36, 37, 38, 39, 40, 41])})
 
 
-def _as5600():
-    pins = [(1, 'VDD5V', 'power_in', -10.16, 3.81), (2, 'VDD3V3', 'passive', -10.16, 1.27),
-            (3, 'OUT', 'output', -10.16, -1.27), (4, 'GND', 'power_in', -10.16, -3.81),
-            (5, 'PGO', 'input', 10.16, -3.81), (6, 'SDA', 'bidirectional', 10.16, -1.27),
-            (7, 'SCL', 'input', 10.16, 1.27), (8, 'DIR', 'input', 10.16, 3.81)]
-    f = '(effects (font (size 1.27 1.27)))'
-    h = '(effects (font (size 1.27 1.27)) (hide yes))'
-    s = ('(symbol "nrsk:AS5600" (pin_names (offset 1.016)) (exclude_from_sim no) (in_bom yes) (on_board yes) '
-         f'(property "Reference" "U" (at 0 7.62 0) {f}) (property "Value" "AS5600" (at 0 -7.62 0) {f}) '
-         f'(property "Footprint" "Package_SO:SOIC-8_3.9x4.9mm_P1.27mm" (at 0 0 0) {h}) '
-         f'(property "Datasheet" "https://ams-osram.com/products/sensor-solutions/position-sensors/ams-as5600-position-sensor" (at 0 0 0) {h}) '
-         f'(property "Description" "12-bit magnetic rotary position sensor, I2C 0x36" (at 0 0 0) {h}) '
-         '(symbol "AS5600_0_1" (rectangle (start -7.62 6.35) (end 7.62 -6.35) (stroke (width 0.254) (type default)) '
-         '(fill (type background)))) (symbol "AS5600_1_1" ')
-    for n, name, kind, x, y in pins:
-        ang = 0 if x < 0 else 180
-        s += f'(pin {kind} line (at {x} {y} {ang}) (length 2.54) (name "{name}" {f}) (number "{n}" {f})) '
-    return s + '))'
-
-
-CUSTOM = {'nrsk:AS5600': _as5600()}
+CUSTOM = {}   # project symbols (lib/nrsk.kicad_sym); everything comes from KiCad's libraries at the moment
 
 
 def key_fp(w):
@@ -248,7 +229,7 @@ def build(side):
     # --- MCU ----------------------------------------------------------------
     MX, MY = 279.4, 116.84
     sh.text('MCU: RP2040 (QFN-56), 12 MHz, 3.3 V I/O, 16 MB QSPI flash', MX - 25.4, MY - 55.88)
-    roles = {SERIAL_PIN: 'DATA', HAND_PIN: 'HAND', I2C_SDA: 'SDA', I2C_SCL: 'SCL'}
+    roles = {SERIAL_PIN: 'DATA', HAND_PIN: 'HAND', I2C_SDA: 'SDA', I2C_SCL: 'SCL', WHEEL_PIN_A: 'ENC_A', WHEEL_PIN_B: 'ENC_B'}
     roles.update({p: f'ROW{i}' for i, p in enumerate(ROW_PINS)})
     roles.update({p: f'COL{i}' for i, p in enumerate(COL_PINS)})
     mcu = {str(pin): roles.get(f'GP{g}') for g, pin in RP_GPIO.items()}
@@ -336,13 +317,11 @@ def build(side):
     two_pin(sh, 'Device:R', 'R8', '4.7k', OX + 25.4, OY - 2.54, FP['r'], '3V3', 'SCL')
     two_pin(sh, 'Device:R', 'R9', '4.7k', OX + 35.56, OY - 2.54, FP['r'], '3V3', 'SDA')
 
-    # corner thumbwheel: AS5600 under the wheel's magnet, on the I2C bus with the OLED
+    # corner thumbwheel: Alps EC05E1220401 on the back under the wheel; RP2040 internal pull-ups on A and B
     AX, AY = 342.9, 254.0
-    sh.text('Thumbwheel sensor AS5600 (I2C 0x36, 3.3 V: VDD5V tied to VDD3V3)', AX - 12.7, AY - 17.78)
-    sh.symbol('nrsk:AS5600', 'U3', 'AS5600-ASOM', AX, AY, 0, FP['angle'],
-              {'1': '3V3', '2': '3V3', '3': None, '4': 'GND', '5': None, '6': 'SDA', '7': 'SCL', '8': 'GND'})
-    two_pin(sh, 'Device:C', 'C9', '1uF', AX + 25.4, AY, FP['c'], '3V3', 'GND')
-    two_pin(sh, 'Device:C', 'C10', '0.1uF', AX + 35.56, AY, FP['c'], '3V3', 'GND')
+    sh.text('Thumbwheel encoder Alps EC05E1220401 (12 detents / 12 pulses, C = common)', AX - 12.7, AY - 12.7)
+    sh.symbol('Device:RotaryEncoder', 'ENC1', 'EC05E1220401', AX, AY, 0, FP['encoder'],
+              {'A': 'ENC_A', 'B': 'ENC_B', 'C': 'GND'})
 
     path = os.path.join(HERE, '..', side, project + '.kicad_sch')
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -352,7 +331,7 @@ def build(side):
     open(os.path.join(d, 'fp-lib-table'), 'w').write(
         '(fp_lib_table\n\t(version 7)\n\t(lib (name "nrsk") (type "KiCad") (uri "${KIPRJMOD}/../lib/nrsk.pretty") '
         '(options "") (descr "nrsk keyboard footprints"))\n)\n')
-    # project symbol library (custom symbols such as the AS5600)
+    # project symbol library (custom symbols, if any)
     lib_sym = os.path.join(HERE, '..', 'lib', 'nrsk.kicad_sym')
     body = '\n'.join(v.replace('"nrsk:', '"', 1) for v in CUSTOM.values())
     open(lib_sym, 'w').write('(kicad_symbol_lib (version 20241209) (generator "nrsk-gen") (generator_version "10.0")\n'

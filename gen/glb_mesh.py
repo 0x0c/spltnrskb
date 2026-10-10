@@ -50,8 +50,8 @@ def category(ref, mesh_name):
         return 'conn'
     if ref == 'J3':
         return 'oled'
-    if ref in ('U3', 'C9', 'C10'):
-        return 'sensor'
+    if ref == 'ENC1':
+        return 'encoder'
     if '_PCB' in mesh_name or ref.endswith('_PCB') or ref.startswith(('left', 'right')):
         return 'board'
     return 'smd'

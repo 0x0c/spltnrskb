@@ -56,7 +56,6 @@ SUPPORT = [
     ('C13', [('U1', '42')]), ('C14', [('U1', '49')]), ('C15', [('U1', '48')]), ('C18', [('U1', '43')]),
     ('C20', [('U5', '8')]),
     ('R8', [('U1', '5')]), ('R9', [('U1', '4')]),
-    ('C9', [('U3', '2')]), ('C10', [('U3', '1')]),
     ('R6', [('U1', '26')]), ('RSW1', [('U1', '26')]), ('R7', [('U5', '1')]), ('JP1', [('R7', '2')]),
     ('R1', [('U1', '2')]),
 ]
@@ -325,6 +324,13 @@ def place_encoder(fp, x, y, rot=90):
     fp.Move(pcbnew.VECTOR2I(target.x - cx, target.y - cy))
 
 
+# thumbwheel encoder (Alps EC05E1220401) on the back, rotor on the wheel axis, terminals toward the board inside
+# (+y): its courtyard relative to the axis in that orientation, and the Kailh socket courtyard of an unturned key
+ENC_BOX = (-4.9, -2.75, 4.9, 5.05)
+SOCKET_BOX = (-8.6, -7.4, 7.35, -0.6)
+ENC_KEEP = 0.5            # gap kept between the two
+
+
 # courtyard overhang beyond the connector mouth (mouth ends flush with the board edge)
 MOUTH_OVERHANG = {'usb': 0.5, 'trrs': 0.355}
 
@@ -454,10 +460,17 @@ def build(side):
 
     # switches + diodes
     row_vias = {}
-    # a key whose socket would sit on the wheel sensor is turned 180 deg (south-facing switch, socket below
+    # a key whose socket would sit on the wheel encoder is turned 180 deg (south-facing switch, socket below
     # the stem); its diode moves above the stem and its row link is left to the autorouter
     wcx, wcy = wheel_centre(side, w)
-    turned = {ref for ref, k in keys.items() if math.hypot(k['cx'] - shift - wcx, k['cy'] - wcy) < 12.0}
+    ex0, ey0, ex1, ey1 = (wcx + ENC_BOX[0] - ENC_KEEP, wcy + ENC_BOX[1] - ENC_KEEP,
+                          wcx + ENC_BOX[2] + ENC_KEEP, wcy + ENC_BOX[3] + ENC_KEEP)
+
+    def on_encoder(k):
+        sx0, sy0, sx1, sy1 = (k['cx'] - shift + SOCKET_BOX[0], k['cy'] + SOCKET_BOX[1],
+                              k['cx'] - shift + SOCKET_BOX[2], k['cy'] + SOCKET_BOX[3])
+        return sx0 < ex1 and ex0 < sx1 and sy0 < ey1 and ey0 < sy1
+    turned = {ref for ref, k in keys.items() if on_encoder(k)}
     for ref, k in keys.items():
         x, y = k['cx'] - shift, k['cy']
         flip = ref in turned
@@ -502,7 +515,8 @@ def build(side):
     place_connector_top(fps['J1'], cfg['trrs_x'], 'trrs', edge_y=tg['trrs'][1])
     place('J3', *cfg['oled'])          # OLED module on the front, in a key-free notch
     wx, wy = wheel_centre(side, w)
-    place('U3', wx, wy, 0, back=True)    # AS5600 right above the wheel's magnet
+    enc = place('ENC1', wx, wy, 180, back=True)     # on the back, 180 deg puts the terminals at +y
+    assert min(pad(enc, n).y for n in ('A', 'B', 'C')) > enc.GetPosition().y, 'encoder terminals not toward +y'
     u1 = place('U1', *cfg['mcu'], 0, back=True)
     # orientation: shortest total ratsnest from the MCU pins to the rest of their nets (USB pair weighted),
     # so the matrix pins face the keys instead of the board edge

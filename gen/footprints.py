@@ -10,6 +10,7 @@ U = 19.05
 # 3D models (fetched by gen/fetch_3d.sh into tools/, which is not committed; see README)
 KISWITCH = '${KIPRJMOD}/../tools/kiswitch/library/3dmodels/3d-library.3dshapes/'
 NRSK_3D = '${KIPRJMOD}/../lib/nrsk.3dshapes/'
+ALPS_3D = '${KIPRJMOD}/../tools/alps/'
 
 
 def uid():
@@ -125,9 +126,67 @@ def oled_module():
     return name, s
 
 
+# Alps EC05E1220401: 5 mm hollow-shaft encoder, vertical, 12 detents / 12 pulses (catalog drawing No.3).
+# Viewed from the mounting side with the rotor axis at the origin and the terminals toward +Y.
+ENC_LAND = (3.8, 0.0, 1.7, 2.6)        # side tabs: centre x (+/-), centre y, w, h (5.9 mm between them)
+ENC_PIN_PITCH, ENC_PIN_Y = 2.0, 4.15   # A C B in a row, 1.5 x 1.3 lands, 2.1 mm from the holes to the land edge
+ENC_PIN = (1.5, 1.3)
+ENC_HOLES = (1.2, 2.7, 0.67)            # locating holes: x (+/-), y, drill (0.62 +0.1/-0)
+ENC_CUT = 1.55                          # half side of the 3 mm (+0.1) square hole under the rotor
+ENC_CUT_LOBE = (0.5, 1.8)               # two R0.5 lobes on the Y axis, centres 3.6 mm apart
+ENC_BODY = (-2.85, -2.5, 2.85, 3.7)     # resin body (5.7 wide, 2.5 / 3.7 from the axis), 2.7 mm high
+
+
+def edge_cut_outline():
+    """Square hole with the two rotor lobes, as Edge.Cuts lines and arcs (a board cut-out)."""
+    c, (lr, ly) = ENC_CUT, ENC_CUT_LOBE
+    s = ''
+    for sy in (-1, 1):
+        y = sy * c
+        # half outline from the left side to the right side through the lobe on this side
+        s += line(-c, y, -lr, y, 'Edge.Cuts', 0.05) + line(-lr, y, -lr, sy * ly, 'Edge.Cuts', 0.05)
+        s += (f'  (fp_arc (start {-lr:.3f} {sy * ly:.3f}) (mid 0 {sy * (ly + lr):.3f}) (end {lr:.3f} {sy * ly:.3f}) '
+              f'(stroke (width 0.05) (type solid)) (layer "Edge.Cuts") (uuid "{uid()}"))\n')
+        s += line(lr, sy * ly, lr, y, 'Edge.Cuts', 0.05) + line(lr, y, c, y, 'Edge.Cuts', 0.05)
+    s += line(-c, -c, -c, c, 'Edge.Cuts', 0.05) + line(c, -c, c, c, 'Edge.Cuts', 0.05)
+    return s
+
+
+def alps_ec05e():
+    name = 'Alps_EC05E1220401'
+    s = (f'(footprint "{name}"\n  (version 20241229)\n  (generator "nrsk-gen")\n  (layer "F.Cu")\n'
+         '  (descr "Alps EC05E1220401 5 mm hollow-shaft rotary encoder, vertical, 12 detents / 12 pulses, '
+         'hex shaft hole 1.72 mm A/F; 3 mm square board hole under the rotor")\n'
+         '  (tags "rotary encoder Alps EC05E hollow shaft")\n  (attr smd)\n')
+    s += prop('Reference', 'REF**', (0, -3.6), 'F.SilkS', size=0.8)
+    s += prop('Value', name, (0, 6.2), 'F.Fab', size=0.6)
+    s += prop('Footprint', '', (0, 0), 'F.Fab', hide=True)
+    s += prop('Datasheet', '', (0, 0), 'F.Fab', hide=True)   # catalog: tech.alpsalpine.com, EC05E1220401
+    s += prop('Description', '', (0, 0), 'F.Fab', hide=True)
+    x0, y0, x1, y1 = ENC_BODY
+    s += rect(x0, y0, x1, y1, 'F.Fab', 0.1)
+    s += text('A', -ENC_PIN_PITCH, ENC_PIN_Y, 'F.Fab', 0.6)
+    s += line(x0, y0 - 0.15, x1, y0 - 0.15, 'F.SilkS')          # top edge only: the lands cover the sides
+    lx, ly, lw, lh = ENC_LAND
+    s += rect(-lx - lw / 2 - 0.25, y0 - 0.25, lx + lw / 2 + 0.25, ENC_PIN_Y + ENC_PIN[1] / 2 + 0.25, 'F.CrtYd', 0.05)
+    for sx in (-1, 1):   # side tabs: mechanical, no net
+        s += (f'  (pad "" smd rect (at {sx * lx:.3f} {ly:.3f}) (size {lw} {lh}) '
+              f'(layers "F.Cu" "F.Paste" "F.Mask") (uuid "{uid()}"))\n')
+    for i, num in enumerate(('A', 'C', 'B')):
+        s += (f'  (pad "{num}" smd rect (at {(i - 1) * ENC_PIN_PITCH:.3f} {ENC_PIN_Y:.3f}) '
+              f'(size {ENC_PIN[0]} {ENC_PIN[1]}) (layers "F.Cu" "F.Paste" "F.Mask") (uuid "{uid()}"))\n')
+    hx, hy, hd = ENC_HOLES
+    s += npth(-hx, hy, hd) + npth(hx, hy, hd)
+    s += edge_cut_outline()
+    # Alps' STEP (fetched by gen/fetch_3d.sh): rotor axis at the origin, mounting surface at z = 0
+    s += model(ALPS_3D + 'EC05E1220401.step')
+    s += ')\n'
+    return name, s
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
-    items = [mx_hotswap(w) for w in WIDTHS] + [oled_module()]
+    items = [mx_hotswap(w) for w in WIDTHS] + [oled_module(), alps_ec05e()]
     for name, s in items:
         open(os.path.join(OUT, name + '.kicad_mod'), 'w').write(s)
     print('wrote', [n for n, _ in items])

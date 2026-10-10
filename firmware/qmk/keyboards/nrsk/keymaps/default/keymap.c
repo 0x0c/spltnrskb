@@ -35,15 +35,16 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 
 
-// Corner thumbwheels (index 0 = left half, 1 = right half). Return value is ignored.
-bool dial_update_user(uint8_t index, bool clockwise) {
+// Corner thumbwheels, one click = one call (index 0 = left half, 1 = right half; clockwise seen from above).
+// Returning false skips QMK's default action (volume up / down).
+bool encoder_update_user(uint8_t index, bool clockwise) {
     bool fn = get_highest_layer(layer_state) == 1;
     if (index == 0) {
         tap_code(fn ? (clockwise ? KC_BRIU : KC_BRID) : (clockwise ? KC_VOLU : KC_VOLD));
     } else {
         tap_code(fn ? (clockwise ? KC_RGHT : KC_LEFT) : (clockwise ? KC_PGDN : KC_PGUP));
     }
-    return true;
+    return false;
 }
 
 #ifdef OLED_ENABLE

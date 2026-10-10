@@ -8,10 +8,9 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from make_case import Half, OUT, STANDOFF  # noqa: E402
-from layout import WHEEL_DETENTS  # noqa: E402
+from make_case import Half, OUT, STANDOFF, PORT_LIFT  # noqa: E402
 
-BOARD = ['board', 'smd', 'sensor', 'conn', 'diode', 'socket', 'stab', 'oled']
+BOARD = ['board', 'smd', 'encoder', 'conn', 'diode', 'socket', 'stab', 'oled']
 
 
 def steps(variant, n_screws, n_holes, n_cover):
@@ -31,9 +30,11 @@ def steps(variant, n_screws, n_holes, n_cover):
         ['smd', 'conn'], 'bottom',
         ['RP2040', 'W25Q128JVSIQ', 'AP2112K-3.3', '水晶 12 MHz', 'USB-C', 'PJ-320D', 'USBLC6-2SC6', '0805 の抵抗・コンデンサ',
          'ポリスイッチ', 'B5819W', 'PTS810'], 'bottom', True)
-    add('ホイールのセンサー',
-        '角に磁気角度センサー AS5600 と 2 個のコンデンサを付けます。ホイールの中心の真上にあたる位置です。1 番ピンの向きに注意してください。',
-        ['sensor'], 'cornerBottom', ['AS5600-ASOM', '1 µF', '0.1 µF'], 'bottom', True)
+    add('ホイールのエンコーダー',
+        '角の裏面に、ロータリーエンコーダー EC05E1220401 を付けます。ホイールの中心の真上で、端子（A、C、B）は基板の内側を向きます。'
+        '位置決めの突起 2 本を基板の小さな穴に入れ、側面の金具の 2 か所を先に半田付けしてから、端子 3 本を付けます。'
+        '回転部の下の基板には 3 mm 角の穴があります。',
+        ['encoder'], 'cornerBottom', ['Alps EC05E1220401'], 'bottom', True)
     add('ダイオード',
         '各キーのダイオード 1N4148W を裏面に付けます（左 44 個、右 48 個）。カソード（帯のある側）の向きをシルクの線に合わせます。',
         ['diode'], 'bottom', ['1N4148W'], 'bottom', True)
@@ -53,24 +54,22 @@ def steps(variant, n_screws, n_holes, n_cover):
             f'3D プリントのトレイです（A と B で共通）。壁の中を縦にネジ穴（{n_screws} か所）が通り、上面には丸いくぼみ、その下に六角のナット受けがあります。'
             'A はナット受けに入れたナットへ上から、B はプレート裏のボスのインサートへ底からネジを締めます。',
             ['tray'], 'top', ['トレイ（3D プリント）'])
-        add('ホイールと磁石',
-            'ホイール上面のポケットに径方向着磁の磁石を接着し、ホイールの軸穴をトレイの床の軸に差し込みます。',
-            ['wheel', 'magnet'], 'corner', ['ホイール', 'ネオジム磁石（径方向着磁）'])
-        add('ボールプランジャー',
-            f'ホイールの内側にあるブロックの穴に、M3 のボールプランジャーを外からねじ込みます。ホイールを回しながら少しずつ締め、'
-            f'1 回転で {WHEEL_DETENTS} 回のクリックがはっきり出る位置で止めます。締めすぎると重くなります。',
-            ['plunger'], 'corner', ['M3 ボールプランジャー'])
+        add('ホイール',
+            'ホイールの軸穴をトレイの床の軸に差し込みます。上面の六角ピンは、あとで基板を下ろしたときにエンコーダーの六角穴に入ります。',
+            ['wheel'], 'corner', ['ホイール（3D プリント）'])
         add('角キャップ',
             'ホイールの上の壁は外せる部品（角キャップ）になっています。ホイールを入れたあと、段のある側を上にしてはめ込みます。'
             '上からプレートで押さえられるので、接着は要りません。',
             ['wheelcap'], 'corner', ['角キャップ（3D プリント）'])
         add('基板をトレイへ',
-            f'組み終わった基板をトレイに入れ、{n_holes} 本の M2 × 6 mm タッピングネジでボスに固定します。USB-C と TRRS は基板の舌に載っていて、壁の溝に収まります。',
-            BOARD + ['pcb_screw'], 'top', [f'M2 × 6 mm タッピングネジ × {n_holes}'])
-        add('ポートキャップ',
-            'USB-C と TRRS の上の壁は外せる部品（ポートキャップ）になっています。基板の舌とコネクタが壁の溝に収まったら、'
-            'キャップを上からはめます。コネクタの形の穴がキャップに開いていて、差込口が外面のすぐ内側に来ます。',
-            ['portcap'], 'top', ['ポートキャップ（3D プリント）'])
+            f'USB-C と TRRS は基板の舌に載っていて、奥の壁の中のトンネルに収まります。基板は手前を少し持ち上げ、ボスより {PORT_LIFT:g} mm ほど浮かせて'
+            '奥の壁に近づけ、舌を 2 つのトンネルに差し込みながら奥へ約 8 mm 滑らせます。'
+            'ホイールのある角は少し高めに保ってください。エンコーダーの下面がホイールの六角ピンのすぐ上を通ります。'
+            '舌が奥まで入ったら手前を下ろし、基板をボスの上に載せます。ホイールの縁を指で少し回すと、六角ピンがエンコーダーの穴に入ります。',
+            BOARD, 'top', [], frm='slide')
+        add('基板をネジ止め',
+            f'{n_holes} 本の M2 × 6 mm タッピングネジで基板をボスに固定します。差込口は外面の穴のすぐ裏に来ます。',
+            ['pcb_screw'], 'top', [f'M2 × 6 mm タッピングネジ × {n_holes}'])
         if variant == 'print':
             add('プレート',
                 f'壁の上面のくぼみの奥にある六角のナット受け（{n_plate} か所）に M2 ナットを落とし込み、透明アクリルのプレートを載せて、'
@@ -86,12 +85,9 @@ def steps(variant, n_screws, n_holes, n_cover):
                 ['plate_screw'], 'bottom', [f'M2 × 12 mm × {n_plate}'], 'bottom')
     else:
         add('底板とホイール',
-            '底板の角の穴に下から M3 × 8 mm のネジを通して軸にし、磁石を接着したホイールを差し込みます。',
-            ['bottom', 'axle', 'wheel', 'magnet'], 'corner', ['底板（マットクリア 3 mm）', 'M3 × 8 mm', 'ホイール', '磁石'])
-        add('プランジャーブロック',
-            '3D プリントのブロックを底板の下から M2 × 6 mm のタッピングネジ 2 本で留め、M3 のボールプランジャーをねじ込みます。'
-            f'ホイールを回しながら、1 回転 {WHEEL_DETENTS} クリックがはっきり出る位置まで締めます。',
-            ['detent', 'block_screw', 'plunger'], 'corner', ['プランジャーブロック', 'M2 × 6 mm × 2', 'M3 ボールプランジャー'])
+            '底板の角の穴に下から M3 × 8 mm のネジを通して軸にし、ホイールを差し込みます。'
+            '上面の六角ピンは、あとで基板を載せたときにエンコーダーの六角穴に入ります。',
+            ['bottom', 'axle', 'wheel'], 'corner', ['底板（マットクリア 3 mm）', 'M3 × 8 mm', 'ホイール（3D プリント）'])
         add('スペーサー',
             f'底板の下から M2 × 5 mm のネジで、長さ {STANDOFF:g} mm のスペーサーを {n_holes} 本立てます。',
             ['standoff', 'bottom_screw'], 'top', [f'M2 スペーサー {STANDOFF:g} mm × {n_holes}', f'M2 × 5 mm × {n_holes}'])
@@ -99,7 +95,8 @@ def steps(variant, n_screws, n_holes, n_cover):
             'マットクリアの枠を frame1 から順に 4 枚重ねます。frame1〜3 にはプラグ用の切り欠きがあります。',
             ['frame1', 'frame2', 'frame3', 'frame4'], 'top', ['枠（マットクリア 3 mm）× 4'])
         add('基板',
-            f'基板をスペーサーに載せ、M2 × 4 mm のネジ {n_holes} 本で留めます。',
+            f'基板をスペーサーに載せ、M2 × 4 mm のネジ {n_holes} 本で留めます。'
+            '載せるときにホイールの縁を指で少し回すと、六角ピンがエンコーダーの穴に入ります。',
             BOARD + ['pcb_screw'], 'top', [f'M2 × 4 mm × {n_holes}'])
         add('プレートと外周のネジ',
             f'プレートを載せ、外周の {n_screws} か所を上から M2 × 20 mm のネジで、底板の下のナットまで共締めします。',
@@ -129,7 +126,7 @@ def main():
     for side in ('left', 'right'):
         (wx, wy), _ = Half(side).wheel_xy()
         focus[side] = [wx, -wy]
-    html = TEMPLATE.replace('__STEPS__', json.dumps(data, ensure_ascii=False)).replace('__FOCUS__', json.dumps(focus))
+    html = TEMPLATE.replace('__STEPS__', json.dumps(data, ensure_ascii=False)).replace('__FOCUS__', json.dumps(focus)).replace('__LIFT__', f'{PORT_LIFT:g}')
     path = os.path.join(OUT, 'preview', 'assembly.html')
     open(path, 'w').write(html)
     print('wrote', path, len(data['print']), 'print steps,', len(data['acrylic']), 'acrylic steps')
@@ -202,7 +199,7 @@ button:disabled{opacity:.4;cursor:default}
 const {DATA, POOL, BOARDS, Z} = window.NRSK;
 const STEPS = __STEPS__;
 const FOCUS = __FOCUS__;   // wheel centre per side (viewer frame)
-const PCBA = ['board', 'smd', 'sensor', 'conn', 'diode', 'socket', 'stab', 'oled', 'switch'];
+const PCBA = ['board', 'smd', 'encoder', 'conn', 'diode', 'socket', 'stab', 'oled', 'switch'];
 const MATERIAL = {matte: {color: '#e6edf1', roughness: 0.95, metalness: 0.0}, clear: {color: '#d8e6ee', roughness: 0.1, metalness: 0.0},
                   mirror: {color: '#3a4048', roughness: 0.08, metalness: 0.9}};
 const OPACITY = {plate: 0.45, bottom: 0.6, frame1: 0.6, frame2: 0.6, frame3: 0.6, frame4: 0.6, cover: 0.85};
@@ -285,7 +282,7 @@ function build() {
 // ---- steps -------------------------------------------------------------------------------------------
 const anim = {t0: 0, dur: 0, items: []};
 function opacityOf(group, f) { group.traverse(o => { if (o.material) o.material.opacity = (o.userData.base ?? 1) * f; }); }
-// parts added in the current step glow in the accent colour so small ones (plunger, magnet, inserts) stand out
+// parts added in the current step glow in the accent colour so small ones (screws, inserts) stand out
 function glow(group, on) {
   const c = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
   group.traverse(o => { if (o.material && o.material.emissive) o.material.emissive.copy(on ? c : new THREE.Color(0)).multiplyScalar(on ? 0.45 : 0); });
@@ -315,11 +312,11 @@ function show(i, animate = true) {
     opacityOf(g, isNew || !state.dim || fresh.size === 0 ? 1 : 0.28);
     if (isNew && animate && g.visible) {
       anim.items.push(g);
-      g.position.z += st.frm === 'bottom' ? -45 : 45;
+      if (st.frm === 'slide') g.position.add(slidePos(0)); else g.position.z += st.frm === 'bottom' ? -45 : 45;
       opacityOf(g, 0);
     }
   }
-  anim.t0 = performance.now(); anim.dur = anim.items.length ? 1100 : 0;
+  anim.t0 = performance.now(); anim.dur = anim.items.length ? (st.frm === 'slide' ? 2600 : 1100) : 0;
   view(st.view, animate);
   // card
   document.getElementById('num').textContent = `手順 ${i + 1} / ${steps.length}`;
@@ -332,11 +329,21 @@ function show(i, animate = true) {
   document.querySelectorAll('#steps li').forEach((li, k) => { li.classList.toggle('cur', k === i); li.classList.toggle('done', k < i); });
   const cur = document.querySelector('#steps li.cur'); if (cur) cur.scrollIntoView({block: 'nearest'});
 }
+// board into the port tunnels: down to just above the bosses, slide back tongue-first, then drop
+const SLIDE = 8, LIFT = __LIFT__;
+function slidePos(t) {
+  const ease = u => 1 - Math.pow(1 - Math.max(0, Math.min(1, u)), 3);
+  const a = ease(t / 0.4), b = ease((t - 0.45) / 0.35), c = ease((t - 0.85) / 0.15);
+  return new THREE.Vector3(0, -SLIDE * (1 - b), LIFT * (1 - c) + 40 * (1 - a));
+}
 function tick(now) {
   if (!anim.dur) return;
   const t = Math.min(1, (now - anim.t0) / anim.dur), e = 1 - Math.pow(1 - t, 3);
   const st = STEPS[state.v][state.step], dz = st.frm === 'bottom' ? -45 : 45;
-  for (const g of anim.items) { g.position.z = g.userData.home.z + dz * (1 - e); opacityOf(g, e); }
+  for (const g of anim.items) {
+    if (st.frm === 'slide') { g.position.copy(g.userData.home).add(slidePos(t)); opacityOf(g, Math.min(1, t * 4)); }
+    else { g.position.z = g.userData.home.z + dz * (1 - e); opacityOf(g, e); }
+  }
   if (t >= 1) anim.dur = 0;
 }
 
