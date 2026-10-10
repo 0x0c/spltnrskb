@@ -1,0 +1,80 @@
+{
+ "parts": {
+  "left-current-tray": "case",
+  "left-current-wheel": "wheel",
+  "left-current-pcb": "pcb",
+  "left-current-sensor": "chip",
+  "left-current-magnet": "magnet",
+  "left-current-plunger": "metal",
+  "left-current-cap": "case",
+  "left-current-plate": "plate",
+  "left-encoder-tray": "case",
+  "left-encoder-wheel": "wheel",
+  "left-encoder-pcb": "pcb",
+  "left-encoder-encoder": "encoder",
+  "left-encoder-cap": "case",
+  "left-encoder-plate": "plate",
+  "right-current-tray": "case",
+  "right-current-wheel": "wheel",
+  "right-current-pcb": "pcb",
+  "right-current-sensor": "chip",
+  "right-current-magnet": "magnet",
+  "right-current-plunger": "metal",
+  "right-current-cap": "case",
+  "right-current-plate": "plate",
+  "right-encoder-tray": "case",
+  "right-encoder-wheel": "wheel",
+  "right-encoder-pcb": "pcb",
+  "right-encoder-encoder": "encoder",
+  "right-encoder-cap": "case",
+  "right-encoder-plate": "plate"
+ },
+ "explode": {
+  "left": {
+   "tray": 0.0,
+   "wheel": 7.0,
+   "encoder": 18.0,
+   "pcb": 28.0,
+   "cap": 44.0,
+   "plate": 44.0
+  },
+  "right": {
+   "tray": 0.0,
+   "wheel": 7.0,
+   "encoder": 18.0,
+   "pcb": 28.0,
+   "cap": 44.0,
+   "plate": 44.0
+  }
+ },
+ "wheel": {
+  "left": {
+   "x": 2.0,
+   "y": 3.0,
+   "r": 14.6,
+   "z_pcb": 9.0,
+   "u": [
+    0.8156656270892416,
+    -0.5785236250881326
+   ],
+   "v": [
+    0.5785236250881326,
+    0.8156656270892416
+   ]
+  },
+  "right": {
+   "x": 191.575,
+   "y": 3.0,
+   "r": 14.6,
+   "z_pcb": 9.0,
+   "u": [
+    -0.854385612178127,
+    -0.5196395151477677
+   ],
+   "v": [
+    0.5196395151477677,
+    -0.854385612178127
+   ]
+  }
+ }
+}
