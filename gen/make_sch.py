@@ -216,7 +216,7 @@ def build(side):
     # --- key matrix ---------------------------------------------------------
     X0, Y0, DX, DY = 38.1, 50.8, 22.86, 20.32
     sh.text(f'Key matrix ({side} half, COL2ROW, {len(keys)} keys)', X0 - 10.16, Y0 - 12.7)
-    for c in range(N_COLS):
+    for c in sorted({k['col'] for k in keys}):
         sh.text(f'COL{c}', X0 + c * DX - 7.62, Y0 - 6.35, 1.27)
     for r in range(N_ROWS):
         sh.text(f'ROW{r}', X0 - 20.32, Y0 + r * DY + 1.27, 1.27)
@@ -234,7 +234,8 @@ def build(side):
     if side in DRUM_SIDES:
         roles.update({DRUM_PIN_A: 'DRUM_A', DRUM_PIN_B: 'DRUM_B'})
     roles.update({p: f'ROW{i}' for i, p in enumerate(ROW_PINS)})
-    roles.update({p: f'COL{i}' for i, p in enumerate(COL_PINS)})
+    used_cols = {k['col'] for k in keys}   # a column without keys on this half (COL7 on the left) stays unconnected
+    roles.update({p: f'COL{i}' for i, p in enumerate(COL_PINS) if i in used_cols})
     mcu = {str(pin): roles.get(f'GP{g}') for g, pin in RP_GPIO.items()}
     mcu.update({str(p): '3V3' for p in (1, 10, 22, 33, 42, 49, 43, 44, 48)})   # IOVDD, ADC_AVDD, VREG_VIN, USB_VDD
     mcu.update({'23': '1V1', '50': '1V1', '45': '1V1',                       # DVDD <- internal regulator

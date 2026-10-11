@@ -24,24 +24,36 @@ PORT_SKIN = 0.8                # wall left in front of the connector mouth
 TONGUE_W = 12.0
 TONGUE_TIP_R = 2.5             # rounded tongue tips (they stick out of the board: no sharp corners)
 TONGUE_ROOT_R = 1.5            # fillet where each tongue leaves the top edge
-OLED_Y = U - 5.0               # OLED centre (both halves): rows 0-1, raised 5 mm to clear the row-2 switches
+# OLED half-mirror cover (make_case.py): COVER_FRAME of plate all round it, to the case outline and to the keycaps
+COVER_FRAME = 3.5              # = make_case COVER_FRAME
+KEYCAP_INSET = (U - 18.0) / 2  # 18 mm keycaps on the 19.05 mm grid
+OLED_COVER_W = 12.5 + 2 * 0.15 + 2 * 5.0   # module courtyard + window clearance + COVER_BORDER on both sides
+# OLED centre (both halves): rows 0-1, 5 mm above the row boundary. The cover runs from COVER_FRAME below the case's
+# top outline to COVER_FRAME above the row-2 keycaps (centre y 10.56); the module's display glass sits 3 mm toward
+# its top (away from the header), so the display lands at the cover's centre. Higher, the module's top corner would
+# leave the board's rounded corner and meet the link USB-C's shield pins.
+OLED_Y = U - 5.0
 CORNER_R = 4.0
 
 # Per-side geometry in board-local mm. Keys are shifted so the board starts at x = -MARGIN.
+# left: rows 0-1 end at 7 u; inner edge = their keycaps + frame + cover + frame, less the case wall
+LEFT_W = 7 * U - KEYCAP_INSET + 2 * COVER_FRAME + OLED_COVER_W - CASE_WALL
 SIDES = {
     # connectors on the BACK so plugs pass under the PCB and the switch plate needs no cut-outs;
-    # each board hugs its own key grid (3 mm margin). The OLEDs sit at the same height too (top two rows, flush with the inner edge). Both boards are widened on
-    # the inner edge so the OLED sits 5 mm clear of the switch tops (room for a half-mirror cover centred on it);
-    # the right one 8 mm more, so its MCU fits between the inner edge and the first column of sockets.
+    # each board hugs its own key grid (3 mm margin). The OLEDs sit at the same height too (top two rows, flush with
+    # the inner edge). The left board is widened on the inner edge just enough for the OLED's cover with COVER_FRAME
+    # on both sides (to the row 0-1 keycaps and to the case outline); the right one has the cover in the notch above
+    # its row-2 key and is widened 12.6 mm, so its MCU fits between the inner edge and the first column of sockets.
     # Two USB-C on the top (back) edge, plugs pointing away from the user: the split link next to the inner
     # corner (above the OLED), the host port further out; the MCU on the back below them. The same receptacle on
     # both tongues puts both openings at the same height. Both OLEDs are turned the same
     # way (header at the bottom), so one firmware rotation fits both.
-    'left': dict(key_shift=0.0, width=8.25 * U + MARGIN + 9.4, inner=+1, usb_x=8.25 * U + MARGIN + 9.4 - 35.0,
-                 link_x=8.25 * U + MARGIN + 9.4 - 17.0, mcu=(157.0, 45.0),
-                 oled=(8.25 * U + MARGIN + 9.4 - 6.3, OLED_Y, 90), wheel='top-left'),
-    'right': dict(key_shift=9.75 * U - 12.6, width=9.5 * U + MARGIN + 12.6, inner=-1, usb_x=-MARGIN + 35.0,
-                  link_x=-MARGIN + 17.0, mcu=(5.0, 45.0), oled=(3.3, OLED_Y, 90), wheel='top-right',
+    'left': dict(key_shift=0.0, width=LEFT_W, inner=+1, usb_x=LEFT_W - 35.0,
+                 link_x=LEFT_W - 17.0, mcu=(LEFT_W - 12.5625, 45.0),
+                 oled=(LEFT_W + CASE_WALL - COVER_FRAME - OLED_COVER_W / 2, OLED_Y, 90), wheel='top-left'),
+    'right': dict(key_shift=10.75 * U - 12.6, width=8.5 * U + MARGIN + 12.6, inner=-1, usb_x=-MARGIN + 35.0,
+                  link_x=-MARGIN + 17.0, mcu=(5.0, 45.0),
+                  oled=(-MARGIN - CASE_WALL + COVER_FRAME + OLED_COVER_W / 2, OLED_Y, 90), wheel='top-right',
                   drum=dict(x_key='Backspace', y_key='F12', dx=-(0.4 + 12.0 / 2))),   # drum centred on Backspace
 }
 

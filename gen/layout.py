@@ -49,8 +49,6 @@ def load(side):
     keys = parse_kle(os.path.join(HERE, '..', 'kle', f'{side}.json'))
     for k in keys:
         r, c = k['prow'], k['pidx']
-        if side == 'right' and r == 2 and c == 8:
-            r, c = 0, 7   # "\" key: right half row2 has 9 keys, row0 only 7
         k['row'], k['col'] = r, c
         k['cx'] = (k['x'] + k['w'] / 2) * U
         k['cy'] = (k['y'] + k['h'] / 2) * U
