@@ -7,7 +7,7 @@
 set -e
 cd "$(dirname "$0")/.."
 RES=${RES:-1800} SAMPLES=${SAMPLES:-128}
-SHOTS=${SHOTS:-"user keys corner profile wheel-right detail ports back hero:nocable back:nocable ports:nocable"}
+SHOTS=${SHOTS:-"user keys corner profile wheel-right drum detail ports back hero:nocable back:nocable ports:nocable"}
 OUT=docs/img/details
 mkdir -p "$OUT"
 for variant in a b; do
