@@ -254,6 +254,16 @@ def corner_wheel(side):
     return [w]
 
 
+def drum_dial(side):
+    """Drum dial at the top right of the right half: drum, bearing block and bezel, placed by make_case.py."""
+    out = []
+    for name, mat in (('drum', 'metal'), ('drum-block', 'case'), ('drum-bezel', 'case')):
+        path = os.path.join(ROOT, 'case', 'preview', f'{side}-{name}-placed.stl')
+        if os.path.exists(path):
+            out.append(import_stl(path, MAT[mat], f'{side} {name}'))
+    return out
+
+
 def knurled_plug(name, length=16.0, radius=3.6):
     bpy.ops.mesh.primitive_cylinder_add(vertices=48, radius=radius * MM, depth=length * MM)
     body = bpy.context.active_object
@@ -351,6 +361,7 @@ def build_half(side, world):
         objs.append(cover)
         data['oled_module'] = None
     objs += corner_wheel(side)
+    objs += drum_dial(side)
     if OLED_H is not None and OLED_H not in ('0', '0.0'):
         # the display moved away from the plate window: close the window (plate without it)
         fill = import_stl(os.path.join(VARIANTS, f'{side}-lens-0.stl'), MAT['case'], f'{side} window fill')
@@ -604,6 +615,12 @@ def finish(W, data):
         t = board_point(W[side], cx, o['y0'] - 6.0, 5.0)
         shots[f'wheel-{side}'] = dict(loc=tuple(t + Vector((sx * 0.12, 0.05, 0.10))), target=tuple(t),
                                       lens=75, focus=tuple(t), fstop=5.6, res=(RES, int(RES * 2 / 3)))
+    # close-up of the drum dial (right half, top right), from the typist's side
+    if 'drum' in data['right']:
+        x, y = data['right']['drum']['origin']
+        t = board_point(W['right'], x + 6.4, y, FLOOR + STANDOFF + PCB_T + 7.0)   # drum centre (axis 7 mm over the PCB)
+        shots['drum'] = dict(loc=tuple(t + Vector((0.05, -0.08, 0.15))), target=tuple(t),
+                             lens=75, focus=tuple(t), fstop=5.6, res=(RES, int(RES * 2 / 3)))
     # the left half's inner top corner, from outside: USB-C and TRRS on the back edge
     o = data['left']['outline']
     t = board_point(W['left'], o['x1'] - 26.0, o['y0'] - 4.0, 4.0)

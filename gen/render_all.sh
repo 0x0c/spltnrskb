@@ -8,7 +8,7 @@ if [ -n "$FINAL" ]; then
 else
   export RES=${RES:-1200} SAMPLES=${SAMPLES:-32}
 fi
-blender -b -P gen/render_blender.py -- --samples "$SAMPLES" --res "$RES" --shots hero,detail,oled,wheel-left,wheel-right > /dev/null 2>&1
+blender -b -P gen/render_blender.py -- --samples "$SAMPLES" --res "$RES" --shots hero,detail,oled,wheel-left,wheel-right,drum > /dev/null 2>&1
 echo "rendered current design ($RES px, $SAMPLES samples)"
 ./gen/oled_study.sh
 .venv/bin/python gen/render_grid.py

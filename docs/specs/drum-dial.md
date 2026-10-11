@@ -220,7 +220,7 @@ QMK のエンコーダーの番号は、左半分のエンコーダーが先に�
 | 5 | 済 | ファームウェアにドラムを足す | `gen/make_qmk.py`、`firmware/qmk/keyboards/nrsk/` | `qmk compile -kb nrsk -km default` が通る | 2 |
 | 6 | 済 | BOM を更新する | `gen/make_bom.py`、`gen/bom_sources.json`、`bom/` | BOM に EC10E1220505（右 1 個）、ドラム、軸受けブロック、ベゼルが載る。EC10E は LCSC の製品ページを開き、型番、在庫、価格を確かめてから載せる | 3、4 |
 | 7 | 済 | 組み立てガイドと 3D ビューアを更新する | `gen/assembly_guide.py`、`gen/case_viewer.py`、`case/preview/` | 組み立てガイドにドラムの手順が入る。ビューアでドラム、ブロック、ベゼルの位置が基板とプレートに合っている | 4、6 |
-| 8 | 未 | README と注文の文書を更新し、レンダリングを作り直す | `README.md`、`docs/ordering.md`、`docs/pre-order-checklist.md`、`gen/render_blender.py`、`docs/img/` | README にドラムの節があり、ピン割り当ての表に GP22、GP23 が載る。注文の文書に EC10E と印刷物が載る。textlint の指摘が 0 件。`./gen/render_all.sh` が通る | 4、5、6、7 |
+| 8 | 済 | README と注文の文書を更新し、レンダリングを作り直す | `README.md`、`docs/ordering.md`、`docs/pre-order-checklist.md`、`gen/render_blender.py`、`docs/img/` | README にドラムの節があり、ピン割り当ての表に GP22、GP23 が載る。注文の文書に EC10E と印刷物が載る。textlint の指摘が 0 件。`./gen/render_all.sh` が通る | 4、5、6、7 |
 | 9 | 未 | 実機で確かめる | なし（結果は README に追記） | 六角ピンのはめあいとスナップフィットを試し印刷で決める。転がす向き、1 クリック 1 回の送り、静止中に送りが出ないこと、ベゼルの爪の掛かり、隣の F12 を押したときに指がベゼルに当たらないことを確かめる | 3、4、5 |
 
 ステップ 5 の完了条件のうち `qmk compile` は通していない。手元の ARM 用コンパイラ（Homebrew の arm-none-eabi-gcc）に C の標準ライブラリ（newlib）がなく、どのキーボードもビルドできなかったためである。代わりに `qmk lint` と `qmk generate-config-h` で設定を確かめた。右半分のエンコーダーは 2 個（GP20/GP19 と GP22/GP23）になり、分解能は 4 と 2 になる。コンパイルは、QMK の公式の手順に従って newlib ごと入れたコンパイラを使い、あとで確かめる。
