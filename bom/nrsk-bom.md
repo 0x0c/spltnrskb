@@ -36,7 +36,7 @@
 | 入力 | サムホイール | 直径 29.2 mm × 厚さ 4.1 mm、外周に 32 山のすべり止め、上面にエンコーダーを回す六角ピン（対辺 1.66 mm）（case/print/<side>-wheel.stl） | 1 | 1 | 2 | case/print/<side>-wheel.stl | 自作（3D プリント） |  |  | 六角ピンのはめあいは試し印刷で調整する；LCSC に該当品なし（自作の 3D プリント部品） |
 | 入力 | ドラム（ドラム式ダイヤル） | 直径 13 mm × 幅 23.8 mm、斜めのローレット、左端にエンコーダーを回す六角ピン（対辺 1.66 mm）、右端に丸ピン（直径 2 mm）（case/print/right-drum.stl） | 0 | 1 | 1 | case/print/right-drum.stl | 自作（光造形、JLC3DP など） |  |  | 六角ピンのはめあいは試し印刷で調整する；LCSC に該当品なし（自作の 3D プリント部品）。斜めのローレットを出すため光造形の樹脂で作る |
 | 入力 | ドラムの軸受けブロック | 基板の穴 2 つに差し込み、ドラムの丸ピンを U 字の溝で受ける（case/print/right-drum-block.stl） | 0 | 1 | 1 | case/print/right-drum-block.stl | 自作（3D プリント） |  |  | 溝のスナップフィットは試し印刷で調整する；LCSC に該当品なし（自作の 3D プリント部品） |
-| 入力 | ドラムのベゼル | プレートの切り欠きに上からはめ、爪でプレートの下面に掛ける。エンコーダーと軸受けブロックを覆う（case/print/right-drum-bezel.stl） | 0 | 1 | 1 | case/print/right-drum-bezel.stl | 自作（3D プリント） |  |  | 3D プリントの A、B、アクリル版で共通；LCSC に該当品なし（自作の 3D プリント部品） |
+| 入力 | ドラムのベゼル | 枠をプレートの穴に収めて上面を面一にし、下のつばでプレートの下面に掛ける。エンコーダーと軸受けブロックを覆う（case/print/right-drum-bezel.stl） | 0 | 1 | 1 | case/print/right-drum-bezel.stl | 自作（3D プリント） |  |  | 3D プリントの A、B、アクリル版で共通；LCSC に該当品なし（自作の 3D プリント部品） |
 | キーキャップ | キーキャップ 1 u |  |  |  | 69 | DSA 無刻印キーキャップ 1 u（PBT、22 色） | 遊舎工房 | ¥55 | [リンク](https://shop.yushakobo.jp/products/dsa-blank-keycaps) | LCSC に該当品なし |
 | キーキャップ | キーキャップ 1.25 u |  |  |  | 5 | Signature Plastics DSA 1.25 u | spkeyboards.com（米国） | US$3.50 | [リンク](https://spkeyboards.com/products/dsa-1-25-space) | LCSC に該当品なし；国内で DSA 1.25 u が見つからなかったため海外通販。輸入時に関税・消費税 |
 | キーキャップ | キーキャップ 1.5 u |  |  |  | 2 | DSA 無刻印キーキャップ 1.5 u（白・黒・灰・緑・赤） | 遊舎工房 | ¥220 | [リンク](https://shop.yushakobo.jp/products/10731) | LCSC に該当品なし |

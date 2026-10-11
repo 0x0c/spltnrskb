@@ -19,7 +19,7 @@ import os
 import struct
 import sys
 
-from manifold3d import CrossSection, JoinType, Manifold, set_circular_segments
+from manifold3d import CrossSection, JoinType, Manifold, OpType, set_circular_segments
 
 from footprints import DRUM_D, DRUM_GAP, DRUM_W
 
@@ -129,15 +129,24 @@ DRUM_CHAMFER = 0.5
 DRUM_PIN_ENGAGE = 1.6                 # hex pin length inside the rotor (<= EC10_HEX_DEPTH)
 DRUM_ROUND_PIN = (2.0, 2.5)           # bearing end: diameter, length
 BLOCK_T, BLOCK_HALF_W = 3.0, 3.5      # bearing block: thickness along the axis, half width across
+BLOCK_R = 1.0                         # bearing block: radius of the top corners (seen along the axis)
 BLOCK_TOP = EC10_AXIS + 1.5
 BLOCK_SLOT_R, BLOCK_LIP = 1.1, 1.8    # slot radius around the round pin, snap-in mouth width
 BLOCK_PEG = (1.9, 1.4)                # pegs into the 2.0 mm NPTH: diameter, length
 PLATE_TOP_Z = PLATE_GAP + PLATE_T     # plate top above the PCB top (5.0)
 DRUM_OPENING = (-7.1, -7.6, 2 * DRUM_GAP + DRUM_W + BLOCK_T + 0.6, 7.6, 1.0)   # plate opening: x0, y0, x1, y1, corner r
-BEZEL_BORDER, BEZEL_T, BEZEL_R = 1.5, 1.0, 2.5  # flange: beyond the opening, thickness, corner r
+# the bezel's flange sits in a plate hole of its own outline, flush with the plate top (like the OLED cover); a
+# ledge under the plate keeps it from lifting, the block hood's roof on the block and a leg under the encoder
+# hood's far wall on the PCB carry it down
+BEZEL_BORDER, BEZEL_R = 1.5, 2.3      # flange: beyond the opening, corner r (= the hoods' outer r)
+BEZEL_FIT = 0.1                       # flange to the plate hole, all round
+BEZEL_LEDGE, BEZEL_LEDGE_T = 1.0, 0.8  # ledge under the plate: beyond the flange, thickness
+BEZEL_LEG_HW = 3.0                    # encoder-side leg down to the PCB: half width across the axis
 BEZEL_WALL, BEZEL_CLEAR = 1.0, 0.3
-# snap hooks on both long sides, centred on the drum: x0, x1, arm thickness, lip under the plate
-BEZEL_HOOK = (DRUM_GAP + DRUM_W / 2 - 2.5, DRUM_GAP + DRUM_W / 2 + 2.5, 1.0, 0.25)
+HOOD_IN_R = 0.8                       # both hoods: inner radius of the top corners (clears the encoder's square edges)
+HOOD_OUT_R = BLOCK_R + BEZEL_CLEAR + BEZEL_WALL   # both hoods: outer radius (2.3), concentric with the block's corners
+BEZEL_FILLET = 1.2                    # concave fillet where each hood meets the flange
+BEZEL_FLAT = 0.8                      # flat flange left beyond the fillet's foot at the short ends
 
 
 def cs_poly(pts):
@@ -381,7 +390,7 @@ class Half:
                     cx = k['cx'] + sx * STAB_X
                     cut = cut + rect(cx - w / 2, k['cy'] + dy - hh / 2, cx + w / 2, k['cy'] + dy + hh / 2)
         if 'drum' in self.d:
-            cut = cut + self.drum_opening()
+            cut = cut + self.bezel_outline(BEZEL_FIT)
         return self.outer - cut - self.cover_shape().offset(COVER_FIT, JoinType.Round) - self.holes(self.screws, SCREW_D)
 
     def frame(self, layer):
@@ -540,6 +549,25 @@ class Half:
         (bx0, by0), (bx1, by1) = self._dl(x0, y0), self._dl(x1, y1)
         return rounded_rect(bx0 - grow, by0 - grow, bx1 + grow, by1 + grow, r + grow)
 
+    def bezel_outline(self, grow=0.0):
+        """The bezel's flange in plan (the plate hole is this grown by BEZEL_FIT)."""
+        x0, y0, x1, y1, _ = DRUM_OPENING
+        bb = BEZEL_BORDER
+        # the short ends leave a flat strip beyond the foot of the hood fillets
+        hx0, hx1 = self._hood_ends()
+        reach = BEZEL_FILLET + BEZEL_FLAT
+        x0, x1 = min(x0 - bb, hx0 - reach), max(x1 + bb, hx1 + reach)
+        (bx0, by0), (bx1, by1) = self._dl(x0 - grow, y0 - bb - grow), self._dl(x1 + grow, y1 + bb + grow)
+        return rounded_rect(bx0, by0, bx1, by1, BEZEL_R + grow)
+
+    def _hood_ends(self):
+        """Local x of the outer faces at the far ends of the encoder hood and the block hood."""
+        return EC10_BRACKET[0] - BEZEL_CLEAR - BEZEL_WALL, self._block_x()[1] + BEZEL_CLEAR + BEZEL_WALL
+
+    def bezel_ledge(self):
+        """The bezel's ledge under the plate in plan, notched round the PCB screw heads like the printed web."""
+        return self.bezel_outline(BEZEL_LEDGE) - self.holes(self.d['holes'], BOSS_D + 2.0)
+
     def ec10e3d(self):
         """EC10E body as a few boxes (checks and viewer); bore along the axis for the drum's hex pin."""
         x0, y0, x1, y1, zt = EC10_BRACKET
@@ -573,14 +601,64 @@ class Half:
         rpin = self._along_x(Manifold.cylinder(l, d / 2, d / 2, 32))
         return self._daxis(body + pin + rpin.translate((DRUM_W, 0, 0)), DRUM_GAP)
 
+    def _dbox_rounded(self, x0, hw, z0, x1, z1, r, end):
+        """Box in the drum's local frame (x0..x1, |y| <= hw, z0..z1) rounded to r on every edge except the bottom
+        and the end facing the drum: the top corners seen along the axis, and the far end (end = -1: at x0,
+        +1: at x1) seen from above and from the side, as the hull of spheres, posts and a flat end slab."""
+        def at(m, x, y, z):
+            bx, by = self._dl(x, y)
+            return m.translate((bx, -by, z))
+        xr = x1 - r if end > 0 else x0 + r          # centre line of the rounded end
+        xf = x0 if end > 0 else x1 - 0.01           # flat end, facing the drum
+        parts = []
+        for sy in (-1, 1):
+            yc = sy * (hw - r)
+            parts += [at(Manifold.sphere(r), xr, yc, z1 - r), at(Manifold.cylinder(z1 - r - z0, r), xr, yc, z0),
+                      at(self._along_x(Manifold.cylinder(0.01, r)), xf, yc, z1 - r)]
+        parts.append(self._dbox(xf, -hw, z0, xf + 0.01, hw, z1 - r))
+        # a short box (x1 - x0 < 2 r) would let the end spheres poke past the flat end: trim to the box
+        return Manifold.batch_hull(parts) ^ self._dbox(x0, -hw, z0, x1, hw, z1)
+
+    def _hood_fillet(self, x0, hw, x1, r, end, z, f, xa, xb):
+        """Concave fillet of radius f round the foot of a hood (plan: x0..x1, |y| <= hw, far end corners rounded
+        to r as in _dbox_rounded) standing on a face at height z; kept to xa..xb so it stops at the drum side.
+        A slab of the foot outline grown by f, less the tube of radius f swept along that outline f above the face
+        (cylinders along the sides, a torus round each far corner) and less the hood itself."""
+        core = (CrossSection.square((x1 - x0, 2 * (hw - r))).translate((x0 - r if end > 0 else x0 + r, -(hw - r)))
+                .offset(r, JoinType.Round) ^ CrossSection.square((x1 - x0, 2 * hw)).translate((x0, -hw)))
+        ox, oy = self._dl(0, 0)
+        # the tube's centre line, built for the far end at +x, run on past the drum side, then mirrored if needed
+        xs, xc, yc, rr = x0 - f - 1, x1 - r, hw - r, r + f
+        if end < 0:
+            xs, xc = x1 + f + 1, x0 + r
+        sx = 1 if end > 0 else -1
+        pts = [(xs, -(hw + f))]
+        n = 32
+        for cy, a0 in ((-yc, -math.pi / 2), (yc, 0.0)):       # far corners, quarter arcs round (xc, -/+yc)
+            for i in range(n + 1):
+                a = a0 + math.pi / 2 * i / n
+                pts.append((xc + sx * rr * math.cos(a), cy + rr * math.sin(a)))
+        pts.append((xs, hw + f))
+        ball = Manifold.sphere(f, 96)
+        balls = [ball.translate((ox + px, -oy + py, z + f)) for px, py in pts]
+        tube = Manifold.batch_boolean([Manifold.batch_hull([a, b]) for a, b in zip(balls, balls[1:])], OpType.Add)
+        slab = Manifold.extrude(core.offset(f - 0.02, JoinType.Round), f + 0.01).translate((ox, -oy, z - 0.01))
+        # the hood's own footprint, shrunk a hair so the fillet fuses with the wall, but kept full width across the
+        # open drum-side end so no film is left over the opening
+        xd = x0 if end > 0 else x1
+        foot = core.offset(-0.01, JoinType.Miter) + CrossSection.square((0.1, 2 * hw)).translate((xd - 0.05, -hw))
+        foot = Manifold.extrude(foot, f + 1).translate((ox, -oy, z - 0.5))
+        return (slab - tube - foot) ^ self._dbox(xa, -hw - f - 1, z - 1, xb, hw + f + 1, z + f + 1)
+
     def _block_x(self):
         x0 = DRUM_GAP + DRUM_W + DRUM_GAP
         return x0, x0 + BLOCK_T
 
     def drum_block3d(self):
-        """Bearing block on the PCB: U slot open upward with a narrowed (snap-in) mouth, two locating pegs."""
+        """Bearing block on the PCB: U slot open upward with a narrowed (snap-in) mouth, two locating pegs.
+        Seen along the axis the top corners are rounded; the flat bottom sits on the PCB."""
         x0, x1 = self._block_x()
-        b = self._dbox(x0, -BLOCK_HALF_W, 0, x1, BLOCK_HALF_W, BLOCK_TOP)
+        b = self._dbox_rounded(x0, BLOCK_HALF_W, 0, x1, BLOCK_TOP, BLOCK_R, 1)
         pin_end = DRUM_GAP + DRUM_W + DRUM_ROUND_PIN[1]
         slot_x1 = pin_end + 0.3
         b = b - self._daxis(self._along_x(Manifold.cylinder(slot_x1 - x0 + 0.1, BLOCK_SLOT_R, BLOCK_SLOT_R, 48)), x0 - 0.1)
@@ -591,35 +669,37 @@ class Half:
         return b
 
     def drum_bezel3d(self):
-        """Flange on the plate top round the opening, a hood over the encoder and one over the block (its roof
-        holds the block down), open toward the drum; snap hooks under the plate on both long sides."""
-        x0, y0, x1, y1, r = DRUM_OPENING
-        z0, z1 = PLATE_TOP_Z, PLATE_TOP_Z + BEZEL_T
-        bb = BEZEL_BORDER
-        (fx0, fy0), (fx1, fy1) = self._dl(x0 - bb, y0 - bb), self._dl(x1 + bb, y1 + bb)
-        m = Manifold.extrude(rounded_rect(fx0, fy0, fx1, fy1, BEZEL_R), BEZEL_T).translate((0, 0, z0))
+        """Flange flush in the plate hole round the opening, with a ledge under the plate; a hood over the encoder
+        (its far wall runs down to the PCB as a leg) and one over the block (its roof holds the block down), both
+        open toward the drum. Laid on the PCB before the plate goes on."""
+        zl, z0, z1 = PLATE_GAP - BEZEL_LEDGE_T, PLATE_GAP, PLATE_TOP_Z
+        m = (Manifold.extrude(self.bezel_outline(), z1 - z0).translate((0, 0, z0))
+             + Manifold.extrude(self.bezel_ledge(), BEZEL_LEDGE_T).translate((0, 0, zl)))
         w, c = BEZEL_WALL, BEZEL_CLEAR
-        # encoder hood
+        # encoder hood: top corners rounded like the block hood outside; inside the radius stays small enough
+        # to clear the body's square top edges by the 0.3 mm clearance, and the block hood follows it
         ex0, ey, etop = EC10_BRACKET[0] - c, EC10_BODY[3] + c, EC10_BODY[4] + c
-        m = m + (self._dbox(ex0 - w, -ey - w, z0, 0.2, ey + w, etop + w) - self._dbox(ex0, -ey, z0 - 0.1, 0.3, ey, etop))
-        # block hood: roof on the block top
+        m = m + (self._dbox_rounded(ex0 - w, ey + w, z0, 0.2, etop + w, HOOD_OUT_R, -1)
+                 - self._dbox_rounded(ex0, ey, z0 - 0.1, 0.3, etop, HOOD_IN_R, -1))
+        # leg: the encoder hood's far wall down to the PCB, clear of the bracket and the pads
+        m = m + self._dbox(ex0 - w, -BEZEL_LEG_HW, 0, ex0, BEZEL_LEG_HW, zl + 0.01)
+        # block hood: roof on the block top; its width, height and corners match the encoder hood's, so its roof
+        # is solid from the block top up
         bx0, bx1 = self._block_x()
-        by, btop = BLOCK_HALF_W + c, BLOCK_TOP
-        m = m + (self._dbox(bx0 - 0.1, -by - w, z0, bx1 + c + w, by + w, btop + w)
-                 - self._dbox(bx0 - 0.2, -by, z0 - 0.1, bx1 + c, by, btop))
-        # through the flange: under both hoods and the drum
+        by, btop = ey, BLOCK_TOP                         # as wide as the encoder hood
+        bhood_top = etop + w
+        m = m + (self._dbox_rounded(bx0 - 0.1, by + w, z0, bx1 + c + w, bhood_top, HOOD_OUT_R, 1)
+                 - self._dbox_rounded(bx0 - 0.2, by, z0 - 0.1, bx1 + c, btop, HOOD_IN_R, 1))
+        # fillets at the foot of both hoods, on the flange top; they end flush with the hoods' drum-side faces,
+        # where the flange is cut away for the drum
+        fr, ef, bf = BEZEL_FILLET, 0.2, bx0 - 0.1          # drum-side faces of the encoder / block hood
+        m = m + self._hood_fillet(ex0 - w, ey + w, ef, HOOD_OUT_R, -1, z1, fr, ex0 - w - fr - 0.1, ef)
+        m = m + self._hood_fillet(bf, by + w, bx1 + c + w, HOOD_OUT_R, 1, z1, fr, bf, bx1 + c + w + fr + 0.1)
+        # through the flange and the ledge: under both hoods and the drum (between the hoods' drum-side faces)
         rr = DRUM_D / 2
-        m = m - self._dbox(DRUM_GAP - c, -(rr + 0.2), z0 - 0.1, bx0, rr + 0.2, z1 + 0.1)
-        m = m - self._dbox(ex0, -ey, z0 - 0.1, 0.3, ey, z1 + 0.1)
-        m = m - self._dbox(bx0 - 0.2, -by, z0 - 0.1, bx1 + c, by, z1 + 0.1)
-        # snap hooks: arm down through the opening along the long edge, lip under the plate
-        hx0, hx1, ht, lip = BEZEL_HOOK
-        zb = PLATE_GAP - 0.55
-        for sy in (-1, 1):
-            ya, yb = sorted((sy * (y1 - 0.1 - ht), sy * (y1 - 0.1)))
-            m = m + self._dbox(hx0, ya, zb, hx1, yb, z0 + 0.01)
-            la, lb = sorted((sy * (y1 - 0.1), sy * (y1 + lip)))
-            m = m + self._dbox(hx0, la, zb, hx1, lb, PLATE_GAP - 0.15)
+        m = m - self._dbox(ef, -(rr + 0.2), zl - 0.1, bf, rr + 0.2, z1 + 0.1)
+        m = m - self._dbox(ex0, -ey, zl - 0.1, 0.3, ey, z1 + 0.1)
+        m = m - self._dbox(bx0 - 0.2, -by, zl - 0.1, bx1 + c, by, z1 + 0.1)
         return m
 
     def plate3d(self):
@@ -640,8 +720,8 @@ class Half:
                     keep = keep + rect(cx - w / 2 - 1.0, k['cy'] + dy - hh / 2 - 1.0, cx + w / 2 + 1.0, k['cy'] + dy + hh / 2 + 1.0)
         web = self.inner.offset(-0.3, JoinType.Round) - keep - self.cover_shape().offset(1.0, JoinType.Round) \
             - self.holes(self.d['holes'], BOSS_D + 2.0)
-        if 'drum' in self.d:   # room for the bezel's hooks and the encoder / block under the opening
-            web = web - self.drum_opening().offset(2.0, JoinType.Round)
+        if 'drum' in self.d:   # room for the bezel's ledge and the encoder / block under the opening
+            web = web - self.bezel_outline(BEZEL_LEDGE + 0.5)
         web = web.offset(-0.4, JoinType.Round).offset(0.4, JoinType.Round)
         plate = self.plate3d() + Manifold.extrude(web, RIB_T).translate((0, 0, -RIB_T))
         plate = plate + Manifold.extrude(self.holes(self.screws, SCREW_D + 0.4), PLATE_T)   # no holes on top: fixed from below
@@ -768,12 +848,11 @@ def check_drum(hf):
     # the bezel's footprint above the plate stays off the switch tops; the hoods stay off the keycaps
     above = bezel.trim_by_plane((0, 0, 1), PLATE_TOP_Z + 0.01).project()
     assert (above ^ hf.switch_tops()).area() < 0.01, 'bezel hits a switch top'
-    hoods = bezel.trim_by_plane((0, 0, 1), PLATE_TOP_Z + BEZEL_T + 0.01).project()
     caps = CrossSection()
     for k in hf.d['keys']:
         hw = k['w'] * 19.05 / 2 - 0.5
         caps = caps + rect(k['cx'] - hw, k['cy'] - 8.9, k['cx'] + hw, k['cy'] + 8.9)
-    assert (hoods ^ caps).area() < 0.01, 'bezel hood under a keycap'
+    assert (above ^ caps).area() < 0.01, 'bezel hood under a keycap'
     # the opening leaves a web to the switch and stabilizer cut-outs; no PCB mounting hole under it
     cut = CrossSection()
     for k in hf.d['keys']:
@@ -784,9 +863,16 @@ def check_drum(hf):
             for sx in (-1, 1):
                 cx = k['cx'] + sx * STAB_X
                 cut = cut + rect(cx - w / 2, k['cy'] + dy - hh / 2, cx + w / 2, k['cy'] + dy + hh / 2)
-    assert (hf.drum_opening(1.5) ^ cut).area() < 0.01, 'drum opening too close to a switch / stabilizer cut-out'
+    assert (hf.bezel_outline(BEZEL_FIT + 1.5) ^ cut).area() < 0.01, 'bezel hole too close to a switch / stabilizer cut-out'
+    # the ledge under the plate stays off the switch housings, the walls and the PCB screw heads
+    ledge = hf.bezel_ledge()
+    assert (ledge ^ cut.offset(0.5, JoinType.Miter)).area() < 0.01, 'bezel ledge under a switch / stabilizer'
+    assert (ledge - hf.inner).area() < 0.01, 'bezel ledge outside the walls'
+    assert (ledge ^ hf.holes(hf.d['holes'], BOSS_D + 1.9)).area() < 0.01, 'bezel ledge over a PCB screw head'
     for p in hf.d['holes']:
         assert not inside(hf.drum_opening(), p), 'PCB mounting hole under the drum opening'
+    # flush: the flange top is the plate top; only the hoods stand above it
+    assert abs(float(bezel.bounding_box()[2])) < 1e-9, 'bezel leg does not reach the PCB'
     print(hf.side, 'drum dial checks ok')
 
 
