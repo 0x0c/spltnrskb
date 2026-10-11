@@ -7,6 +7,7 @@ import sys
 import pcbnew
 
 import sexpr
+from footprints import DRUM_GAP, DRUM_W
 from layout import HERE, U, load
 
 KICAD = os.path.expanduser('~/Applications/KiCad/KiCad.app/Contents')
@@ -57,7 +58,7 @@ SIDES = {
                   usb_x=-MARGIN + 35.0,
                   link_x=-MARGIN + 17.0, mcu=(5.0, 45.0),
                   oled=(-MARGIN - CASE_WALL + COVER_FRAME + OLED_COVER_W / 2, OLED_Y, 90), wheel='top-right',
-                  drum=dict(x_key='Backspace', y_key='F12', dx=-(0.4 + 12.0 / 2))),   # drum centred on Backspace
+                  drum=dict(x_key='Backspace', y_key='F12', dx=-(DRUM_GAP + DRUM_W / 2) + 1.75)),   # bezel centred on Backspace
 }
 
 # Support parts: (ref, list of (footprint ref, pad) the part should sit close to)
@@ -341,9 +342,11 @@ ENC_KEEP = 0.5            # gap kept between the two
 
 
 # drum dial: Alps EC10E (ENC2) on the front in the free 2 u of the top row, axis along X, on the row of
-# drum['y_key']; its shaft-insert face dx right of drum['x_key']'s centre, so the drum (0.4 mm gap, 12 mm wide)
-# is centred on that key. The drum and its bearing block (Drum_Dial_Bearing, board only) continue to +X; the
-# block's pegs stop inside the board, clear of the thumbwheel underneath.
+# drum['y_key']; its shaft-insert face dx right of drum['x_key']'s centre, so the drum sits 1.75 mm right
+# of that key's centre: the bezel, whose encoder hood is longer than its block hood, is then centred on the
+# key, and its flange stays clear of the F12 keycap. The drum and its bearing block
+# (Drum_Dial_Bearing, board only) continue to +X; the block's pegs stop inside the board, clear of the
+# thumbwheel underneath.
 
 
 # courtyard overhang beyond the connector mouth (mouth ends flush with the board edge)
@@ -417,7 +420,7 @@ def write_case_data(side, board, fps, keys, holes, w, h, shift):
         wheel=dict(center=list(wheel_centre(side, w)), r=WHEEL_R),
     )
     if 'DRUM1' in fps:   # drum dial: encoder origin (shaft-insert face on the axis) and the block peg holes
-        data['drum'] = dict(origin=local(fps['ENC2'].GetPosition()),
+        data['drum'] = dict(origin=local(fps['ENC2'].GetPosition()), width=DRUM_W,
                             pegs=[local(p.GetPosition()) for p in fps['DRUM1'].Pads()])
     import json
     json.dump(data, open(os.path.join(ROOT, side, 'case_data.json'), 'w'), indent=1, ensure_ascii=False)
