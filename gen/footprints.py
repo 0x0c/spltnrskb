@@ -227,7 +227,8 @@ def alps_ec10e():
 # Drum dial (right half): the printed drum spins between the EC10E rotor and a printed bearing block that
 # stands on the PCB, located by two pegs in NPTH holes. Board-only footprint, same origin as Alps_EC10E
 # (encoder's shaft-insert face on the axis); its courtyard covers drum + block so nothing is placed there.
-DRUM_GAP, DRUM_W = 0.4, 23.8            # encoder face -> drum, drum width (~1.25 u: the most the free 2 u takes)
+DRUM_GAP, DRUM_W = 0.4, 21.6            # encoder face -> drum, drum width (the most that keeps the bezel, with hoods of
+                                        # equal length, inside the case wall)
 DRUM_D = 13.0
 BLOCK_T = 3.0                           # bearing block thickness along the axis
 BLOCK_PEGS = (2.0, 2.0)                 # NPTH diameter, peg offset across the axis (+/-)

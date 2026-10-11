@@ -1,20 +1,8 @@
 ** Drc report for nrsk-right.kicad_pcb **
-** Created on 2026-10-11T22:23:28 **
+** Created on 2026-10-12T01:46:47 **
 ** Report includes: Errors, Warnings, Exclusions **
 
-** Found 5 DRC violations **
-[starved_thermal]: Thermal relief connection to zone incomplete (layer F.Cu; 1 spokes connected to isolated island)
-    Local override; error
-    @(26.9500 mm, 13.7500 mm): Zone 'GND' [GND] on F.Cu, priority 0
-    @(31.5900 mm, 62.3500 mm): PTH pad 1 [GND] of J3
-[silk_edge_clearance]: Silkscreen clipped by board edge
-    Rule: board setup constraints silk; warning
-    @(58.5000 mm, 16.3000 mm): Arc on Edge.Cuts
-    @(57.3000 mm, 15.4950 mm): Segment of J2 on B.Silkscreen
-[silk_edge_clearance]: Silkscreen clipped by board edge
-    Rule: board setup constraints silk; warning
-    @(65.5000 mm, 16.3000 mm): Arc on Edge.Cuts
-    @(66.7000 mm, 15.4950 mm): Segment of J2 on B.Silkscreen
+** Found 4 DRC violations **
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
     @(40.5000 mm, 16.3000 mm): Arc on Edge.Cuts
@@ -23,6 +11,14 @@
     Rule: board setup constraints silk; warning
     @(47.5000 mm, 16.3000 mm): Arc on Edge.Cuts
     @(48.7000 mm, 15.4950 mm): Segment of J1 on B.Silkscreen
+[silk_edge_clearance]: Silkscreen clipped by board edge
+    Rule: board setup constraints silk; warning
+    @(58.5000 mm, 16.3000 mm): Arc on Edge.Cuts
+    @(57.3000 mm, 15.4950 mm): Segment of J2 on B.Silkscreen
+[silk_edge_clearance]: Silkscreen clipped by board edge
+    Rule: board setup constraints silk; warning
+    @(65.5000 mm, 16.3000 mm): Arc on Edge.Cuts
+    @(66.7000 mm, 15.4950 mm): Segment of J2 on B.Silkscreen
 
 ** Found 0 unconnected pads **
 

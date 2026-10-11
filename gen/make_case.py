@@ -561,8 +561,10 @@ class Half:
         return rounded_rect(bx0, by0, bx1, by1, BEZEL_R + grow)
 
     def _hood_ends(self):
-        """Local x of the outer faces at the far ends of the encoder hood and the block hood."""
-        return EC10_BRACKET[0] - BEZEL_CLEAR - BEZEL_WALL, self._block_x()[1] + BEZEL_CLEAR + BEZEL_WALL
+        """Local x of the outer faces at the far ends of the encoder hood and the block hood. The block hood is as
+        long as the encoder hood (drum-side face 0.2 mm off the encoder face, as the block hood's off the block)."""
+        e_end = EC10_BRACKET[0] - BEZEL_CLEAR - BEZEL_WALL
+        return e_end, self._block_x()[0] - 0.1 + (0.2 - e_end)
 
     def bezel_ledge(self):
         """The bezel's ledge under the plate in plan, notched round the PCB screw heads like the printed web."""
@@ -683,18 +685,18 @@ class Half:
                  - self._dbox_rounded(ex0, ey, z0 - 0.1, 0.3, etop, HOOD_IN_R, -1))
         # leg: the encoder hood's far wall down to the PCB, clear of the bracket and the pads
         m = m + self._dbox(ex0 - w, -BEZEL_LEG_HW, 0, ex0, BEZEL_LEG_HW, zl + 0.01)
-        # block hood: roof on the block top; its width, height and corners match the encoder hood's, so its roof
-        # is solid from the block top up
+        # block hood: roof on the block top; its length, width, height and corners match the encoder hood's, so it
+        # is solid above the block top and beyond the block's far end
         bx0, bx1 = self._block_x()
         by, btop = ey, BLOCK_TOP                         # as wide as the encoder hood
-        bhood_top = etop + w
-        m = m + (self._dbox_rounded(bx0 - 0.1, by + w, z0, bx1 + c + w, bhood_top, HOOD_OUT_R, 1)
+        bhood_top, bend = etop + w, self._hood_ends()[1]    # beyond the block the hood is solid
+        m = m + (self._dbox_rounded(bx0 - 0.1, by + w, z0, bend, bhood_top, HOOD_OUT_R, 1)
                  - self._dbox_rounded(bx0 - 0.2, by, z0 - 0.1, bx1 + c, btop, HOOD_IN_R, 1))
         # fillets at the foot of both hoods, on the flange top; they end flush with the hoods' drum-side faces,
         # where the flange is cut away for the drum
         fr, ef, bf = BEZEL_FILLET, 0.2, bx0 - 0.1          # drum-side faces of the encoder / block hood
         m = m + self._hood_fillet(ex0 - w, ey + w, ef, HOOD_OUT_R, -1, z1, fr, ex0 - w - fr - 0.1, ef)
-        m = m + self._hood_fillet(bf, by + w, bx1 + c + w, HOOD_OUT_R, 1, z1, fr, bf, bx1 + c + w + fr + 0.1)
+        m = m + self._hood_fillet(bf, by + w, bend, HOOD_OUT_R, 1, z1, fr, bf, bend + fr + 0.1)
         # through the flange and the ledge: under both hoods and the drum (between the hoods' drum-side faces)
         rr = DRUM_D / 2
         m = m - self._dbox(ef, -(rr + 0.2), zl - 0.1, bf, rr + 0.2, z1 + 0.1)
