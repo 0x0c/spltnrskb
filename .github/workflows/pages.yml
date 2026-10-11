@@ -10,6 +10,7 @@ on:
       - docs/img/render-hero.png
       - docs/views.html
       - docs/img/views/**
+      - docs/img/details/**
       - .github/workflows/pages.yml
   workflow_dispatch:
 
