@@ -52,6 +52,8 @@ def category(ref, mesh_name):
         return 'oled'
     if ref == 'ENC1':
         return 'encoder'
+    if ref == 'ENC2':
+        return 'drumenc'
     if '_PCB' in mesh_name or ref.endswith('_PCB') or ref.startswith(('left', 'right')):
         return 'board'
     return 'smd'
