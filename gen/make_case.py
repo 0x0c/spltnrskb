@@ -21,6 +21,8 @@ import sys
 
 from manifold3d import CrossSection, JoinType, Manifold, set_circular_segments
 
+from footprints import DRUM_D, DRUM_GAP, DRUM_W
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, '..'))
 OUT = os.path.join(ROOT, 'case')
@@ -122,7 +124,6 @@ EC10_BRACKET = (-6.1, -4.9, 0.0, 4.9, 2.0)    # metal bracket: x0, y0, x1, y1, t
 EC10_BODY = (-5.15, -4.9, -0.65, 4.9, EC10_AXIS + 3.6)   # upper body (top 3.6 above the axis)
 EC10_ROTOR_FACE = -1.3                # hex hole entrance (1.73 A/F, 1.7 deep, then a 2.2 mm bore)
 EC10_HEX_DEPTH = 1.7
-DRUM_GAP, DRUM_W, DRUM_D = 0.4, 12.0, 13.0
 DRUM_GROOVES, DRUM_GROOVE_DEPTH, DRUM_HELIX = 36, 0.4, 30.0   # diagonal knurl: rounded grooves, helix angle
 DRUM_CHAMFER = 0.5
 DRUM_PIN_ENGAGE = 1.6                 # hex pin length inside the rotor (<= EC10_HEX_DEPTH)
@@ -132,10 +133,11 @@ BLOCK_TOP = EC10_AXIS + 1.5
 BLOCK_SLOT_R, BLOCK_LIP = 1.1, 1.8    # slot radius around the round pin, snap-in mouth width
 BLOCK_PEG = (1.9, 1.4)                # pegs into the 2.0 mm NPTH: diameter, length
 PLATE_TOP_Z = PLATE_GAP + PLATE_T     # plate top above the PCB top (5.0)
-DRUM_OPENING = (-7.1, -7.6, 16.4, 7.6, 1.0)   # plate opening: x0, y0, x1, y1, corner r
+DRUM_OPENING = (-7.1, -7.6, 2 * DRUM_GAP + DRUM_W + BLOCK_T + 0.6, 7.6, 1.0)   # plate opening: x0, y0, x1, y1, corner r
 BEZEL_BORDER, BEZEL_T, BEZEL_R = 1.5, 1.0, 2.5  # flange: beyond the opening, thickness, corner r
 BEZEL_WALL, BEZEL_CLEAR = 1.0, 0.3
-BEZEL_HOOK = (3.5, 8.5, 1.0, 0.25)    # snap hooks on both long sides: x0, x1, arm thickness, lip under the plate
+# snap hooks on both long sides, centred on the drum: x0, x1, arm thickness, lip under the plate
+BEZEL_HOOK = (DRUM_GAP + DRUM_W / 2 - 2.5, DRUM_GAP + DRUM_W / 2 + 2.5, 1.0, 0.25)
 
 
 def cs_poly(pts):

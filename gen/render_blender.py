@@ -657,7 +657,8 @@ def finish(W, data):
     # close-up of the drum dial (right half, top right), from the typist's side
     if 'drum' in data['right']:
         x, y = data['right']['drum']['origin']
-        t = board_point(W['right'], x + 6.4, y, FLOOR + STANDOFF + PCB_T + 7.0)   # drum centre (axis 7 mm over the PCB)
+        x += 0.4 + data['right']['drum']['width'] / 2
+        t = board_point(W['right'], x, y, FLOOR + STANDOFF + PCB_T + 7.0)   # drum centre (axis 7 mm over the PCB)
         shots['drum'] = dict(loc=tuple(t + Vector((0.05, -0.08, 0.15))), target=tuple(t),
                              lens=75, focus=tuple(t), fstop=5.6, res=(RES, int(RES * 2 / 3)))
     # the left half's inner top corner, from outside: both USB-C ports on the back edge
