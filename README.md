@@ -31,7 +31,7 @@ v2 では Pro Micro などのマイコンボードをやめ、RP2040 と QSPI Fl
 
 ![A と B の比較](docs/img/render-compare-ab.jpg)
 
-A と B を周囲 15 か所（8 方位 × 仰角 30°、真上、見下ろし、低い視点）から撮った画像は http://www.0x0c.me/spltnrskb/views.html （手元では [docs/views.html](docs/views.html)）で見比べられます。方位と仰角を選ぶか、画像をドラッグして視点を回します。画像は `gen/render_views.sh` で作り直せます（1 枚 1 分ほど）。
+A と B を周囲 15 か所（8 方位 × 仰角 30°、真上、見下ろし、低い視点）から撮った画像は http://www.0x0c.me/spltnrskb/views.html （手元では [docs/views.html](docs/views.html)）で見比べられます。方位と仰角を選ぶか、画像をドラッグして視点を回します。画像をクリックすると拡大表示になり、← → で次の画像へ進みます。寄りの画像（打鍵する位置から、背面、側面、角、キーキャップ、ホイール、差込口。ケーブルを抜いた全体・背面・差込口も）も A と B を並べて見られます。全方位の画像は `gen/render_views.sh`（1 枚 1 分ほど）、寄りの画像は `gen/render_details.sh`（1 枚 3 分ほど）で作り直せます。
 
 ## 回路
 
@@ -293,6 +293,7 @@ spltnrskb/
 │   ├── left-*.png, right-*.png  基板の 3D 表示と重ね合わせ図
 │   ├── render-*                 Blender による完成イメージ
 │   ├── views/                   全方位の完成イメージ（docs/views.html 用）
+│   ├── details/                 A と B の寄りの画像（docs/views.html 用）
 │   ├── port-slide.png           基板を差込口のトンネルへ入れる手順の断面図
 │   ├── oled-study/              OLED の高さ・角度の比較レンダリング
 │   ├── dial-study/              サムホイールの比較レンダリング
@@ -320,7 +321,7 @@ spltnrskb/
 次のスクリプトは `build.sh` に含まれず、必要なときに手で実行します。
 
 - 完成イメージのレンダリング：`render_blender.py`、`render_all.sh`、`render_grid.py`
-- 全方位の完成イメージと確認ページ：`render_views.sh`、`views_page.py`
+- 全方位の完成イメージと確認ページ：`render_views.sh`、`render_details.sh`、`views_page.py`
 - A と B の比較画像、差込口、基板の差し込み手順の断面図：`render_compare.sh`、`compare_ab.py`、`port_slide.py`
 - OLED と開口の比較検討：`oled_variants.py`、`oled_study.sh`、`oled_sheet.py`、`port_variants.py`
 - 六角ピンの試し印刷：`pin_coupon.py`（`case/print/pin-coupon.stl`。使い方は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）

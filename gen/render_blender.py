@@ -44,7 +44,7 @@ SCREWS = arg('--screws', 'none')             # case screws on the plate: 'none',
 TOP = arg('--top', 'acrylic')
 PORTS = arg('--ports', None)                 # USB-C/TRRS opening study style (case/preview/port-variants), left half only
 NO_CABLES = '--no-cables' in args                # switch plate: 'acrylic' (clear, laser cut) or 'print' (printed, with web)
-VIEWS_DIR = arg('--views-dir', None)         # orbit shots ('view-*') go here as <name><suffix>.png instead of docs/img
+VIEWS_DIR = arg('--views-dir', None)         # shots go here as <name><suffix>.png instead of docs/img/render-<name><suffix>.png
 VARIANTS = os.path.join(ROOT, 'case', 'preview', 'oled-variants')
 
 
@@ -609,6 +609,26 @@ def finish(W, data):
     t = board_point(W['left'], o['x1'] - 26.0, o['y0'] - 4.0, 4.0)
     shots['ports'] = dict(loc=tuple(board_point(W['left'], o['x1'] + 30.0, o['y0'] - 110.0, 60.0)), target=tuple(t),
                           lens=70, focus=tuple(t), fstop=8.0, res=(RES, int(RES * 2 / 3)))
+    # more close-ups for the design review (gen/render_details.sh): the case's thickness from the side,
+    # the front corner, the back edge of both halves, the keycaps
+    o = data['left']['outline']
+    t = board_point(W['left'], o['x0'] + 60.0, (o['y0'] + o['y1']) / 2, 4.0)
+    shots['profile'] = dict(loc=tuple(board_point(W['left'], o['x0'] - 260.0, o['y1'] + 80.0, 45.0)), target=tuple(t),
+                            lens=70, focus=tuple(board_point(W['left'], o['x0'], o['y1'] - 20.0, 8.0)), fstop=11.0,
+                            res=(RES, int(RES * 2 / 3)), orbit=True)
+    t = board_point(W['left'], o['x0'] + 14.0, o['y1'] - 14.0, 12.0)
+    shots['corner'] = dict(loc=tuple(t + Vector((-0.12, -0.15, 0.10))), target=tuple(t),
+                           lens=70, focus=tuple(t), fstop=5.6, res=(RES, int(RES * 2 / 3)))
+    shots['back'] = dict(loc=(0.08, 0.62, 0.22), target=(0.01, 0.02, 0.0), lens=38, focus=(0.0, 0.06, 0.01),
+                         fstop=8.0, res=(RES, int(RES * 2 / 3)), orbit=True)
+    o = data['right']['outline']
+    t = board_point(W['right'], o['x1'] - 50.0, 50.0, CAP_BOTTOM + CAP_H)
+    shots['keys'] = dict(loc=tuple(t + Vector((0.12, -0.17, 0.11))), target=tuple(t),
+                         lens=90, focus=tuple(t), fstop=8.0, res=(RES, int(RES * 2 / 3)))
+    for s in shots.values():                        # orbit-stage shots turn the lights with the camera
+        if s.get('orbit'):
+            d = Vector(s['loc']) - Vector(s['target'])
+            s['turn'] = math.atan2(d.x, -d.y)
     # design-review orbit around both halves: 'view-a<azimuth>-e<elevation>' (azimuth 0 = from the front,
     # 90 = from the right), same distance and lens for every view; the lights turn with the camera
     centre = Vector((0.0, 0.0, 0.008))
@@ -621,7 +641,7 @@ def finish(W, data):
         d = Vector((math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
         shots[name] = dict(loc=tuple(centre + d * dist), target=tuple(centre), lens=62, focus=tuple(centre),
                            fstop=11.0, res=(RES, int(RES * 2 / 3)), turn=a)
-    if any(n.startswith('view-') for n in SHOTS):
+    if any(n.startswith('view-') or shots[n].get('orbit') for n in SHOTS):
         orbit_stage()
     lights = {o: o.matrix_world.copy() for o in bpy.data.objects if o.type == 'LIGHT'}
     for name in SHOTS:
@@ -633,7 +653,7 @@ def finish(W, data):
         for o, m in lights.items():
             o.matrix_world = turn @ m
         sc.render.resolution_x, sc.render.resolution_y = s['res']
-        if name.startswith('view-') and VIEWS_DIR:
+        if VIEWS_DIR:
             sc.render.filepath = os.path.join(VIEWS_DIR, f'{name}{OUT_SUFFIX}.png')
         else:
             sc.render.filepath = os.path.join(out_dir, f'render-{name}{OUT_SUFFIX}.png')

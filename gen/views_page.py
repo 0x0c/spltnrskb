@@ -1,7 +1,8 @@
 """Design-review page for the orbit renders -> docs/views.html.
 
 The renders come from gen/render_views.sh (docs/img/views/view-a<azimuth>-e<elevation>-<variant>.jpg);
-the close-ups next to them are the A / B renders of gen/render_compare.sh. Open docs/views.html in a browser.
+the close-ups below them are the A / B renders of gen/render_compare.sh (whole board, OLED, left wheel) and
+gen/render_details.sh (docs/img/details/<shot>-<variant>.jpg). Open docs/views.html in a browser.
 """
 import json
 import os
@@ -10,13 +11,29 @@ import re
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 DOCS = os.path.join(ROOT, 'docs')
 VIEWS = os.path.join(DOCS, 'img', 'views')
-# close-ups per variant: (label, file under docs/img)
-DETAILS = {
-    'a': [('全体', 'render-hero-top-acrylic-lowpan.png'), ('OLED', 'render-oled-top-acrylic-lowpan.png'),
-          ('左のホイール', 'render-wheel-left-top-acrylic-lowpan.png'), ('USB-C と TRRS', 'render-ports.png')],
-    'b': [('全体', 'render-hero-top-print.png'), ('OLED', 'render-oled-top-print.png'),
-          ('左のホイール', 'render-wheel-left-top-print.png')],
-}
+
+
+def shot(name):
+    return {v: f'details/{name}-{v}.jpg' for v in 'ab'}
+
+
+# close-ups in page order: (label, {variant: file under docs/img}); files not rendered yet are left out
+DETAILS = [
+    ('全体', {'a': 'render-hero-top-acrylic-lowpan.png', 'b': 'render-hero-top-print.png'}),
+    ('全体・ケーブルなし', shot('hero-nocable')),
+    ('打鍵する位置から', shot('user')),
+    ('背面', shot('back')),
+    ('背面・ケーブルなし', shot('back-nocable')),
+    ('側面（厚み）', shot('profile')),
+    ('手前の角', shot('corner')),
+    ('キーキャップ', shot('keys')),
+    ('OLED', {'a': 'render-oled-top-acrylic-lowpan.png', 'b': 'render-oled-top-print.png'}),
+    ('左のホイール', {'a': 'render-wheel-left-top-acrylic-lowpan.png', 'b': 'render-wheel-left-top-print.png'}),
+    ('右のホイール', shot('wheel-right')),
+    ('内側の角とケーブル', shot('detail')),
+    ('USB-C と TRRS', shot('ports')),
+    ('USB-C と TRRS・ケーブルなし', shot('ports-nocable')),
+]
 
 
 def main():
@@ -25,8 +42,8 @@ def main():
         m = re.fullmatch(r'view-a(\d+)-e(\d+)-([ab])\.jpg', f)
         if m:
             views.setdefault(m[3], {})[f'{m[1]}-{m[2]}'] = f'img/views/{f}'
-    details = {v: [(t, f'img/{f}') for t, f in items if os.path.exists(os.path.join(DOCS, 'img', f))]
-               for v, items in DETAILS.items()}
+    details = {v: [(t, f'img/{files[v]}') for t, files in DETAILS
+                   if v in files and os.path.exists(os.path.join(DOCS, 'img', files[v]))] for v in 'ab'}
     data = json.dumps({'views': views, 'details': details}, ensure_ascii=False)
     out = os.path.join(DOCS, 'views.html')
     with open(out, 'w') as fh:
@@ -57,13 +74,12 @@ header p{margin:4px 0 0;color:var(--muted);max-width:62ch}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
 .seg button:disabled{color:var(--line);cursor:default}
-button:focus-visible,.thumb:focus-visible,.dot:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:focus-visible,.thumb:focus-visible,.dot:focus-visible,.stage:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .viewer{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:20px;align-items:start}
 .stages{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
 .stages.two{grid-template-columns:repeat(2,minmax(0,1fr))}
 figure{margin:0;min-width:0}
-.stage{position:relative;aspect-ratio:3/2;max-width:100%;background:var(--stage);border-radius:6px;overflow:hidden;cursor:grab;touch-action:pan-y;user-select:none}
-.stage:active{cursor:grabbing}
+.stage{position:relative;aspect-ratio:3/2;max-width:100%;background:var(--stage);border-radius:6px;overflow:hidden;cursor:zoom-in;touch-action:pan-y;user-select:none}
 .stage img{display:block;width:100%;height:100%;object-fit:cover;-webkit-user-drag:none}
 .stage .tag{position:absolute;left:10px;top:10px;font:12px/1 var(--mono);background:var(--panel);color:var(--fg);padding:5px 7px;border-radius:4px;opacity:.92}
 figcaption{font-size:12px;color:var(--muted);margin-top:6px}
@@ -89,11 +105,30 @@ figcaption{font-size:12px;color:var(--muted);margin-top:6px}
 .thumb[aria-current="true"] img{border-color:var(--key)}
 .thumb span{display:block;font-size:12px;color:var(--muted);margin-top:3px}
 .details{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
-.details a{color:inherit;text-decoration:none}
-.details img{display:block;width:100%;border-radius:5px;background:var(--stage)}
+.shot{border:0;padding:0;background:none;color:inherit;font:inherit;text-align:left;cursor:zoom-in;min-width:0}
+.details img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:5px;background:var(--stage)}
+.shot:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* lightbox: the image as large as the window allows; click it for 100 %, ← → or swipe for the next one */
+.lb{border:0;padding:0;margin:0;width:100vw;height:100dvh;max-width:none;max-height:none;background:#0e1114;color:#e6eaee}
+.lb::backdrop{background:transparent}
+body:has(.lb[open]){overflow:hidden}
+.lb[open]{display:grid;grid-template-rows:auto minmax(0,1fr)}
+.lb-bar{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 16px}
+.lb-cap{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-count{font:12px var(--mono);color:#9aa5b1;font-variant-numeric:tabular-nums}
+.lb button{font:inherit;color:inherit;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:6px;cursor:pointer}
+.lb-close{width:36px;height:36px;font-size:20px;line-height:1}
+.lb-body{position:relative;overflow:auto;display:grid;place-items:center;touch-action:pan-x pan-y pinch-zoom}
+.lb-body img{max-width:calc(100vw - 32px);max-height:calc(100dvh - 72px);object-fit:contain;cursor:zoom-in;user-select:none;-webkit-user-drag:none}
+.lb-body.zoomed{place-items:start}
+.lb-body.zoomed img{max-width:none;max-height:none;cursor:zoom-out}
+.lb .lb-nav{position:fixed;top:50%;transform:translateY(-50%);width:44px;height:64px;font-size:28px;line-height:1;background:rgba(14,17,20,.72)}
+.lb-nav.prev{left:12px}.lb-nav.next{right:12px}
+.lb-nav:disabled{display:none}
+.lb button:focus-visible{outline:2px solid #5fc285;outline-offset:2px}
 .empty{color:var(--muted)}
 @media (max-width:860px){.viewer{grid-template-columns:minmax(0,1fr)}.controls{grid-template-columns:1fr 1fr}.controls .wide{grid-column:1/-1}}
-@media (max-width:560px){.stages.two{grid-template-columns:minmax(0,1fr)}.controls{grid-template-columns:minmax(0,1fr)}.compass{max-width:150px}.seg button{padding:7px 10px}}
+@media (max-width:560px){.lb .lb-nav{width:36px;height:52px}.stages.two{grid-template-columns:minmax(0,1fr)}.controls{grid-template-columns:minmax(0,1fr)}.compass{max-width:150px}.seg button{padding:7px 10px}}
 @media (prefers-reduced-motion:no-preference){.stage img{transition:opacity .12s}}
 </style>
 <main>
@@ -122,7 +157,7 @@ figcaption{font-size:12px;color:var(--muted);margin-top:6px}
       </div>
       <div class="wide">
         <div class="readout" id="readout"></div>
-        <p class="hint">← → で方位、↑ ↓ で仰角を切り替えます。</p>
+        <p class="hint">← → で方位、↑ ↓ で仰角を切り替えます。画像をクリックすると拡大します。</p>
       </div>
     </div>
   </section>
@@ -137,6 +172,16 @@ figcaption{font-size:12px;color:var(--muted);margin-top:6px}
     <div class="details" id="details"></div>
   </section>
 </main>
+<dialog class="lb" id="lb" aria-labelledby="lb-cap">
+  <div class="lb-bar">
+    <span class="lb-cap" id="lb-cap"></span>
+    <span class="lb-count" id="lb-count"></span>
+    <button class="lb-close" id="lb-close" aria-label="閉じる">×</button>
+  </div>
+  <div class="lb-body" id="lb-body"><img id="lb-img" alt=""></div>
+  <button class="lb-nav prev" id="lb-prev" aria-label="前の画像">‹</button>
+  <button class="lb-nav next" id="lb-next" aria-label="次の画像">›</button>
+</dialog>
 <script>
 const DATA = /*DATA*/null;
 const AZ_NAME = {0:'正面', 45:'右前', 90:'右', 135:'右後ろ', 180:'背面', 225:'左後ろ', 270:'左', 315:'左前'};
@@ -247,16 +292,76 @@ function renderSheet() {
     `<button class="thumb" data-az="${az}" data-el="${el}" aria-current="${az === state.az && el === state.el}">
        <img loading="lazy" src="${src(v, az, el)}" alt="${name(az, el)}"><span>${name(az, el)}　${az}° / ${el}°</span></button>`).join('')
     : '<p class="empty">まだ描画されていません。gen/render_views.sh を実行してください。</p>';
-  $('sheet').querySelectorAll('.thumb').forEach(b => b.addEventListener('click', () => {
-    pick(+b.dataset.az, +b.dataset.el);
-    $('stages').scrollIntoView({behavior: 'smooth', block: 'nearest'});
-  }));
+  $('sheet').querySelectorAll('.thumb').forEach((b, i) => b.addEventListener('click', () => openViews(v, i)));
+}
+
+// every orbit view of one variant in the lightbox, starting at index i; the stage follows along
+function openViews(v, i) {
+  const list = views.filter(([az, el]) => src(v, az, el));
+  lightbox(list.map(([az, el]) => ({src: src(v, az, el), cap: `${V_NAME[v]}・${name(az, el)}　${az}° / ${el}°`})), i,
+    j => pick(...list[j]));
 }
 
 function renderDetails() {
-  const html = variants().flatMap(v => (DATA.details[v] || []).map(([t, url]) =>
-    `<a href="${url}" target="_blank" rel="noopener"><figure><img loading="lazy" src="${url}" alt="${V_NAME[v]}、${t}"><figcaption>${V_NAME[v]}・${t}</figcaption></figure></a>`));
-  $('details').innerHTML = html.join('') || '<p class="empty">寄りの画像はありません。</p>';
+  // A | B: the same shot of both variants next to each other
+  const per = variants().map(v => (DATA.details[v] || []).map(([t, url]) => ({src: url, cap: `${V_NAME[v]}・${t}`, t})));
+  const labels = [...new Set(per.flat().map(d => d.t))];
+  const items = labels.flatMap(t => per.map(list => list.find(d => d.t === t)).filter(Boolean));
+  $('details').innerHTML = items.map((d, i) =>
+    `<button class="shot" data-i="${i}"><figure><img loading="lazy" src="${d.src}" alt="${d.cap}"><figcaption>${d.cap}</figcaption></figure></button>`).join('')
+    || '<p class="empty">寄りの画像はありません。</p>';
+  $('details').querySelectorAll('.shot').forEach(b => b.addEventListener('click', () => lightbox(items, +b.dataset.i)));
+}
+
+const lb = {items: [], i: 0, onShow: null};
+function lightbox(items, i, onShow = null) {
+  Object.assign(lb, {items, onShow});
+  if (!$('lb').open) $('lb').showModal();
+  show(i);
+}
+
+function show(i) {
+  const n = lb.items.length, d = lb.items[i];
+  if (!d) return;
+  lb.i = i;
+  $('lb-body').classList.remove('zoomed');
+  $('lb-img').src = d.src; $('lb-img').alt = d.cap;
+  $('lb-cap').textContent = d.cap;
+  $('lb-count').textContent = `${i + 1} / ${n}`;
+  $('lb-prev').disabled = $('lb-next').disabled = n < 2;
+  [i - 1, i + 1].forEach(j => { const e = lb.items[(j + n) % n]; if (e) new Image().src = e.src; });
+  lb.onShow?.(i);
+}
+
+function lbStep(dir) {
+  const n = lb.items.length;
+  if (n > 1) show((lb.i + dir + n) % n);
+}
+
+function setupLightbox() {
+  const dlg = $('lb'), body = $('lb-body'), img = $('lb-img');
+  $('lb-close').addEventListener('click', () => dlg.close());
+  $('lb-prev').addEventListener('click', () => lbStep(-1));
+  $('lb-next').addEventListener('click', () => lbStep(1));
+  // the dark area around the image closes it; the image itself toggles 100 % at the clicked spot
+  body.addEventListener('click', e => { if (e.target === body && !body.classList.contains('zoomed')) dlg.close(); });
+  let p0 = null;
+  img.addEventListener('pointerdown', e => { p0 = {x: e.clientX, y: e.clientY}; });
+  img.addEventListener('pointerup', e => {
+    if (!p0) return;
+    const dx = e.clientX - p0.x, dy = e.clientY - p0.y; p0 = null;
+    const zoomed = body.classList.contains('zoomed');
+    if (!zoomed && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) return lbStep(dx < 0 ? 1 : -1);   // swipe
+    if (Math.hypot(dx, dy) > 6) return;
+    const r = img.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+    body.classList.toggle('zoomed');
+    if (!zoomed) {
+      if (img.naturalWidth <= r.width) return body.classList.remove('zoomed');   // already shown at full size
+      body.scrollLeft = fx * img.naturalWidth - body.clientWidth / 2;
+      body.scrollTop = fy * img.naturalHeight - body.clientHeight / 2;
+    }
+  });
+  dlg.addEventListener('close', () => { lb.onShow = null; body.classList.remove('zoomed'); });
 }
 
 let lastV = null;
@@ -273,24 +378,40 @@ function preload() {
 }
 
 function dragToTurn(el) {
-  let x0 = null;
-  el.addEventListener('pointerdown', e => { x0 = e.clientX; el.setPointerCapture(e.pointerId); });
+  let x0 = null, moved = false;
+  el.addEventListener('pointerdown', e => { x0 = e.clientX; moved = false; el.setPointerCapture(e.pointerId); });
   el.addEventListener('pointermove', e => {
     if (x0 === null) return;
     const dx = e.clientX - x0;
+    if (Math.abs(dx) > 6) { moved = true; el.style.cursor = 'grabbing'; }
     if (Math.abs(dx) > 60) { step(dx < 0 ? 1 : -1); x0 = e.clientX; }
   });
-  const end = () => { x0 = null; };
-  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+  const enlarge = () => {
+    const v = el.dataset.v, list = views.filter(([az, e]) => src(v, az, e));
+    const i = list.findIndex(([az, e]) => az === state.az && e === state.el);
+    if (i >= 0) openViews(v, i);
+  };
+  el.addEventListener('pointerup', () => {   // a click without dragging: enlarge
+    if (x0 !== null && !moved) enlarge();
+    x0 = null; el.style.cursor = '';
+  });
+  el.addEventListener('pointercancel', () => { x0 = null; el.style.cursor = ''; });
+  el.tabIndex = 0; el.setAttribute('role', 'button'); el.setAttribute('aria-label', '拡大');
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enlarge(); } });
 }
 
 document.querySelectorAll('header .seg button').forEach(b => b.addEventListener('click', () => { state.v = b.dataset.v; render(); }));
 document.addEventListener('keydown', e => {
+  if ($('lb').open) {   // Esc is the dialog's own
+    const k = {ArrowLeft: -1, ArrowRight: 1}[e.key];
+    if (k) { e.preventDefault(); lbStep(k); }
+    return;
+  }
   if (e.target.closest('input,textarea')) return;
   const k = {ArrowLeft: () => step(-1), ArrowRight: () => step(1), ArrowUp: () => stepElev(1), ArrowDown: () => stepElev(-1)}[e.key];
   if (k) { e.preventDefault(); k(); }
 });
-buildCompass(); buildElev(); render();
+buildCompass(); buildElev(); setupLightbox(); render();
 </script>
 '''
 
