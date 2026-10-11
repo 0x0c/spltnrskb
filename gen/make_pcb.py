@@ -41,7 +41,7 @@ SIDES = {
                  oled=(8.25 * U + MARGIN + 9.4 - 6.3, OLED_Y, 90), wheel='top-left'),
     'right': dict(key_shift=9.75 * U - 12.6, width=9.5 * U + MARGIN + 12.6, inner=-1, usb_x=-MARGIN + 35.0,
                   trrs_x=-MARGIN + 17.0, mcu=(5.0, 45.0), oled=(3.3, OLED_Y, 90), wheel='top-right',
-                  drum=dict(key='F12', dx=17.15)),
+                  drum=dict(x_key='Backspace', y_key='F12', dx=-(0.4 + 12.0 / 2))),   # drum centred on Backspace
 }
 
 # Support parts: (ref, list of (footprint ref, pad) the part should sit close to)
@@ -324,9 +324,10 @@ SOCKET_BOX = (-8.6, -7.4, 7.35, -0.6)
 ENC_KEEP = 0.5            # gap kept between the two
 
 
-# drum dial: Alps EC10E (ENC2) on the front in the free 2 u right of a top-row key, axis along X, its
-# shaft-insert face DRUM dx right of that key's centre; the drum and its bearing block (Drum_Dial_Bearing,
-# board only) continue to +X. Left-aligned in the gap: the thumbwheel lies under the board's right end.
+# drum dial: Alps EC10E (ENC2) on the front in the free 2 u of the top row, axis along X, on the row of
+# drum['y_key']; its shaft-insert face dx right of drum['x_key']'s centre, so the drum (0.4 mm gap, 12 mm wide)
+# is centred on that key. The drum and its bearing block (Drum_Dial_Bearing, board only) continue to +X; the
+# block's pegs stop inside the board, clear of the thumbwheel underneath.
 
 
 # courtyard overhang beyond the connector mouth (mouth ends flush with the board edge)
@@ -519,8 +520,9 @@ def build(side):
     enc = place('ENC1', wx, wy, 180, back=True)     # on the back, 180 deg puts the terminals at +y
     assert min(pad(enc, n).y for n in ('A', 'B', 'C')) > enc.GetPosition().y, 'encoder terminals not toward +y'
     if 'drum' in cfg:
-        k = next(k for k in keys.values() if k['name'] == cfg['drum']['key'])
-        dx, dy = k['cx'] - shift + cfg['drum']['dx'], k['cy']
+        kx = next(k for k in keys.values() if k['name'] == cfg['drum']['x_key'])
+        ky = next(k for k in keys.values() if k['name'] == cfg['drum']['y_key'])
+        dx, dy = kx['cx'] - shift + cfg['drum']['dx'], ky['cy']
         place('ENC2', dx, dy, 0)
         brg = pcbnew.FootprintLoad(lib_path('nrsk'), 'Drum_Dial_Bearing')
         brg.SetFPID(pcbnew.LIB_ID('nrsk', 'Drum_Dial_Bearing'))
