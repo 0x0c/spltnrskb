@@ -1,20 +1,16 @@
 ** Drc report for nrsk-right.kicad_pcb **
-** Created on 2026-10-11T17:28:01 **
+** Created on 2026-10-11T18:01:20 **
 ** Report includes: Errors, Warnings, Exclusions **
 
-** Found 5 DRC violations **
+** Found 4 DRC violations **
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
-    @(40.5000 mm, 13.6550 mm): Segment on Edge.Cuts
-    @(41.5000 mm, 13.7000 mm): Segment of J1 on B.Silkscreen
+    @(40.5000 mm, 16.3000 mm): Arc on Edge.Cuts
+    @(39.3000 mm, 15.4950 mm): Segment of J1 on B.Silkscreen
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
-    @(40.5000 mm, 13.6550 mm): Segment on Edge.Cuts
-    @(41.5000 mm, 15.7000 mm): Segment of J1 on B.Silkscreen
-[silk_edge_clearance]: Silkscreen clipped by board edge
-    Rule: board setup constraints silk; warning
-    @(40.5000 mm, 13.6550 mm): Segment on Edge.Cuts
-    @(46.5000 mm, 15.7000 mm): Segment of J1 on B.Silkscreen
+    @(47.5000 mm, 16.3000 mm): Arc on Edge.Cuts
+    @(48.7000 mm, 15.4950 mm): Segment of J1 on B.Silkscreen
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
     @(58.5000 mm, 16.3000 mm): Arc on Edge.Cuts

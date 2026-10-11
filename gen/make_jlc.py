@@ -31,7 +31,6 @@ JLC_FIX = {
     'SOT-23-6': (270, (0.0, 0.0)),
     'SOIC-8_5.3x5.3mm_P1.27mm': (270, (0.0, 0.0)),
     'USB_C_Receptacle_HRO_TYPE-C-31-M-12': (0, (0.0, -1.575)),     # EasyEDA origin 2.47 mm behind the signal pads
-    'Jack_3.5mm_PJ320D_Horizontal': (0, (0.925, 0.0)),              # EasyEDA origin 0.925 mm off, holes aligned
     'Alps_EC05E1220401': (0, (0.0, 2.08)),                          # EasyEDA origin 2.08 mm toward the terminals
 }
 

@@ -42,7 +42,7 @@ OLED_H = arg('--oled-height', None)          # None = built design (cover on the
 OUT_SUFFIX = arg('--suffix', '')
 SCREWS = arg('--screws', 'none')             # case screws on the plate: 'none', 'flat' (M2 countersunk, flush) or 'lowpan' (M2 low-head pan)
 TOP = arg('--top', 'acrylic')
-PORTS = arg('--ports', None)                 # USB-C/TRRS opening study style (case/preview/port-variants), left half only
+PORTS = arg('--ports', None)                 # USB-C/TRRS opening study style (case/preview/port-variants, made for the former TRRS link), left half only
 NO_CABLES = '--no-cables' in args                # switch plate: 'acrylic' (clear, laser cut) or 'print' (printed, with web)
 VIEWS_DIR = arg('--views-dir', None)         # shots go here as <name><suffix>.png instead of docs/img/render-<name><suffix>.png
 VARIANTS = os.path.join(ROOT, 'case', 'preview', 'oled-variants')
@@ -555,7 +555,7 @@ def main():
         d = data[side]
         out = 1 if d['inner_side'] == 'right' else -1
         edge = d['outline']['x1'] + 8.5 if out > 0 else d['outline']['x0'] - 8.5
-        for kind in ('trrs', 'usb'):
+        for kind in ('link', 'usb'):
             if side == 'right' and kind == 'usb':
                 continue
             c = d['connectors'][kind]
@@ -563,10 +563,10 @@ def main():
                 mouth, direction = (c['center'][0], d['outline']['y0'] - 8.5), (0, -1)
             else:
                 mouth, direction = (edge, c['center'][1]), (out, 0)
-            tail, axis = plug_at(f'{side} {kind}', W[side], mouth, z_conn, direction, 14.0 if kind == 'trrs' else 17.0)
+            tail, axis = plug_at(f'{side} {kind}', W[side], mouth, z_conn, direction, 17.0)
             ends[(side, kind)] = (tail, axis)
-    (a, aa), (b, ba) = ends[('left', 'trrs')], ends[('right', 'trrs')]
-    cable('trrs cable', cable_path(a, aa, b, ba, reach=0.06))
+    (a, aa), (b, ba) = ends[('left', 'link')], ends[('right', 'link')]
+    cable('link cable', cable_path(a, aa, b, ba, reach=0.06))
     u, ua = ends[('left', 'usb')]
     # USB cable leaves the back edge and runs off behind the keyboard (to the computer)
     far = u + Vector((-0.06, 0.40, 0)); far.z = 2.6 * MM
@@ -621,7 +621,7 @@ def finish(W, data):
         t = board_point(W['right'], x + 6.4, y, FLOOR + STANDOFF + PCB_T + 7.0)   # drum centre (axis 7 mm over the PCB)
         shots['drum'] = dict(loc=tuple(t + Vector((0.05, -0.08, 0.15))), target=tuple(t),
                              lens=75, focus=tuple(t), fstop=5.6, res=(RES, int(RES * 2 / 3)))
-    # the left half's inner top corner, from outside: USB-C and TRRS on the back edge
+    # the left half's inner top corner, from outside: both USB-C ports on the back edge
     o = data['left']['outline']
     t = board_point(W['left'], o['x1'] - 26.0, o['y0'] - 4.0, 4.0)
     shots['ports'] = dict(loc=tuple(board_point(W['left'], o['x1'] + 30.0, o['y0'] - 110.0, 60.0)), target=tuple(t),

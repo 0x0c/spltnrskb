@@ -82,8 +82,8 @@ def pour(side):
     board = pcbnew.LoadBoard(pcb)
     gnd = board.FindNet('GND')
     bb = board.GetBoardEdgesBoundingBox()
-    for fp in board.GetFootprints():      # the USB-C shell legs: through-hole, but JLC solders them; solid to GND
-        if fp.GetReference() == 'J2':
+    for fp in board.GetFootprints():      # the USB-C shell legs (both ports): through-hole, but JLC solders them; solid to GND
+        if fp.GetReference() in ('J1', 'J2'):
             for p in fp.Pads():
                 if p.GetNumber() == 'SH':
                     p.SetLocalZoneConnection(pcbnew.ZONE_CONNECTION_FULL)

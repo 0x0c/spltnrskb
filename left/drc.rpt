@@ -1,8 +1,8 @@
 ** Drc report for nrsk-left.kicad_pcb **
-** Created on 2026-10-11T10:34:15 **
+** Created on 2026-10-11T15:30:30 **
 ** Report includes: Errors, Warnings, Exclusions **
 
-** Found 5 DRC violations **
+** Found 4 DRC violations **
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
     @(161.0625 mm, 16.3000 mm): Arc on Edge.Cuts
@@ -13,16 +13,12 @@
     @(169.2625 mm, 15.4950 mm): Segment of J2 on B.Silkscreen
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
-    @(179.0625 mm, 13.6550 mm): Segment on Edge.Cuts
-    @(180.0625 mm, 13.7000 mm): Segment of J1 on B.Silkscreen
+    @(179.0625 mm, 16.3000 mm): Arc on Edge.Cuts
+    @(177.8625 mm, 15.4950 mm): Segment of J1 on B.Silkscreen
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
-    @(179.0625 mm, 13.6550 mm): Segment on Edge.Cuts
-    @(180.0625 mm, 15.7000 mm): Segment of J1 on B.Silkscreen
-[silk_edge_clearance]: Silkscreen clipped by board edge
-    Rule: board setup constraints silk; warning
-    @(179.0625 mm, 13.6550 mm): Segment on Edge.Cuts
-    @(185.0625 mm, 15.7000 mm): Segment of J1 on B.Silkscreen
+    @(186.0625 mm, 16.3000 mm): Arc on Edge.Cuts
+    @(187.2625 mm, 15.4950 mm): Segment of J1 on B.Silkscreen
 
 ** Found 0 unconnected pads **
 

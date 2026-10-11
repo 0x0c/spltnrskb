@@ -3,9 +3,7 @@ MCU,マイコン RP2040,Raspberry Pi RP2040、QFN-56 7×7 mm,1,1,2,Raspberry Pi 
 MCU,QSPI フラッシュ 16 MB,Winbond W25Q128JVSIQ、SOIC-8 208 mil,1,1,2,Winbond W25Q128JVSIQ,LCSC C113767,US$2.52,https://www.lcsc.com/product-detail/C113767.html,よく使われる C97521 は同じ型番だが確認時に在庫切れ
 MCU,　└ 代替,,,,,Winbond W25Q16JVSSIQ（2 MB、同じ 208 mil）,LCSC C82317,US$1.07,https://www.lcsc.com/product-detail/C82317.html,容量は小さいがキーボードには十分
 電源,LDO 3.3 V,Diodes AP2112K-3.3TRG1（600 mA）、SOT-23-5,1,1,2,Diodes AP2112K-3.3TRG1,LCSC C51118,US$0.17,https://www.lcsc.com/product-detail/C51118.html,
-コネクタ,USB-C レセプタクル,HRO TYPE-C-31-M-12（16 ピン、USB 2.0）,1,1,2,Korean Hroparts TYPE-C-31-M-12,LCSC C165948,US$0.17,https://www.lcsc.com/product-detail/C165948.html,
-コネクタ,TRRS ジャック 3.5 mm,PJ-320D（4 極、表面実装）,1,1,2,SHOU HAN PJ-320D,LCSC C431535,US$0.05,https://www.lcsc.com/product-detail/C431535.html,LCSC の EasyEDA フットプリントと照合済み：固定ピン間隔 7.0 mm が一致し、端子位置の差は 0.1 mm 以内で KiCad の PJ320D パッドに載る
-コネクタ,　└ 代替,,,,,Korean Hroparts PJ-320D-4A,LCSC C95562,US$0.11,https://www.lcsc.com/product-detail/C95562.html,代替。同じく固定ピン間隔 7.0 mm が一致し、端子位置の差は 0.1 mm 以内
+コネクタ,USB-C レセプタクル,HRO TYPE-C-31-M-12（16 ピン、USB 2.0）。片側 2 個：PC 用（J2）と左右の接続用（J1）,2,2,4,Korean Hroparts TYPE-C-31-M-12,LCSC C165948,US$0.17,https://www.lcsc.com/product-detail/C165948.html,
 保護,USB ESD 保護,"STMicroelectronics USBLC6-2SC6, SOT-23-6",1,1,2,STMicroelectronics USBLC6-2SC6,LCSC C7519,US$0.18,https://www.lcsc.com/product-detail/C7519.html,
 クロック,水晶振動子 12 MHz,3225 4 パッド、負荷容量 10 pF 前後（15 pF のコンデンサと組み合わせる）,1,1,2,Abracon ABM8-272-T3（CL 10 pF）,LCSC C20625731,US$0.63,https://www.lcsc.com/product-detail/C20625731.html,Raspberry Pi のリファレンスと同じ部品。安価な YXC X322512MSB4SI（C9002）は CL 20 pF なので 15 pF のコンデンサとは合わない
 保護,ポリスイッチ 500 mA,1206（例: Bourns MF-NSMF050-2）,1,1,2,Bourns MF-NSMF050-2,LCSC C75464,US$0.04,https://www.lcsc.com/product-detail/C75464.html,
@@ -67,8 +65,7 @@ OLED カバー,透明両面テープ 厚さ 0.5 mm,カバーと OLED のガラ�
 3D プリント版 B,M2 × 12 mm なべネジ（底から）,トレイ底の座ぐりから壁を通してプレート裏のインサートへ,10,11,21,TRUSCO Y823-0212 ナベ頭小ねじ ステンレス M2 × 12,MonotaRO,¥395 / 20 本,https://www.monotaro.com/p/2498/0167/,LCSC に該当品なし
 3D プリント版 B,　└ 代替,,,,,エスコ EA949NF-212 鍋頭小ねじ ステンレス M2 × 12,MonotaRO,¥275 / 16 本,https://www.monotaro.com/g/02450718/,
 3D プリント版,M2 × 6 mm タッピングネジ,基板をボス（下穴 φ1.6）へ固定,8,8,16,Shuntian PA2X6nie（なべ、頭 φ3.5、ニッケルめっき）,LCSC C357360,US$0.16 / 100 本（100 本単位）,https://www.lcsc.com/product-detail/C357360.html,"2026-10-10 に確認（在庫 2,900）"
-ケーブル,TRRS ケーブル（4 極、オス-オス）,3.5 mm,,,,TRRS ケーブル 0.3 m,遊舎工房,¥330,https://shop.yushakobo.jp/products/8023,1 本；LCSC に該当品なし
-ケーブル,　└ 代替,,,,,TRRS ケーブル 0.8 m（メタル）,遊舎工房,"¥1,100",https://shop.yushakobo.jp/products/8111,
-ケーブル,USB-C ケーブル,USB 2.0 以上,,,,Ckmtw S100920007（USB-A to C、データ用、1 m）,LCSC C430908,US$2.12,https://www.lcsc.com/product-detail/C430908.html,1 本；2026-10-10 に確認（在庫 110）
+ケーブル,USB-C ケーブル（左右の接続用、C-C）,USB 2.0 以上のデータ通信用（充電専用は不可）,,,,USB Type-C to C 1.0 m（ノーブランド A0400CX-01-1）,遊舎工房,¥440,https://shop.yushakobo.jp/products/11426,1 本；キーボードと PC の接続用として売られているデータ通信用のケーブル（2026-10-11 に確認、在庫 65）。D+ を通らない充電専用のケーブルでは左右が通信しない
+ケーブル,USB-C ケーブル,USB 2.0 以上（PC との接続用）,,,,Ckmtw S100920007（USB-A to C、データ用、1 m）,LCSC C430908,US$2.12,https://www.lcsc.com/product-detail/C430908.html,1 本；2026-10-10 に確認（在庫 110）
 ケーブル,　└ 代替,,,,,USB Type-C to C 1.0 m,遊舎工房,¥440,https://shop.yushakobo.jp/products/11426,
 基板,プリント基板（2 層、1.6 mm）,fab/<side>/nrsk-<side>-gerber.zip,1,1,2,Gerber から発注（実装サービスも可）,JLCPCB,見積,https://cart.jlcpcb.com/quote,

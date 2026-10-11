@@ -8,7 +8,7 @@ Heights (z, mm, bottom of case = 0)
   acrylic : bottom 0-3 | frames 3-15 | PCB 10.0-11.6 on 7 mm M2 standoffs | plate 15-16.5
   print   : floor 0-2  | walls 2-14.1 | PCB 9.0-10.6 on 7 mm bosses       | plate 14.1-15.6
 MX spec: plate top to PCB top = 5.0 mm -> plate bottom 3.5 mm above the PCB.
-USB-C and TRRS sit on the back of the PCB, so the plugs pass below the PCB: the switch plate and
+Both USB-C receptacles (host and split link) sit on the back of the PCB, so the plugs pass below the PCB: the switch plate and
 the top frame stay closed, only the wall below the PCB is opened.
 
 Run with the project venv:  .venv/bin/python gen/make_case.py
@@ -33,7 +33,7 @@ SCREW_D = 2.2        # M2 clearance hole
 PLATE_T = 1.5
 PCB_T = 1.6
 PLATE_GAP = 3.5      # PCB top -> plate bottom (MX: 5.0 - 1.5)
-STANDOFF = 7.0       # PCB bottom above case floor (room for the TRRS / USB-C plugs under the PCB)
+STANDOFF = 7.0       # PCB bottom above case floor (room for the USB-C plugs under the PCB)
 # acrylic
 BOTTOM_T = 3.0
 FRAME_T = 3.0
@@ -42,8 +42,7 @@ N_FRAMES = 4
 # surface, and the wall shows only the connector outline. In the printed tray each port is a closed tunnel with
 # PORT_LIFT of headroom over the tongue: the board goes in front edge slightly raised and PORT_LIFT high, slides
 # tongue-first into the tunnels, then drops onto the bosses. In the acrylic stack the frames are notched.
-USB_SHELL = (8.94, 3.26)     # HRO TYPE-C-31-M-12 shell w, h (hangs under the PCB)
-TRRS_H, TRRS_NOZZLE = 5.0, 5.0   # PJ-320D body height under the PCB, nozzle diameter
+USB_SHELL = (8.94, 3.26)     # HRO TYPE-C-31-M-12 shell w, h (hangs under the PCB); both ports use it
 PORT_CLR = 0.2               # opening around the connector outline
 CHANNEL_CLR = 0.3            # tongue / connector body to the tunnel
 PORT_KEEP = 3.0              # case screws stay this far beyond the tunnel along the wall
@@ -225,28 +224,22 @@ class Half:
         return out
 
     def port_z(self, port, z_pcb):
-        """(bottom of the connector, centre of its opening, opening height) for a PCB bottom at z_pcb."""
-        if port['name'] == 'usb':
-            return z_pcb - USB_SHELL[1], z_pcb - USB_SHELL[1] / 2, USB_SHELL[1] + 2 * PORT_CLR
-        return z_pcb - TRRS_H, z_pcb - TRRS_NOZZLE / 2, TRRS_NOZZLE + 2 * PORT_CLR
+        """(bottom of the connector, centre of its opening, opening height) for a PCB bottom at z_pcb. Both ports
+        are the same USB-C receptacle, so both openings sit at the same height."""
+        return z_pcb - USB_SHELL[1], z_pcb - USB_SHELL[1] / 2, USB_SHELL[1] + 2 * PORT_CLR
 
     def port_hole(self, port, z_pcb):
-        """The visible opening: connector outline + PORT_CLR, through the skin in front of the mouth."""
+        """The visible opening: connector outline + PORT_CLR (a rounded slot), through the skin in front of the
+        mouth. Ports are on the top edge."""
+        assert port['edge'] == 'top', port['name']
         _, zc, hh = self.port_z(port, z_pcb)
         ox0, oy0, ox1, oy1, _ = self.outer_box
         depth = self.d.get('port_skin', 0.8) + 1.0
-        if port['name'] == 'usb':
-            w, h = USB_SHELL[0] + 2 * PORT_CLR, hh
-            r = h / 2
-            cs = CrossSection.square((w - 2 * r, 0.001), center=True).offset(r, JoinType.Round)
-            m = Manifold.extrude(cs, depth + 1).rotate((-90, 0, 0))        # along +y (3D) = outward on the top edge
-            return m.translate((port['along'], -oy0 - depth, zc))
-        m = Manifold.cylinder(depth + 1, hh / 2, hh / 2, 48).rotate((0, 90, 0))   # along +x
-        if port['edge'] == 'top':
-            return m.rotate((0, 0, 90)).translate((port['along'], -oy0 - depth, zc))
-        if self.inner_right:
-            return m.translate((ox1 - depth, -port['along'], zc))
-        return m.rotate((0, 0, 180)).translate((ox0 + depth, -port['along'], zc))
+        w, h = USB_SHELL[0] + 2 * PORT_CLR, hh
+        r = h / 2
+        cs = CrossSection.square((w - 2 * r, 0.001), center=True).offset(r, JoinType.Round)
+        m = Manifold.extrude(cs, depth + 1).rotate((-90, 0, 0))        # along +y (3D) = outward on the top edge
+        return m.translate((port['along'], -oy0 - depth, zc))
 
     def slot_cs(self, pcb_side_too=True):
         cs = CrossSection()
