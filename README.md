@@ -188,7 +188,7 @@ LCSC で買えるものは、すべて LCSC を最初の購入先にしていま
 
 購入先は [gen/bom_sources.json](gen/bom_sources.json) にまとめてあり、価格や在庫は変わるので発注前に確認してください。
 
-注文先ごとの手順と数量（筐体の版ごとのネジやアクリルを含む）は [docs/ordering.md](docs/ordering.md) にまとめています。
+注文先ごとの手順と数量（筐体の版ごとのネジやアクリルを含む）は [docs/ordering.md](docs/ordering.md) にまとめています。注文の前に確かめることは [docs/pre-order-checklist.md](docs/pre-order-checklist.md) にあります。
 
 次の部品は、発注前に特に確認してください。
 
@@ -283,7 +283,8 @@ spltnrskb/
 ├── bom/                         左右と筐体を合わせた部品表（CSV と Markdown）
 ├── firmware/qmk/keyboards/nrsk/ QMK のキーボード定義と既定のキーマップ
 ├── docs/specs/                  設計変更の仕様書
-├── docs/ordering.md            発注の手順（注文先ごとの部品と数量）
+├── docs/ordering.md             発注の手順（注文先ごとの部品と数量）
+├── docs/pre-order-checklist.md  発注前の確認事項（検査結果、残るリスク、注文の順番）
 ├── docs/thumbwheel-check.md     サムホイールと OLED の実機確認の手順
 ├── docs/img/                    README の画像
 │   ├── left-*.png, right-*.png  基板の 3D 表示と重ね合わせ図
