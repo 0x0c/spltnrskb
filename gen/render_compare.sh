@@ -1,7 +1,7 @@
 #!/bin/bash
 # README comparison of case variants A (clear acrylic plate, low-head screws from the top) and B (all printed):
 # whole board, OLED and left wheel for each, then gen/compare_ab.py puts them on one sheet.
-# Also the USB-C / TRRS opening close-up (render-ports.png, variant A) and the board slide-in section (port-slide.png).
+# Also the USB-C opening close-up (render-ports.png, variant A) and the board slide-in section (port-slide.png).
 set -e
 cd "$(dirname "$0")/.."
 RES=${RES:-1800} SAMPLES=${SAMPLES:-160}

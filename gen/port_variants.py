@@ -10,6 +10,8 @@ gen/render_blender.py --ports <style>:
   panel   : 3 - panel-mount USB-C (flanged, 2 screws) and 3.5 mm jack (hex nut) in the wall
 Writes left-<style>-*.stl and parts.json (file -> material).
 Run with the project venv:  .venv/bin/python gen/port_variants.py
+Kept as a record: it was made for the earlier layout (TRRS jack on the inner edge) and no longer runs on the
+current case_data, where the split link is a second USB-C on the top edge.
 """
 import json
 import math

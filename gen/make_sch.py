@@ -17,7 +17,6 @@ KI_SYM = os.path.expanduser('~/Applications/KiCad/KiCad.app/Contents/SharedSuppo
 
 FP = {
     'diode': 'Diode_SMD:D_SOD-123',
-    'trrs': 'Connector_Audio:Jack_3.5mm_PJ320D_Horizontal',
     'usb': 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12',
     'mcu': 'Package_DFN_QFN:QFN-56-1EP_7x7mm_P0.4mm_EP3.2x3.2mm',
     'flash': 'Package_SO:SOIC-8_5.3x5.3mm_P1.27mm',
@@ -303,11 +302,14 @@ def build(side):
     sh.power('PWR_FLAG', 388.62, 137.16, 0)
     sh.attach('GND', (388.62, 137.16), (0, 1))
 
-    # TRRS
-    JX, JY = 342.9, 175.26
-    sh.text('Split link: TRRS 3.5 mm (5 V + QMK serial)', JX - 12.7, JY - 15.24)
-    sh.symbol('Connector_Audio:AudioJack4', 'J1', 'PJ-320D', JX, JY, 0, FP['trrs'],
-              {'T': 'DATA', 'R1': None, 'R2': 'VCC', 'S': 'GND'})
+    # split link: a second USB-C, wired like the old TRRS (5 V, GND, one data line). DATA on D+ (A6/B6, both rows:
+    # the cable can go in either way). CC left open: without Rd a USB-C host or charger plugged in by mistake sees
+    # no sink and keeps VBUS off. Needs a USB 2.0 data cable (charge-only cables have no D+).
+    JX, JY = 342.9, 167.64
+    sh.text('Split link: USB-C (5 V + QMK serial on D+, CC open)', JX - 10.16, JY - 20.32)
+    link = {'A4': 'VCC', 'A1': 'GND', 'A5': None, 'B5': None, 'A6': 'DATA', 'B6': 'DATA',
+            'A7': None, 'B7': None, 'A8': None, 'B8': None, 'SH': 'GND'}
+    sh.symbol('Connector:USB_C_Receptacle_USB2.0_16P', 'J1', 'USB-C', JX, JY, 0, FP['usb'], link)
 
     # OLED (0.91" SSD1306, I2C on PD0/PD1)
     OX, OY = 342.9, 215.9

@@ -9,22 +9,6 @@
    "price": "US$0.17"
   }
  ],
- "TRRS ジャック 3.5 mm": [
-  {
-   "mpn": "SHOU HAN PJ-320D",
-   "shop": "LCSC C431535",
-   "url": "https://www.lcsc.com/product-detail/C431535.html",
-   "price": "US$0.05",
-   "note": "LCSC の EasyEDA フットプリントと照合済み：固定ピン間隔 7.0 mm が一致し、端子位置の差は 0.1 mm 以内で KiCad の PJ320D パッドに載る"
-  },
-  {
-   "mpn": "Korean Hroparts PJ-320D-4A",
-   "shop": "LCSC C95562",
-   "url": "https://www.lcsc.com/product-detail/C95562.html",
-   "price": "US$0.11",
-   "note": "代替。同じく固定ピン間隔 7.0 mm が一致し、端子位置の差は 0.1 mm 以内"
-  }
- ],
  "USB ESD 保護": [
   {
    "mpn": "STMicroelectronics USBLC6-2SC6",
@@ -233,19 +217,13 @@
    "note": "2026-10-10 に確認（在庫 291 個）"
   }
  ],
- "TRRS ケーブル（4 極、オス-オス）": [
+ "USB-C ケーブル（左右の接続用、C-C）": [
   {
-   "mpn": "TRRS ケーブル 0.3 m",
+   "mpn": "USB Type-C to C 1.0 m（ノーブランド A0400CX-01-1）",
    "shop": "遊舎工房",
-   "url": "https://shop.yushakobo.jp/products/8023",
-   "price": "¥330",
-   "note": "LCSC に該当品なし"
-  },
-  {
-   "mpn": "TRRS ケーブル 0.8 m（メタル）",
-   "shop": "遊舎工房",
-   "url": "https://shop.yushakobo.jp/products/8111",
-   "price": "¥1,100"
+   "url": "https://shop.yushakobo.jp/products/11426",
+   "price": "¥440",
+   "note": "キーボードと PC の接続用として売られているデータ通信用のケーブル（2026-10-11 に確認、在庫 65）。D+ を通らない充電専用のケーブルでは左右が通信しない"
   }
  ],
  "USB-C ケーブル": [

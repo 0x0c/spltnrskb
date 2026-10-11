@@ -4673,250 +4673,6 @@
 		)
 		(embedded_fonts no)
 	)
-		(symbol "Connector_Audio:AudioJack4"
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(duplicate_pin_numbers_are_jumpers no)
-		(property "Reference" "J"
-			(at 0 8.89 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "AudioJack4"
-			(at 0 6.35 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 0 0 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(hide yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 0 0 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(hide yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" "Audio Jack, 4 Poles (TRRS)"
-			(at 0 0 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(hide yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "ki_keywords" "audio jack receptacle stereo headphones TRRS connector"
-			(at 0 0 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(hide yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "ki_fp_filters" "Jack*"
-			(at 0 0 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(hide yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(symbol "AudioJack4_0_1"
-			(rectangle
-				(start -6.35 -5.08)
-				(end -7.62 -7.62)
-				(stroke
-					(width 0.254)
-					(type default)
-				)
-				(fill
-					(type outline)
-				)
-			)
-			(polyline
-				(pts
-					(xy -5.715 -5.08)
-					(xy -5.08 -5.715)
-					(xy -4.445 -5.08)
-					(xy -4.445 2.54)
-					(xy 2.54 2.54)
-				)
-				(stroke
-					(width 0.254)
-					(type default)
-				)
-				(fill
-					(type none)
-				)
-			)
-			(polyline
-				(pts
-					(xy -1.905 -5.08)
-					(xy -1.27 -5.715)
-					(xy -0.635 -5.08)
-					(xy -0.635 -2.54)
-					(xy 2.54 -2.54)
-				)
-				(stroke
-					(width 0.254)
-					(type default)
-				)
-				(fill
-					(type none)
-				)
-			)
-			(polyline
-				(pts
-					(xy 0 -5.08)
-					(xy 0.635 -5.715)
-					(xy 1.27 -5.08)
-					(xy 2.54 -5.08)
-				)
-				(stroke
-					(width 0.254)
-					(type default)
-				)
-				(fill
-					(type none)
-				)
-			)
-			(rectangle
-				(start 2.54 3.81)
-				(end -6.35 -7.62)
-				(stroke
-					(width 0.254)
-					(type default)
-				)
-				(fill
-					(type background)
-				)
-			)
-			(polyline
-				(pts
-					(xy 2.54 0)
-					(xy -2.54 0)
-					(xy -2.54 -5.08)
-					(xy -3.175 -5.715)
-					(xy -3.81 -5.08)
-				)
-				(stroke
-					(width 0.254)
-					(type default)
-				)
-				(fill
-					(type none)
-				)
-			)
-		)
-		(symbol "AudioJack4_1_1"
-			(pin passive line
-				(at 5.08 -2.54 180)
-				(length 2.54)
-				(name ""
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(number "R1"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-			(pin passive line
-				(at 5.08 0 180)
-				(length 2.54)
-				(name ""
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(number "R2"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-			(pin passive line
-				(at 5.08 2.54 180)
-				(length 2.54)
-				(name ""
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(number "S"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-			(pin passive line
-				(at 5.08 -5.08 180)
-				(length 2.54)
-				(name ""
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(number "T"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-		)
-		(embedded_fonts no)
-	)
 		(symbol "Connector_Generic:Conn_01x04"
 		(pin_names
 			(offset 1.016)
@@ -7309,38 +7065,66 @@
 	  (pin "1" (uuid "01d28aab-cc89-5438-b180-ee832537b018"))
 	  (instances (project "nrsk-left" (path "/6c78887a-19a2-5291-a4e1-47e49dcf604a" (reference "#PWR039") (unit 1))))
 	)
-	(text "Split link: TRRS 3.5 mm (5 V + QMK serial)" (exclude_from_sim no) (at 330.20 160.02 0) (effects (font (size 2.0 2.0) (bold yes)) (justify left bottom)) (uuid "59a8a07e-2527-5456-8ecd-2d54c40bcc0e"))
-	(symbol (lib_id "Connector_Audio:AudioJack4") (at 342.90 175.26 0) (unit 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no) (uuid "bbd4dc47-07bd-50ac-9488-a392d7daa327")
-	  (property "Reference" "J1" (at 345.44 172.72 0) (effects (font (size 1.27 1.27)) (justify left)))
-	  (property "Value" "PJ-320D" (at 345.44 177.80 0) (effects (font (size 1.27 1.27)) (justify left)))
-	  (property "Footprint" "Connector_Audio:Jack_3.5mm_PJ320D_Horizontal" (at 342.90 175.26 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (property "Datasheet" "" (at 342.90 175.26 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (pin "R1" (uuid "9ec9a5d4-1f07-573f-9c41-1bf0afe06bf8"))
-	  (pin "R2" (uuid "d51b4edc-604f-5ac0-b0f1-e38a6d5d241f"))
-	  (pin "S" (uuid "f46b1cb3-49f8-5810-ae6d-4b142ff03e3d"))
-	  (pin "T" (uuid "c7801883-d4f1-5a5e-9a92-9caf1d5d5874"))
+	(text "Split link: USB-C (5 V + QMK serial on D+, CC open)" (exclude_from_sim no) (at 332.74 147.32 0) (effects (font (size 2.0 2.0) (bold yes)) (justify left bottom)) (uuid "07170252-d451-5765-8774-b0fce10fe995"))
+	(symbol (lib_id "Connector:USB_C_Receptacle_USB2.0_16P") (at 342.90 167.64 0) (unit 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no) (uuid "bbd4dc47-07bd-50ac-9488-a392d7daa327")
+	  (property "Reference" "J1" (at 345.44 165.10 0) (effects (font (size 1.27 1.27)) (justify left)))
+	  (property "Value" "USB-C" (at 345.44 170.18 0) (effects (font (size 1.27 1.27)) (justify left)))
+	  (property "Footprint" "Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12" (at 342.90 167.64 0) (effects (font (size 1.27 1.27)) (hide yes)))
+	  (property "Datasheet" "" (at 342.90 167.64 0) (effects (font (size 1.27 1.27)) (hide yes)))
+	  (pin "A1" (uuid "f8398b1a-888a-51a3-a04b-3e137fb6506e"))
+	  (pin "A4" (uuid "60eba156-c8f5-59f6-ac0d-237dafd4bcca"))
+	  (pin "A5" (uuid "6f0e2a06-d1c6-5f2d-b4e1-f0f798c86d4c"))
+	  (pin "A6" (uuid "eedd85cc-7f89-509c-934e-263b9ee0dbc0"))
+	  (pin "A7" (uuid "32d0cebb-958c-5aff-ac56-4ebd20ee72bc"))
+	  (pin "A8" (uuid "fadc5440-0634-5397-9483-dbd66616d95b"))
+	  (pin "A9" (uuid "575d5b5d-06df-553a-9515-a434cf53e132"))
+	  (pin "A12" (uuid "3e2d35c0-c4ad-5ba8-afdc-5ecd660be0cb"))
+	  (pin "B1" (uuid "fa939be9-c62c-553d-b5fe-db45f8d901d3"))
+	  (pin "B4" (uuid "c3f97ebc-7ef9-5947-83da-0bd14f8a83fd"))
+	  (pin "B5" (uuid "e411f0c7-2962-5d88-bcc1-1e5620d80f23"))
+	  (pin "B6" (uuid "d72a8f2d-1ca8-5019-aeb4-1125dc5f6a38"))
+	  (pin "B7" (uuid "1bdec530-9bbe-5859-b3f6-d7beed822119"))
+	  (pin "B8" (uuid "75ed9edb-dcc4-5f55-b138-060e9d3348ff"))
+	  (pin "B9" (uuid "4d41d28b-8020-500a-bd34-a965fc10d720"))
+	  (pin "B12" (uuid "74d3e8e7-1dad-5ae5-95cd-0d92065e34bc"))
+	  (pin "SH" (uuid "37bd9e9b-95ca-5d5a-b828-aaf718a13be2"))
 	  (instances (project "nrsk-left" (path "/6c78887a-19a2-5291-a4e1-47e49dcf604a" (reference "J1") (unit 1))))
 	)
-	(no_connect (at 347.98 177.80) (uuid "d544a1ab-6145-5591-8669-c37154684004"))
-	(wire (pts (xy 347.98 175.26) (xy 353.06 175.26)) (stroke (width 0) (type default)) (uuid "5def6a4c-3138-5388-a7b9-886847b5e2a5"))
-	(symbol (lib_id "power:VCC") (at 353.06 175.26 270) (unit 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "6c9dfc2f-4d9d-5d3e-bd32-cd009ee404a8")
-	  (property "Reference" "#PWR040" (at 353.06 175.26 0) (effects (font (size 1.27 1.27)) (justify left) (hide yes)))
-	  (property "Value" "VCC" (at 353.06 171.45 0) (effects (font (size 1.27 1.27)) (justify left)))
-	  (property "Footprint" "" (at 353.06 175.26 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (property "Datasheet" "" (at 353.06 175.26 0) (effects (font (size 1.27 1.27)) (hide yes)))
+	(wire (pts (xy 342.90 190.50) (xy 342.90 195.58)) (stroke (width 0) (type default)) (uuid "6a36ac39-b30b-5f8b-a7eb-0c05109e52fe"))
+	(symbol (lib_id "power:GND") (at 342.90 195.58 0) (unit 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "6c9dfc2f-4d9d-5d3e-bd32-cd009ee404a8")
+	  (property "Reference" "#PWR040" (at 342.90 195.58 0) (effects (font (size 1.27 1.27)) (justify left) (hide yes)))
+	  (property "Value" "GND" (at 342.90 199.39 0) (effects (font (size 1.27 1.27)) (justify left)))
+	  (property "Footprint" "" (at 342.90 195.58 0) (effects (font (size 1.27 1.27)) (hide yes)))
+	  (property "Datasheet" "" (at 342.90 195.58 0) (effects (font (size 1.27 1.27)) (hide yes)))
 	  (pin "1" (uuid "c5094699-2ea4-594f-a3e2-394557b88cf2"))
 	  (instances (project "nrsk-left" (path "/6c78887a-19a2-5291-a4e1-47e49dcf604a" (reference "#PWR040") (unit 1))))
 	)
-	(wire (pts (xy 347.98 172.72) (xy 353.06 172.72)) (stroke (width 0) (type default)) (uuid "2106066f-7269-58fc-9397-876863294653"))
-	(symbol (lib_id "power:GND") (at 353.06 172.72 90) (unit 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "c0fb412f-ea18-5e77-b9df-63159ea2a8d7")
-	  (property "Reference" "#PWR041" (at 353.06 172.72 0) (effects (font (size 1.27 1.27)) (justify left) (hide yes)))
-	  (property "Value" "GND" (at 353.06 176.53 0) (effects (font (size 1.27 1.27)) (justify left)))
-	  (property "Footprint" "" (at 353.06 172.72 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (property "Datasheet" "" (at 353.06 172.72 0) (effects (font (size 1.27 1.27)) (hide yes)))
+	(wire (pts (xy 358.14 152.40) (xy 363.22 152.40)) (stroke (width 0) (type default)) (uuid "f63d2e90-f72d-5c26-af99-fa21f395d786"))
+	(symbol (lib_id "power:VCC") (at 363.22 152.40 270) (unit 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "c0fb412f-ea18-5e77-b9df-63159ea2a8d7")
+	  (property "Reference" "#PWR041" (at 363.22 152.40 0) (effects (font (size 1.27 1.27)) (justify left) (hide yes)))
+	  (property "Value" "VCC" (at 363.22 148.59 0) (effects (font (size 1.27 1.27)) (justify left)))
+	  (property "Footprint" "" (at 363.22 152.40 0) (effects (font (size 1.27 1.27)) (hide yes)))
+	  (property "Datasheet" "" (at 363.22 152.40 0) (effects (font (size 1.27 1.27)) (hide yes)))
 	  (pin "1" (uuid "71bc3c25-9182-55be-ae59-a28f24286a76"))
 	  (instances (project "nrsk-left" (path "/6c78887a-19a2-5291-a4e1-47e49dcf604a" (reference "#PWR041") (unit 1))))
 	)
-	(label "DATA" (at 347.98 180.34 0) (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "669dc4dd-841c-5dc5-8e9d-536c975a85aa"))
+	(no_connect (at 358.14 157.48) (uuid "bb30aff5-be04-572f-8e2a-17b914eb8ff4"))
+	(label "DATA" (at 358.14 170.18 0) (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "7f006129-7a9d-5061-9cc9-d21c3a5aa43a"))
+	(no_connect (at 358.14 165.10) (uuid "3d2f4809-b34d-5872-88da-bd696ec7f037"))
+	(no_connect (at 358.14 180.34) (uuid "82a398f9-fa94-59a9-bd90-ef1f7d1d95c5"))
+	(no_connect (at 358.14 160.02) (uuid "5e19023d-92cc-56e4-8e9a-1d07ddfb9425"))
+	(label "DATA" (at 358.14 172.72 0) (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "33fce20c-ce0b-5ff0-bcab-02785cf9a2fc"))
+	(no_connect (at 358.14 167.64) (uuid "594b667b-247e-5d6d-980a-5cfca0fd3a98"))
+	(no_connect (at 358.14 182.88) (uuid "1443e07d-81b0-5a8f-aa25-ee0bce9e3a95"))
+	(wire (pts (xy 335.28 190.50) (xy 335.28 195.58)) (stroke (width 0) (type default)) (uuid "db8202a9-9844-5bda-b66e-e481ed592537"))
+	(symbol (lib_id "power:GND") (at 335.28 195.58 0) (unit 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "687ce155-98d4-5a8c-b915-52a7cb569027")
+	  (property "Reference" "#PWR042" (at 335.28 195.58 0) (effects (font (size 1.27 1.27)) (justify left) (hide yes)))
+	  (property "Value" "GND" (at 335.28 199.39 0) (effects (font (size 1.27 1.27)) (justify left)))
+	  (property "Footprint" "" (at 335.28 195.58 0) (effects (font (size 1.27 1.27)) (hide yes)))
+	  (property "Datasheet" "" (at 335.28 195.58 0) (effects (font (size 1.27 1.27)) (hide yes)))
+	  (pin "1" (uuid "c6fa83f7-3b29-590c-b9ed-157d3ef58f16"))
+	  (instances (project "nrsk-left" (path "/6c78887a-19a2-5291-a4e1-47e49dcf604a" (reference "#PWR042") (unit 1))))
+	)
 	(text "OLED 0.91\" 128x32 (I2C, SSD1306, 3.3 V)" (exclude_from_sim no) (at 330.20 200.66 0) (effects (font (size 2.0 2.0) (bold yes)) (justify left bottom)) (uuid "0a3b494c-c113-564e-b7bb-762e05437794"))
 	(symbol (lib_id "Connector_Generic:Conn_01x04") (at 342.90 215.90 0) (unit 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no) (uuid "69c0bcd9-b2f9-565a-9f37-7b29e193ea84")
 	  (property "Reference" "J3" (at 345.44 213.36 0) (effects (font (size 1.27 1.27)) (justify left)))
@@ -7354,13 +7138,13 @@
 	  (instances (project "nrsk-left" (path "/6c78887a-19a2-5291-a4e1-47e49dcf604a" (reference "J3") (unit 1))))
 	)
 	(wire (pts (xy 337.82 213.36) (xy 332.74 213.36)) (stroke (width 0) (type default)) (uuid "eef161d7-0769-5e5b-b287-be2b314e7f43"))
-	(symbol (lib_id "power:GND") (at 332.74 213.36 270) (unit 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "687ce155-98d4-5a8c-b915-52a7cb569027")
-	  (property "Reference" "#PWR042" (at 332.74 213.36 0) (effects (font (size 1.27 1.27)) (justify left) (hide yes)))
+	(symbol (lib_id "power:GND") (at 332.74 213.36 270) (unit 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "54e0a5eb-5632-51fe-9e24-d9b790a6c0af")
+	  (property "Reference" "#PWR043" (at 332.74 213.36 0) (effects (font (size 1.27 1.27)) (justify left) (hide yes)))
 	  (property "Value" "GND" (at 332.74 217.17 0) (effects (font (size 1.27 1.27)) (justify left)))
 	  (property "Footprint" "" (at 332.74 213.36 0) (effects (font (size 1.27 1.27)) (hide yes)))
 	  (property "Datasheet" "" (at 332.74 213.36 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (pin "1" (uuid "c6fa83f7-3b29-590c-b9ed-157d3ef58f16"))
-	  (instances (project "nrsk-left" (path "/6c78887a-19a2-5291-a4e1-47e49dcf604a" (reference "#PWR042") (unit 1))))
+	  (pin "1" (uuid "96df3142-772e-5a11-987d-ddadeda33fcd"))
+	  (instances (project "nrsk-left" (path "/6c78887a-19a2-5291-a4e1-47e49dcf604a" (reference "#PWR043") (unit 1))))
 	)
 	(label "3V3" (at 337.82 215.90 180) (effects (font (size 1.27 1.27)) (justify right bottom)) (uuid "a728a404-2987-540a-8d60-23fbd85da5c0"))
 	(label "SCL" (at 337.82 218.44 180) (effects (font (size 1.27 1.27)) (justify right bottom)) (uuid "7301f773-e10f-56af-8270-cceacde2389a"))
@@ -7401,13 +7185,13 @@
 	(label "ENC_A" (at 335.28 251.46 180) (effects (font (size 1.27 1.27)) (justify right bottom)) (uuid "02dbfa69-83d4-5fef-9a1f-2245c3bc75fe"))
 	(label "ENC_B" (at 335.28 256.54 180) (effects (font (size 1.27 1.27)) (justify right bottom)) (uuid "8de1beeb-4381-51b4-a5c6-2a493f2d03f8"))
 	(wire (pts (xy 335.28 254.00) (xy 330.20 254.00)) (stroke (width 0) (type default)) (uuid "d5c9e1de-5427-5918-8d47-c3cb312a0bc7"))
-	(symbol (lib_id "power:GND") (at 330.20 254.00 270) (unit 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "54e0a5eb-5632-51fe-9e24-d9b790a6c0af")
-	  (property "Reference" "#PWR043" (at 330.20 254.00 0) (effects (font (size 1.27 1.27)) (justify left) (hide yes)))
+	(symbol (lib_id "power:GND") (at 330.20 254.00 270) (unit 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "287ec531-b42b-577c-871c-1367f5ad0ed8")
+	  (property "Reference" "#PWR044" (at 330.20 254.00 0) (effects (font (size 1.27 1.27)) (justify left) (hide yes)))
 	  (property "Value" "GND" (at 330.20 257.81 0) (effects (font (size 1.27 1.27)) (justify left)))
 	  (property "Footprint" "" (at 330.20 254.00 0) (effects (font (size 1.27 1.27)) (hide yes)))
 	  (property "Datasheet" "" (at 330.20 254.00 0) (effects (font (size 1.27 1.27)) (hide yes)))
-	  (pin "1" (uuid "96df3142-772e-5a11-987d-ddadeda33fcd"))
-	  (instances (project "nrsk-left" (path "/6c78887a-19a2-5291-a4e1-47e49dcf604a" (reference "#PWR043") (unit 1))))
+	  (pin "1" (uuid "c13a6825-8ee1-5437-a7b6-ff0ceed1c745"))
+	  (instances (project "nrsk-left" (path "/6c78887a-19a2-5291-a4e1-47e49dcf604a" (reference "#PWR044") (unit 1))))
 	)
 	(sheet_instances (path "/" (page "1")))
 	(embedded_fonts no)

@@ -31,8 +31,8 @@ DETAILS = [
     ('左のホイール', {'a': 'render-wheel-left-top-acrylic-lowpan.png', 'b': 'render-wheel-left-top-print.png'}),
     ('右のホイール', shot('wheel-right')),
     ('内側の角とケーブル', shot('detail')),
-    ('USB-C と TRRS', shot('ports')),
-    ('USB-C と TRRS・ケーブルなし', shot('ports-nocable')),
+    ('USB-C × 2', shot('ports')),
+    ('USB-C × 2・ケーブルなし', shot('ports-nocable')),
 ]
 
 
