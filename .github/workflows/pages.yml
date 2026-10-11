@@ -43,7 +43,8 @@ jobs:
             cat "$1"
             echo '</body></html>'
           }
-          wrap case/preview/viewer.html > _site/index.html
+          # views.html sits next to index.html on the site, not at ../../docs/
+          wrap case/preview/viewer.html | sed 's#href="../../docs/views.html"#href="views.html"#' > _site/index.html
           wrap case/preview/assembly.html > _site/assembly.html
           wrap docs/views.html > _site/views.html
           # the renders views.html shows (orbit views and close-ups), at the same relative paths

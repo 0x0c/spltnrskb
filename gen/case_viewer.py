@@ -221,6 +221,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
  <span class="sep"></span>
  <button id="t-reset" type="button">視点リセット</button>
  <a class="link" href="assembly.html">組み立てガイド</a>
+ <a class="link" href="../../docs/views.html">レンダリング</a>
 </div>
 <div id="spec" class="panel"><h1 id="spec-title"></h1><dl id="spec-dl"></dl></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
