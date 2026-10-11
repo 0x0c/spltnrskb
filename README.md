@@ -18,7 +18,7 @@ v2 では Pro Micro などのマイコンボードをやめ、RP2040 と QSPI Fl
 | 外観 | プレートは透明アクリル 1.5 mm、アクリル版の枠と底板はマットクリア 3 mm。プレートは外周の切り欠きなし。USB-C と TRRS の穴はコネクタの外形ぴったり（基板の舌で差込口を外面の 0.8 mm 内側まで出している）。3D プリントのトレイは外周の角をフィレット加工（B のプレートも上面の外周に半径 1 mm の R） |
 | 表示 | 0.91 インチ OLED（128×32）を左右に 1 枚ずつ、プレートと面一のハーフミラーアクリルのカバー付き。高さは増えない |
 | ホイール | 左上と右上の角にサムホイール（ロータリーエンコーダー Alps EC05E1220401 で読み取り、1 回転 12 クリック）。高さは増えない |
-| 3D ビューア | http://www.0x0c.me/spltnrskb/ 、組み立てガイドは http://www.0x0c.me/spltnrskb/assembly.html （GitHub Pages、`main` への Push で自動更新） |
+| 3D ビューア | http://www.0x0c.me/spltnrskb/ 、組み立てガイドは http://www.0x0c.me/spltnrskb/assembly.html 、全方位の完成イメージは http://www.0x0c.me/spltnrskb/views.html （GitHub Pages、`main` への Push で自動更新） |
 
 基板の表と裏です（KiCad の 3D 表示）。裏面は裏から見た向きなので、左右が反転して見えます。
 
@@ -30,6 +30,8 @@ v2 では Pro Micro などのマイコンボードをやめ、RP2040 と QSPI Fl
 完成イメージ（Blender でレンダリング）です。筐体は 2 つの 3D プリント版を採用しています。左が A（3D プリントのトレイ + 透明アクリルのプレート）、右が B（プレートも 3D プリント）です。A はプレートを上からスリムヘッドの小ねじで、B は底からネジで留めます（B の上面にはネジが見えません）。
 
 ![A と B の比較](docs/img/render-compare-ab.jpg)
+
+A と B を周囲 15 か所（8 方位 × 仰角 30°、真上、見下ろし、低い視点）から撮った画像は http://www.0x0c.me/spltnrskb/views.html （手元では [docs/views.html](docs/views.html)）で見比べられます。方位と仰角を選ぶか、画像をドラッグして視点を回します。画像は `gen/render_views.sh` で作り直せます（1 枚 1 分ほど）。
 
 ## 回路
 
@@ -286,9 +288,11 @@ spltnrskb/
 ├── docs/ordering.md             発注の手順（注文先ごとの部品と数量）
 ├── docs/pre-order-checklist.md  発注前の確認事項（検査結果、残るリスク、注文の順番）
 ├── docs/thumbwheel-check.md     サムホイールと OLED の実機確認の手順
+├── docs/views.html              A と B を全方位から見比べるページ
 ├── docs/img/                    README の画像
 │   ├── left-*.png, right-*.png  基板の 3D 表示と重ね合わせ図
 │   ├── render-*                 Blender による完成イメージ
+│   ├── views/                   全方位の完成イメージ（docs/views.html 用）
 │   ├── port-slide.png           基板を差込口のトンネルへ入れる手順の断面図
 │   ├── oled-study/              OLED の高さ・角度の比較レンダリング
 │   ├── dial-study/              サムホイールの比較レンダリング
@@ -316,6 +320,7 @@ spltnrskb/
 次のスクリプトは `build.sh` に含まれず、必要なときに手で実行します。
 
 - 完成イメージのレンダリング：`render_blender.py`、`render_all.sh`、`render_grid.py`
+- 全方位の完成イメージと確認ページ：`render_views.sh`、`views_page.py`
 - A と B の比較画像、差込口、基板の差し込み手順の断面図：`render_compare.sh`、`compare_ab.py`、`port_slide.py`
 - OLED と開口の比較検討：`oled_variants.py`、`oled_study.sh`、`oled_sheet.py`、`port_variants.py`
 - 六角ピンの試し印刷：`pin_coupon.py`（`case/print/pin-coupon.stl`。使い方は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）

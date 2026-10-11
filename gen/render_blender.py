@@ -44,6 +44,7 @@ SCREWS = arg('--screws', 'none')             # case screws on the plate: 'none',
 TOP = arg('--top', 'acrylic')
 PORTS = arg('--ports', None)                 # USB-C/TRRS opening study style (case/preview/port-variants), left half only
 NO_CABLES = '--no-cables' in args                # switch plate: 'acrylic' (clear, laser cut) or 'print' (printed, with web)
+VIEWS_DIR = arg('--views-dir', None)         # orbit shots ('view-*') go here as <name><suffix>.png instead of docs/img
 VARIANTS = os.path.join(ROOT, 'case', 'preview', 'oled-variants')
 
 
@@ -608,13 +609,59 @@ def finish(W, data):
     t = board_point(W['left'], o['x1'] - 26.0, o['y0'] - 4.0, 4.0)
     shots['ports'] = dict(loc=tuple(board_point(W['left'], o['x1'] + 30.0, o['y0'] - 110.0, 60.0)), target=tuple(t),
                           lens=70, focus=tuple(t), fstop=8.0, res=(RES, int(RES * 2 / 3)))
+    # design-review orbit around both halves: 'view-a<azimuth>-e<elevation>' (azimuth 0 = from the front,
+    # 90 = from the right), same distance and lens for every view; the lights turn with the camera
+    centre = Vector((0.0, 0.0, 0.008))
+    for name in SHOTS:
+        if not name.startswith('view-'):
+            continue
+        az, el = (float(t[1:]) for t in name[5:].split('-'))
+        dist = 1.0
+        a, e = math.radians(az), math.radians(el)
+        d = Vector((math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
+        shots[name] = dict(loc=tuple(centre + d * dist), target=tuple(centre), lens=62, focus=tuple(centre),
+                           fstop=11.0, res=(RES, int(RES * 2 / 3)), turn=a)
+    if any(n.startswith('view-') for n in SHOTS):
+        orbit_stage()
+    lights = {o: o.matrix_world.copy() for o in bpy.data.objects if o.type == 'LIGHT'}
     for name in SHOTS:
         s = shots[name]
         sc.camera = camera(name, s['loc'], s['target'], s['lens'], s['focus'], s['fstop'])
+        if name == 'view-a0-e90':                   # straight down: keep the keyboard's front at the bottom
+            sc.camera.rotation_euler = (0, 0, 0)
+        turn = Matrix.Rotation(s.get('turn', 0.0), 4, 'Z')
+        for o, m in lights.items():
+            o.matrix_world = turn @ m
         sc.render.resolution_x, sc.render.resolution_y = s['res']
-        sc.render.filepath = os.path.join(out_dir, f'render-{name}{OUT_SUFFIX}.png')
+        if name.startswith('view-') and VIEWS_DIR:
+            sc.render.filepath = os.path.join(VIEWS_DIR, f'{name}{OUT_SUFFIX}.png')
+        else:
+            sc.render.filepath = os.path.join(out_dir, f'render-{name}{OUT_SUFFIX}.png')
         bpy.ops.render.render(write_still=True)
         print('rendered', sc.render.filepath)
+
+
+def orbit_stage():
+    """Orbit views look from every side, so the cyclorama's back wall is swapped for a wide round floor."""
+    cyc = bpy.data.objects.get('cyclorama')
+    if cyc:
+        bpy.data.objects.remove(cyc)
+    bpy.ops.mesh.primitive_circle_add(vertices=96, radius=6.0, fill_type='NGON', location=(0, 0, 0))
+    floor = bpy.context.active_object
+    floor.name = 'floor'
+    floor.data.materials.append(MAT['floor'])
+    floor.is_shadow_catcher = True             # only the shadows show, over the light backdrop: no dark horizon
+    # past the floor's edge the camera sees a light backdrop; the lighting of the model stays as in the studio
+    nt = bpy.context.scene.world.node_tree
+    bg, out = nt.nodes['Background'], nt.nodes['World Output']
+    seen = nt.nodes.new('ShaderNodeBackground')
+    seen.inputs['Color'].default_value = srgb('#f4f4f2') + (1,)
+    seen.inputs['Strength'].default_value = 9.0
+    path, mix = nt.nodes.new('ShaderNodeLightPath'), nt.nodes.new('ShaderNodeMixShader')
+    nt.links.new(path.outputs['Is Camera Ray'], mix.inputs[0])
+    nt.links.new(bg.outputs[0], mix.inputs[1])
+    nt.links.new(seen.outputs[0], mix.inputs[2])
+    nt.links.new(mix.outputs[0], out.inputs[0])
 
 
 main()
