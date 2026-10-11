@@ -1,8 +1,8 @@
 """JLCPCB assembly files for each half -> fab/<side>/nrsk-<side>-jlc-bom.csv and nrsk-<side>-jlc-cpl.csv.
 
 Every part with an LCSC number (first source in bom_sources.json) is listed, except the ones assembled by hand:
-the OLED module (glass height set by hand), the hot-swap sockets and the BOOTSEL pad (no part).
-All assembled parts sit on the back of the board.
+the OLED module (glass height set by hand), the drum dial encoder (through-hole on the front), the hot-swap
+sockets and the BOOTSEL pad (no part). All assembled parts sit on the back of the board.
 
 JLCPCB places its own (EasyEDA) footprint for each LCSC part. Where that footprint is turned or has its origin
 elsewhere than the KiCad one, the placement is corrected with JLC_FIX below. Values were found by fitting the
@@ -24,7 +24,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from make_bom import ELEC, HERE, ROOT  # noqa: E402
 
-HAND = ('nrsk:OLED_0.91in_128x32_I2C', 'Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm')
+HAND = ('nrsk:OLED_0.91in_128x32_I2C', 'nrsk:Alps_EC10E', 'Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm')
 # KiCad footprint name -> (rotation correction in degrees, EasyEDA origin in KiCad footprint coordinates, mm)
 JLC_FIX = {
     'SOT-23-5': (270, (0.0, 0.0)),

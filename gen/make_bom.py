@@ -37,6 +37,9 @@ ELEC = {
     ('EC05E1220401', 'nrsk:Alps_EC05E1220401'):
         ('入力', 'ロータリーエンコーダー（サムホイール用）',
          'Alps Alpine EC05E1220401、中空シャフト（六角穴 対辺 1.72 mm）、12 クリック / 12 パルス、表面実装、基板の裏に付ける'),
+    ('EC10E1220505', 'nrsk:Alps_EC10E'):
+        ('入力', 'ロータリーエンコーダー（ドラム式ダイヤル用）',
+         'Alps Alpine EC10E1220505、横型（軸の高さ 7 mm）、貫通軸（六角穴 対辺 1.73 mm）、24 クリック / 12 パルス、挿入実装、基板の表に付ける'),
     ('4.7k', 'Resistor_SMD:R_0805_2012Metric'): ('受動部品', '抵抗 4.7 kΩ', '0805 1%（I2C プルアップ）'),
     ('Reset', 'Button_Switch_SMD:SW_SPST_PTS810'): ('スイッチ', 'タクトスイッチ（リセット）', 'C&K PTS810 SJM 250 SMTR LFS（2 回押しで書き込みモード）'),
     ('BOOTSEL', 'Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm'):
@@ -81,6 +84,13 @@ def main():
                 '左 Shift、右 Backspace、右 Enter'))
     out.append(('入力', 'サムホイール', '直径 29.2 mm × 厚さ 4.1 mm、外周に 32 山のすべり止め、上面にエンコーダーを回す六角ピン'
                 '（対辺 1.66 mm）（case/print/<side>-wheel.stl）', 1, 1, 2, '六角ピンのはめあいは試し印刷で調整する'))
+    out.append(('入力', 'ドラム（ドラム式ダイヤル）', '直径 13 mm × 幅 12 mm、斜めのローレット、左端にエンコーダーを回す六角ピン'
+                '（対辺 1.66 mm）、右端に丸ピン（直径 2 mm）（case/print/right-drum.stl）', 0, 1, 1,
+                '六角ピンのはめあいは試し印刷で調整する'))
+    out.append(('入力', 'ドラムの軸受けブロック', '基板の穴 2 つに差し込み、ドラムの丸ピンを U 字の溝で受ける'
+                '（case/print/right-drum-block.stl）', 0, 1, 1, '溝のスナップフィットは試し印刷で調整する'))
+    out.append(('入力', 'ドラムのベゼル', 'プレートの切り欠きに上からはめ、爪でプレートの下面に掛ける。エンコーダーと軸受けブロックを覆う'
+                '（case/print/right-drum-bezel.stl）', 0, 1, 1, '3D プリントの A、B、アクリル版で共通'))
     for w in sorted(widths):
         out.append(('キーキャップ', f'キーキャップ {w:g} u', '', '', '', widths[w], ''))
 

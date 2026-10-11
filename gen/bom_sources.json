@@ -233,6 +233,15 @@
    "note": "2026-10-10 に確認（在庫 291 個）"
   }
  ],
+ "ロータリーエンコーダー（ドラム式ダイヤル用）": [
+  {
+   "mpn": "Alps Alpine EC10E1220505",
+   "shop": "LCSC C160888",
+   "url": "https://www.lcsc.com/product-detail/C160888.html",
+   "price": "US$0.3722（5 個単位）",
+   "note": "2026-10-11 に確認（在庫 1,065 個）"
+  }
+ ],
  "TRRS ケーブル（4 極、オス-オス）": [
   {
    "mpn": "TRRS ケーブル 0.3 m",
@@ -354,6 +363,33 @@
  "サムホイール": [
   {
    "mpn": "case/print/<side>-wheel.stl",
+   "shop": "自作（3D プリント）",
+   "url": "",
+   "price": "",
+   "note": "LCSC に該当品なし（自作の 3D プリント部品）"
+  }
+ ],
+ "ドラム（ドラム式ダイヤル）": [
+  {
+   "mpn": "case/print/right-drum.stl",
+   "shop": "自作（光造形、JLC3DP など）",
+   "url": "",
+   "price": "",
+   "note": "LCSC に該当品なし（自作の 3D プリント部品）。斜めのローレットを出すため光造形の樹脂で作る"
+  }
+ ],
+ "ドラムの軸受けブロック": [
+  {
+   "mpn": "case/print/right-drum-block.stl",
+   "shop": "自作（3D プリント）",
+   "url": "",
+   "price": "",
+   "note": "LCSC に該当品なし（自作の 3D プリント部品）"
+  }
+ ],
+ "ドラムのベゼル": [
+  {
+   "mpn": "case/print/right-drum-bezel.stl",
    "shop": "自作（3D プリント）",
    "url": "",
    "price": "",
