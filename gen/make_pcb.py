@@ -40,7 +40,8 @@ SIDES = {
                  trrs_x=8.25 * U + MARGIN + 9.4 - 17.0, mcu=(157.0, 45.0),
                  oled=(8.25 * U + MARGIN + 9.4 - 6.3, OLED_Y, 90), wheel='top-left'),
     'right': dict(key_shift=9.75 * U - 12.6, width=9.5 * U + MARGIN + 12.6, inner=-1, usb_x=-MARGIN + 35.0,
-                  trrs_x=-MARGIN + 17.0, mcu=(5.0, 45.0), oled=(3.3, OLED_Y, 90), wheel='top-right'),
+                  trrs_x=-MARGIN + 17.0, mcu=(5.0, 45.0), oled=(3.3, OLED_Y, 90), wheel='top-right',
+                  drum=dict(key='F12', dx=17.15)),
 }
 
 # Support parts: (ref, list of (footprint ref, pad) the part should sit close to)
@@ -323,6 +324,11 @@ SOCKET_BOX = (-8.6, -7.4, 7.35, -0.6)
 ENC_KEEP = 0.5            # gap kept between the two
 
 
+# drum dial: Alps EC10E (ENC2) on the front in the free 2 u right of a top-row key, axis along X, its
+# shaft-insert face DRUM dx right of that key's centre; the drum and its bearing block (Drum_Dial_Bearing,
+# board only) continue to +X. Left-aligned in the gap: the thumbwheel lies under the board's right end.
+
+
 # courtyard overhang beyond the connector mouth (mouth ends flush with the board edge)
 MOUTH_OVERHANG = {'usb': 0.5, 'trrs': 0.355}
 
@@ -396,6 +402,9 @@ def write_case_data(side, board, fps, keys, holes, w, h, shift):
         oled=dict(box=local_box(fps['J3']), rot=round(fps['J3'].GetOrientationDegrees()) % 360),
         wheel=dict(center=list(wheel_centre(side, w)), r=WHEEL_R),
     )
+    if 'DRUM1' in fps:   # drum dial: encoder origin (shaft-insert face on the axis) and the block peg holes
+        data['drum'] = dict(origin=local(fps['ENC2'].GetPosition()),
+                            pegs=[local(p.GetPosition()) for p in fps['DRUM1'].Pads()])
     import json
     json.dump(data, open(os.path.join(ROOT, side, 'case_data.json'), 'w'), indent=1, ensure_ascii=False)
 
@@ -509,6 +518,18 @@ def build(side):
     wx, wy = wheel_centre(side, w)
     enc = place('ENC1', wx, wy, 180, back=True)     # on the back, 180 deg puts the terminals at +y
     assert min(pad(enc, n).y for n in ('A', 'B', 'C')) > enc.GetPosition().y, 'encoder terminals not toward +y'
+    if 'drum' in cfg:
+        k = next(k for k in keys.values() if k['name'] == cfg['drum']['key'])
+        dx, dy = k['cx'] - shift + cfg['drum']['dx'], k['cy']
+        place('ENC2', dx, dy, 0)
+        brg = pcbnew.FootprintLoad(lib_path('nrsk'), 'Drum_Dial_Bearing')
+        brg.SetFPID(pcbnew.LIB_ID('nrsk', 'Drum_Dial_Bearing'))
+        brg.SetReference('DRUM1'); brg.SetValue('Drum_Dial_Bearing')
+        brg.SetBoardOnly(True)
+        brg.SetExcludedFromBOM(True)
+        brg.SetPosition(mm(dx, dy))
+        board.Add(brg)
+        fps['DRUM1'] = brg
     u1 = place('U1', *cfg['mcu'], 0, back=True)
     # orientation: shortest total ratsnest from the MCU pins to the rest of their nets (USB pair weighted),
     # so the matrix pins face the keys instead of the board edge

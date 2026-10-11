@@ -213,7 +213,7 @@ def alps_ec10e():
     s += line(x1 + 0.15, -1.6, x1 + 0.15, 1.6, 'F.SilkS')
     s += rect(x0 - 0.3, -(ly + lh / 2 + 0.65), x1 + 0.3, ly + lh / 2 + 0.65, 'F.CrtYd', 0.05)
     for sy in (-1, 1):   # mounting legs: plated slots, no net
-        s += (f'  (pad "" thru_hole roundrect (at {lx:.3f} {sy * ly:.3f}) (size {lw + 0.5:.2f} {lh + 0.5:.2f}) '
+        s += (f'  (pad "" thru_hole roundrect (at {lx:.3f} {sy * ly:.3f}) (size {lw + 0.4:.2f} {lh + 0.4:.2f}) '
               f'(drill oval {lw} {lh}) (roundrect_rratio 0.25) (layers "*.Cu" "*.Mask") (uuid "{uid()}"))\n')
     for i, num in enumerate(('A', 'B', 'C')):
         shape = 'rect' if num == 'A' else 'circle'
@@ -224,9 +224,41 @@ def alps_ec10e():
     return name, s
 
 
+# Drum dial (right half): the printed drum spins between the EC10E rotor and a printed bearing block that
+# stands on the PCB, located by two pegs in NPTH holes. Board-only footprint, same origin as Alps_EC10E
+# (encoder's shaft-insert face on the axis); its courtyard covers drum + block so nothing is placed there.
+DRUM_GAP, DRUM_W = 0.4, 12.0            # encoder face -> drum, drum width
+DRUM_D = 13.0
+BLOCK_T = 3.0                           # bearing block thickness along the axis
+BLOCK_PEGS = (2.0, 2.0)                 # NPTH diameter, peg offset across the axis (+/-)
+DRUM_BLOCK_X = DRUM_GAP + DRUM_W + DRUM_GAP + BLOCK_T / 2   # block centre = 14.3
+
+
+def drum_bearing():
+    name = 'Drum_Dial_Bearing'
+    s = (f'(footprint "{name}"\n  (version 20241229)\n  (generator "nrsk-gen")\n  (layer "F.Cu")\n'
+         '  (descr "Drum dial: 13 mm drum and the printed bearing block beside an Alps EC10E; two NPTH for the '
+         'block pegs. Origin = the encoder footprint origin")\n'
+         '  (tags "drum dial bearing")\n  (attr board_only exclude_from_pos_files exclude_from_bom)\n')
+    s += prop('Reference', 'REF**', (DRUM_BLOCK_X / 2, -8.0), 'F.Fab', hide=True, size=0.8)
+    s += prop('Value', name, (DRUM_BLOCK_X / 2, 8.0), 'F.Fab', hide=True, size=0.6)
+    s += prop('Footprint', '', (0, 0), 'F.Fab', hide=True)
+    s += prop('Datasheet', '', (0, 0), 'F.Fab', hide=True)
+    s += prop('Description', '', (0, 0), 'F.Fab', hide=True)
+    r = DRUM_D / 2
+    s += rect(DRUM_GAP, -r, DRUM_GAP + DRUM_W, r, 'F.Fab', 0.1)
+    s += text('DRUM', DRUM_GAP + DRUM_W / 2, 0, 'F.Fab', 1.2)
+    s += rect(DRUM_BLOCK_X - BLOCK_T / 2, -3.5, DRUM_BLOCK_X + BLOCK_T / 2, 3.5, 'F.Fab', 0.1)
+    s += rect(0.35, -r - 0.5, DRUM_BLOCK_X + BLOCK_T / 2 + 0.25, r + 0.5, 'F.CrtYd', 0.05)   # clear of the EC10E's
+    d, py = BLOCK_PEGS
+    s += npth(DRUM_BLOCK_X, -py, d) + npth(DRUM_BLOCK_X, py, d)
+    s += ')\n'
+    return name, s
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
-    items = [mx_hotswap(w) for w in WIDTHS] + [oled_module(), alps_ec05e(), alps_ec10e()]
+    items = [mx_hotswap(w) for w in WIDTHS] + [oled_module(), alps_ec05e(), alps_ec10e(), drum_bearing()]
     for name, s in items:
         open(os.path.join(OUT, name + '.kicad_mod'), 'w').write(s)
     print('wrote', [n for n, _ in items])
