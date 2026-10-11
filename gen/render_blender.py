@@ -208,7 +208,7 @@ def oled(data, side, module=None, glass_top=None):
     pcb = box_mesh('oled pcb', x1 - x0, y1 - y0, 1.2, mat=MAT['oled pcb'])
     pcb.location = (cx * MM, -cy * MM, z * MM)
     horizontal = (x1 - x0) > (y1 - y0)
-    pins_at_bottom = side == 'left'                 # header end; the glass sits toward the other end
+    pins_at_bottom = data['oled'].get('rot', 90) == 90   # header end (KiCad 90 deg = header down); glass toward the other
     if horizontal:
         gx, gy = cx + 3.0, cy
         glass = box_mesh('oled glass', 30.0, 11.4, 1.4, bevel=0.2, mat=MAT['oled glass'])

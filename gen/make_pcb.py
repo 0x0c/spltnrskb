@@ -34,12 +34,13 @@ SIDES = {
     # the inner edge so the OLED sits 5 mm clear of the switch tops (room for a half-mirror cover centred on it);
     # the right one 8 mm more, so its MCU fits between the inner edge and the first column of sockets.
     # USB-C and TRRS both on the top (back) edge, plugs pointing away from the user: TRRS next to the inner
-    # corner (above the OLED), USB-C further out; the MCU on the back below them.
+    # corner (above the OLED), USB-C further out; the MCU on the back below them. Both OLEDs are turned the same
+    # way (header at the bottom), so one firmware rotation fits both.
     'left': dict(key_shift=0.0, width=8.25 * U + MARGIN + 9.4, inner=+1, usb_x=8.25 * U + MARGIN + 9.4 - 35.0,
                  trrs_x=8.25 * U + MARGIN + 9.4 - 17.0, mcu=(157.0, 45.0),
                  oled=(8.25 * U + MARGIN + 9.4 - 6.3, OLED_Y, 90), wheel='top-left'),
     'right': dict(key_shift=9.75 * U - 12.6, width=9.5 * U + MARGIN + 12.6, inner=-1, usb_x=-MARGIN + 35.0,
-                  trrs_x=-MARGIN + 17.0, mcu=(5.0, 45.0), oled=(3.3, OLED_Y, 270), wheel='top-right'),
+                  trrs_x=-MARGIN + 17.0, mcu=(5.0, 45.0), oled=(3.3, OLED_Y, 90), wheel='top-right'),
 }
 
 # Support parts: (ref, list of (footprint ref, pad) the part should sit close to)
@@ -392,7 +393,7 @@ def write_case_data(side, board, fps, keys, holes, w, h, shift):
             trrs=dict(center=local(fps['J1'].GetPosition()), box=local_box(fps['J1']), plug=[9.0, 9.0], edge='top'),
         ),
         reset=local(fps['RSW1'].GetPosition()),
-        oled=dict(box=local_box(fps['J3'])),
+        oled=dict(box=local_box(fps['J3']), rot=round(fps['J3'].GetOrientationDegrees()) % 360),
         wheel=dict(center=list(wheel_centre(side, w)), r=WHEEL_R),
     )
     import json

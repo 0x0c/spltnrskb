@@ -1,17 +1,8 @@
 ** Drc report for nrsk-left.kicad_pcb **
-** Created on 2026-10-10T23:06:35 **
+** Created on 2026-10-11T10:34:15 **
 ** Report includes: Errors, Warnings, Exclusions **
 
-** Found 8 DRC violations **
-[via_dangling]: Via is not connected or connected on only one layer
-    Local override; warning
-    @(187.8000 mm, 75.8000 mm): Via [GND] on F.Cu - B.Cu
-[via_dangling]: Via is not connected or connected on only one layer
-    Local override; warning
-    @(187.8000 mm, 74.2000 mm): Via [GND] on F.Cu - B.Cu
-[via_dangling]: Via is not connected or connected on only one layer
-    Local override; warning
-    @(186.2000 mm, 75.8000 mm): Via [GND] on F.Cu - B.Cu
+** Found 5 DRC violations **
 [silk_edge_clearance]: Silkscreen clipped by board edge
     Rule: board setup constraints silk; warning
     @(161.0625 mm, 16.3000 mm): Arc on Edge.Cuts
