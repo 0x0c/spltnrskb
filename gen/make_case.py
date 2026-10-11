@@ -136,7 +136,8 @@ PLATE_TOP_Z = PLATE_GAP + PLATE_T     # plate top above the PCB top (5.0)
 DRUM_OPENING = (-7.1, -7.6, 2 * DRUM_GAP + DRUM_W + BLOCK_T + 0.6, 7.6, 1.0)   # plate opening: x0, y0, x1, y1, corner r
 BEZEL_BORDER, BEZEL_T, BEZEL_R = 1.5, 1.0, 2.5  # flange: beyond the opening, thickness, corner r
 BEZEL_WALL, BEZEL_CLEAR = 1.0, 0.3
-BEZEL_HOOK = (3.5, 8.5, 1.0, 0.25)    # snap hooks on both long sides: x0, x1, arm thickness, lip under the plate
+# snap hooks on both long sides, centred on the drum: x0, x1, arm thickness, lip under the plate
+BEZEL_HOOK = (DRUM_GAP + DRUM_W / 2 - 2.5, DRUM_GAP + DRUM_W / 2 + 2.5, 1.0, 0.25)
 
 
 def cs_poly(pts):
@@ -767,11 +768,12 @@ def check_drum(hf):
     # the bezel's footprint above the plate stays off the switch tops; the hoods stay off the keycaps
     above = bezel.trim_by_plane((0, 0, 1), PLATE_TOP_Z + 0.01).project()
     assert (above ^ hf.switch_tops()).area() < 0.01, 'bezel hits a switch top'
+    hoods = bezel.trim_by_plane((0, 0, 1), PLATE_TOP_Z + BEZEL_T + 0.01).project()
     caps = CrossSection()
     for k in hf.d['keys']:
         hw = k['w'] * 19.05 / 2 - 0.5
         caps = caps + rect(k['cx'] - hw, k['cy'] - 8.9, k['cx'] + hw, k['cy'] + 8.9)
-    assert (above ^ caps).area() < 0.01, 'bezel (flange or hood) under a keycap'
+    assert (hoods ^ caps).area() < 0.01, 'bezel hood under a keycap'
     # the opening leaves a web to the switch and stabilizer cut-outs; no PCB mounting hole under it
     cut = CrossSection()
     for k in hf.d['keys']:

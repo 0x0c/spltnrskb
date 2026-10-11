@@ -344,9 +344,8 @@ ENC_KEEP = 0.5            # gap kept between the two
 # drum dial: Alps EC10E (ENC2) on the front in the free 2 u of the top row, axis along X, on the row of
 # drum['y_key']; its shaft-insert face dx right of drum['x_key']'s centre, so the drum sits 1.75 mm right
 # of that key's centre: the bezel, whose encoder hood is longer than its block hood, is then centred on the
-# key, and its flange stays clear of the F12 keycap. The drum and its bearing block
-# (Drum_Dial_Bearing, board only) continue to +X; the block's pegs stop inside the board, clear of the
-# thumbwheel underneath.
+# key. The drum and its bearing block (Drum_Dial_Bearing, board only) continue to +X; the block's pegs stop
+# inside the board, clear of the thumbwheel underneath.
 
 
 # courtyard overhang beyond the connector mouth (mouth ends flush with the board edge)
