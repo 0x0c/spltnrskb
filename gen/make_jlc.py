@@ -2,15 +2,18 @@
 
 Every part with an LCSC number (first source in bom_sources.json) is listed, except the ones assembled by hand:
 the OLED module (glass height set by hand), the drum dial encoder (through-hole on the front), the hot-swap
-sockets and the BOOTSEL pad (no part). All assembled parts sit on the back of the board.
+sockets and the BOOTSEL pad (no part). The RP2040 and its support parts sit on the front (top), the connectors,
+their protection parts, the reset button and the thumbwheel encoder on the back: JLC assembles both sides.
 
 JLCPCB places its own (EasyEDA) footprint for each LCSC part. Where that footprint is turned or has its origin
 elsewhere than the KiCad one, the placement is corrected with JLC_FIX below. Values were found by fitting the
 EasyEDA footprints (easyeda2kicad, 2026-10-10) onto the placed KiCad pads, pad by pad; the rotations agree with
 the JLCKicadTools rotation table (SOT-23 -90, SOIC 270, 2-pad parts and the standard QFN-56 0) except the HRO
 USB-C, whose current EasyEDA footprint has the same orientation as KiCad's (the table says 180).
-Back-side convention as in kicad-jlcpcb-tools: rotation = 180 - KiCad rotation + correction, position = board
-coordinates with y up (the gerbers are plotted in absolute coordinates too).
+Conventions as in kicad-jlcpcb-tools: front rotation = KiCad rotation + correction, back rotation = 180 - KiCad
+rotation + correction; position = board coordinates with y up (the gerbers are plotted in absolute coordinates too).
+The RP2040's pin 1 is at the top-left of its marking, so with the QFN-56 correction of 0 the chip sits with its
+Raspberry Pi logo upright, as on the board.
 
 Run:  NRSK_KC=<kicad-cli> python3 gen/make_jlc.py [left right]
 """
@@ -65,16 +68,18 @@ def positions(side):
 
 
 def placement(row):
-    """JLC (x, y, rotation) of one back-side part from its KiCad position row."""
+    """JLC (layer, x, y, rotation) of one part from its KiCad position row."""
     rot = float(row['Rot'])
     fix, (ox, oy) = JLC_FIX.get(row['Package'], (0, (0.0, 0.0)))
-    if row['Side'] != 'bottom':
-        sys.exit(f"{row['Ref']}: only back-side parts are handled")
+    if row['Side'] == 'top':
+        if (ox, oy) != (0.0, 0.0):
+            sys.exit(f"{row['Ref']}: origin correction on a front-side part is not handled")
+        return 'Top', float(row['PosX']), float(row['PosY']), (rot + fix) % 360
     # KiCad puts a back-side footprint at  T + R(180 - rot) . mirror-x . p  (y-down board coordinates)
     a = math.radians(180 - rot)
     dx, dy = -ox * math.cos(a) - oy * math.sin(a), -ox * math.sin(a) + oy * math.cos(a)
     x, y_down = float(row['PosX']) + dx, -float(row['PosY']) + dy
-    return x, -y_down, (180 - rot + fix) % 360
+    return 'Bottom', x, -y_down, (180 - rot + fix) % 360
 
 
 def main(sides):
@@ -89,8 +94,8 @@ def main(sides):
             refs = r['Refs'].split(',')
             bom.append((r['Value'], ','.join(refs), r['Footprint'].split(':')[1], lcsc[key]))
             for ref in refs:
-                x, y, rot = placement(pos[ref])
-                cpl.append((ref, f'{x:.4f}', f'{y:.4f}', 'Bottom', f'{rot:g}'))
+                layer, x, y, rot = placement(pos[ref])
+                cpl.append((ref, f'{x:.4f}', f'{y:.4f}', layer, f'{rot:g}'))
         out = os.path.join(ROOT, 'fab', side)
         with open(os.path.join(out, f'nrsk-{side}-jlc-bom.csv'), 'w', encoding='utf-8', newline='') as f:
             w = csv.writer(f)

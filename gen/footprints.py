@@ -11,6 +11,9 @@ U = 19.05
 KISWITCH = '${KIPRJMOD}/../tools/kiswitch/library/3dmodels/3d-library.3dshapes/'
 NRSK_3D = '${KIPRJMOD}/../lib/nrsk.3dshapes/'
 ALPS_3D = '${KIPRJMOD}/../tools/alps/'
+STD_FP = os.path.expanduser('~/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints')
+if not os.path.isdir(STD_FP):
+    STD_FP = '/Applications/KiCad/KiCad.app/Contents/SharedSupport/footprints'
 
 
 def uid():
@@ -256,9 +259,18 @@ def drum_bearing():
     return name, s
 
 
+def usb_c():
+    """KiCad's HRO TYPE-C-31-M-12 with its outline moved from the silkscreen to the Fab layer: on the board
+    tongue the outline's front ends would run into the tongue's rounded corners (clipped silk)."""
+    name = 'USB_C_Receptacle_HRO_TYPE-C-31-M-12'
+    s = open(os.path.join(STD_FP, 'Connector_USB.pretty', name + '.kicad_mod')).read()
+    head, sep, body = s.partition('(fp_line')       # the Reference text before the first line stays on silk
+    return name, head + sep + body.replace('(layer "F.SilkS")', '(layer "F.Fab")')
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
-    items = [mx_hotswap(w) for w in WIDTHS] + [oled_module(), alps_ec05e(), alps_ec10e(), drum_bearing()]
+    items = [mx_hotswap(w) for w in WIDTHS] + [oled_module(), alps_ec05e(), alps_ec10e(), drum_bearing(), usb_c()]
     for name, s in items:
         open(os.path.join(OUT, name + '.kicad_mod'), 'w').write(s)
     print('wrote', [n for n, _ in items])
