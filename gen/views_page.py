@@ -13,7 +13,7 @@ VIEWS = os.path.join(DOCS, 'img', 'views')
 # close-ups per variant: (label, file under docs/img)
 DETAILS = {
     'a': [('全体', 'render-hero-top-acrylic-lowpan.png'), ('OLED', 'render-oled-top-acrylic-lowpan.png'),
-          ('左のホイール', 'render-wheel-left-top-acrylic-lowpan.png'), ('USB-C と TRRS', 'render-ports.png')],
+          ('左のホイール', 'render-wheel-left-top-acrylic-lowpan.png'), ('USB-C × 2', 'render-ports.png')],
     'b': [('全体', 'render-hero-top-print.png'), ('OLED', 'render-oled-top-print.png'),
           ('左のホイール', 'render-wheel-left-top-print.png')],
 }

@@ -3,7 +3,7 @@
 Coordinates below are footprint mm (x right, y down as in the footprint, z up from the board's top
 surface); they are converted to VRML (y up, 1 unit = 0.1 inch) on write. Models only need to look
 right in the KiCad 3D viewer and the case viewer, so the module is a few boxes.
-Switches, sockets and stabilizers come from kiswitch, the USB-C and TRRS jacks from LCSC (gen/fetch_3d.sh).
+Switches, sockets and stabilizers come from kiswitch, the USB-C receptacle from LCSC (gen/fetch_3d.sh).
 """
 import os
 

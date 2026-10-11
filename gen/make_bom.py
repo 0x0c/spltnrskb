@@ -18,8 +18,7 @@ ELEC = {
     ('RP2040', 'Package_DFN_QFN:QFN-56-1EP_7x7mm_P0.4mm_EP3.2x3.2mm'): ('MCU', 'マイコン RP2040', 'Raspberry Pi RP2040、QFN-56 7×7 mm'),
     ('W25Q128JVS', 'Package_SO:SOIC-8_5.3x5.3mm_P1.27mm'): ('MCU', 'QSPI フラッシュ 16 MB', 'Winbond W25Q128JVSIQ、SOIC-8 208 mil'),
     ('AP2112K-3.3', 'Package_TO_SOT_SMD:SOT-23-5'): ('電源', 'LDO 3.3 V', 'Diodes AP2112K-3.3TRG1（600 mA）、SOT-23-5'),
-    ('USB-C', 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'): ('コネクタ', 'USB-C レセプタクル', 'HRO TYPE-C-31-M-12（16 ピン、USB 2.0）'),
-    ('PJ-320D', 'Connector_Audio:Jack_3.5mm_PJ320D_Horizontal'): ('コネクタ', 'TRRS ジャック 3.5 mm', 'PJ-320D（4 極、表面実装）'),
+    ('USB-C', 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12'): ('コネクタ', 'USB-C レセプタクル', 'HRO TYPE-C-31-M-12（16 ピン、USB 2.0）。片側 2 個：PC 用（J2）と左右の接続用（J1）'),
     ('USBLC6-2SC6', 'Package_TO_SOT_SMD:SOT-23-6'): ('保護', 'USB ESD 保護', 'STMicroelectronics USBLC6-2SC6, SOT-23-6'),
     ('12MHz', 'Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm_HandSoldering'): ('クロック', '水晶振動子 12 MHz', '3225 4 パッド、負荷容量 10 pF 前後（15 pF のコンデンサと組み合わせる）'),
     ('500mA', 'Fuse:Fuse_1206_3216Metric'): ('保護', 'ポリスイッチ 500 mA', '1206（例: Bourns MF-NSMF050-2）'),
@@ -111,8 +110,8 @@ def main():
     add('アクリル版', 'M3 × 8 mm なべネジ', 'サムホイールの軸（底板の下から差し込む）', 1, 1, '3D プリント版はトレイの軸を使う')
     add('3D プリント版 B', 'M2 × 12 mm なべネジ（底から）', 'トレイ底の座ぐりから壁を通してプレート裏のインサートへ', scr[0], scr[1], '')
     add('3D プリント版', 'M2 × 6 mm タッピングネジ', '基板をボス（下穴 φ1.6）へ固定', std[0], std[1], '')
-    add('ケーブル', 'TRRS ケーブル（4 極、オス-オス）', '3.5 mm', '', '', '1 本')
-    add('ケーブル', 'USB-C ケーブル', 'USB 2.0 以上', '', '', '1 本')
+    add('ケーブル', 'USB-C ケーブル（左右の接続用、C-C）', 'USB 2.0 以上のデータ通信用（充電専用は不可）', '', '', '1 本')
+    add('ケーブル', 'USB-C ケーブル', 'USB 2.0 以上（PC との接続用）', '', '', '1 本')
     add('基板', 'プリント基板（2 層、1.6 mm）', 'fab/<side>/nrsk-<side>-gerber.zip', 1, 1, '')
 
     sources = json.load(open(os.path.join(HERE, 'bom_sources.json'), encoding='utf-8'))

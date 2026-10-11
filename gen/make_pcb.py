@@ -33,14 +33,15 @@ SIDES = {
     # each board hugs its own key grid (3 mm margin). The OLEDs sit at the same height too (top two rows, flush with the inner edge). Both boards are widened on
     # the inner edge so the OLED sits 5 mm clear of the switch tops (room for a half-mirror cover centred on it);
     # the right one 8 mm more, so its MCU fits between the inner edge and the first column of sockets.
-    # USB-C and TRRS both on the top (back) edge, plugs pointing away from the user: TRRS next to the inner
-    # corner (above the OLED), USB-C further out; the MCU on the back below them. Both OLEDs are turned the same
+    # Two USB-C on the top (back) edge, plugs pointing away from the user: the split link next to the inner
+    # corner (above the OLED), the host port further out; the MCU on the back below them. The same receptacle on
+    # both tongues puts both openings at the same height. Both OLEDs are turned the same
     # way (header at the bottom), so one firmware rotation fits both.
     'left': dict(key_shift=0.0, width=8.25 * U + MARGIN + 9.4, inner=+1, usb_x=8.25 * U + MARGIN + 9.4 - 35.0,
-                 trrs_x=8.25 * U + MARGIN + 9.4 - 17.0, mcu=(157.0, 45.0),
+                 link_x=8.25 * U + MARGIN + 9.4 - 17.0, mcu=(157.0, 45.0),
                  oled=(8.25 * U + MARGIN + 9.4 - 6.3, OLED_Y, 90), wheel='top-left'),
     'right': dict(key_shift=9.75 * U - 12.6, width=9.5 * U + MARGIN + 12.6, inner=-1, usb_x=-MARGIN + 35.0,
-                  trrs_x=-MARGIN + 17.0, mcu=(5.0, 45.0), oled=(3.3, OLED_Y, 90), wheel='top-right'),
+                  link_x=-MARGIN + 17.0, mcu=(5.0, 45.0), oled=(3.3, OLED_Y, 90), wheel='top-right'),
 }
 
 # Support parts: (ref, list of (footprint ref, pad) the part should sit close to)
@@ -95,10 +96,10 @@ def tongue_len(kind):
 
 
 def tongues(side, w):
-    """Board-local bounding rectangles (x0, y0, x1, y1) of the USB-C and TRRS tongues (both on the top edge)."""
+    """Board-local bounding rectangles (x0, y0, x1, y1) of the host and link USB-C tongues (both on the top edge)."""
     cfg = SIDES[side]
     return {k: (cfg[k + '_x'] - TONGUE_W / 2, -TOP - tongue_len(k), cfg[k + '_x'] + TONGUE_W / 2, -TOP)
-            for k in ('usb', 'trrs')}
+            for k in ('usb', 'link')}
 
 
 def outline(board, w, h, tg=None):
@@ -324,7 +325,7 @@ ENC_KEEP = 0.5            # gap kept between the two
 
 
 # courtyard overhang beyond the connector mouth (mouth ends flush with the board edge)
-MOUTH_OVERHANG = {'usb': 0.5, 'trrs': 0.355}
+MOUTH_OVERHANG = {'usb': 0.5, 'link': 0.5}
 
 
 # KiCad's library has no 3D model for these footprints; use LCSC's (gen/fetch_3d.sh), shifted so
@@ -332,7 +333,6 @@ MOUTH_OVERHANG = {'usb': 0.5, 'trrs': 0.355}
 LCSC_3D = '${KIPRJMOD}/../tools/easyeda/nrsk_lcsc.3dshapes/'
 MODELS = {
     'USB_C_Receptacle_HRO_TYPE-C-31-M-12': ('USB-C_SMD-TYPE-C-31-M-12_1.wrl', (0, 1.42, 0), (0, 0, 180)),
-    'Jack_3.5mm_PJ320D_Horizontal': ('AUDIO-SMD_PJ-320D-1.wrl', (0.925, 0, 0), (0, 0, 0)),
 }
 
 
@@ -357,11 +357,9 @@ def place_connector_top(fp, x, kind, edge_y=None):
     def outwardness(rot):
         fp.SetOrientationDegrees(rot)
         c = fp.GetPosition()
-        if kind == 'usb':      # contacts at the back (+y, into the board), mouth toward -y
-            pads = [p for p in fp.Pads() if p.GetAttribute() == pcbnew.PAD_ATTRIB_SMD]
-            return sum(p.GetPosition().y for p in pads) / len(pads) - c.y
-        pegs = [p for p in fp.Pads() if p.GetAttribute() == pcbnew.PAD_ATTRIB_NPTH]
-        return -(sum(p.GetPosition().y for p in pegs) / len(pegs) - c.y)
+        # USB-C: contacts at the back (+y, into the board), mouth toward -y
+        pads = [p for p in fp.Pads() if p.GetAttribute() == pcbnew.PAD_ATTRIB_SMD]
+        return sum(p.GetPosition().y for p in pads) / len(pads) - c.y
 
     fp.SetOrientationDegrees(max((0, 90, 180, 270), key=outwardness))
     b = bbox_mm(fp.GetCourtyard(pcbnew.B_CrtYd).BBox())
@@ -390,7 +388,7 @@ def write_case_data(side, board, fps, keys, holes, w, h, shift):
               for k in keys.values()],
         connectors=dict(
             usb=dict(center=local(fps['J2'].GetPosition()), box=local_box(fps['J2']), plug=[12.5, 7.0], edge='top'),
-            trrs=dict(center=local(fps['J1'].GetPosition()), box=local_box(fps['J1']), plug=[9.0, 9.0], edge='top'),
+            link=dict(center=local(fps['J1'].GetPosition()), box=local_box(fps['J1']), plug=[12.5, 7.0], edge='top'),
         ),
         reset=local(fps['RSW1'].GetPosition()),
         oled=dict(box=local_box(fps['J3']), rot=round(fps['J3'].GetOrientationDegrees()) % 360),
@@ -504,7 +502,7 @@ def build(side):
     # connectors (front) and MCU (back)
     tg = tongues(side, w)
     place_connector_top(fps['J2'], cfg['usb_x'], 'usb', edge_y=tg['usb'][1])
-    place_connector_top(fps['J1'], cfg['trrs_x'], 'trrs', edge_y=tg['trrs'][1])
+    place_connector_top(fps['J1'], cfg['link_x'], 'link', edge_y=tg['link'][1])
     place('J3', *cfg['oled'])          # OLED module on the front, in a key-free notch
     wx, wy = wheel_centre(side, w)
     enc = place('ENC1', wx, wy, 180, back=True)     # on the back, 180 deg puts the terminals at +y

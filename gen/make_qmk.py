@@ -181,7 +181,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {{
     open(os.path.join(OUT, 'halconf.h'), 'w').write(HALCONF)
     open(os.path.join(OUT, 'mcuconf.h'), 'w').write(MCUCONF)
     open(os.path.join(OUT, 'readme.md'), 'w').write(
-        '# nrsk\n\nSplit keyboard, RP2040 on each half (UF2 bootloader: double-tap reset), TRRS PIO serial.\n\n'
+        '# nrsk\n\nSplit keyboard, RP2040 on each half (UF2 bootloader: double-tap reset), PIO serial over a USB-C cable (D+).\n\n'
         'Copy this folder to `qmk_firmware/keyboards/nrsk` and build:\n\n'
         '    qmk compile -kb nrsk -km default\n    qmk flash -kb nrsk -km default\n')
     print('wrote', OUT)
