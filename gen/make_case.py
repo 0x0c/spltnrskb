@@ -80,10 +80,10 @@ OLED_WINDOW_CLEAR = 0.15     # added to the module courtyard (courtyard = module
 COVER_T = 2.0                # half-mirror acrylic; top flush with the plate top
 COVER_FIT = 0.1              # cover edge to plate opening
 COVER_BORDER = 5.0           # cover: at least this much wider than the OLED window on both sides
-COVER_FRAME = 3.5            # plate band round the cover, the same on every side: to the case outline (top and
+COVER_FRAME = 5.5            # plate band round the cover, the same on every side: to the case outline (top and
                              # inner edge) and to the keycaps (keys side and below); = make_pcb COVER_FRAME
-COVER_R = 2.0                # cover corners, except the one at the case corner (concentric with it)
 COVER_END = 1.5              # at least this much cover past both ends of the module (header end included)
+COVER_BELOW = 2.5            # the band below the cover, to the row-2 keycap, may narrow to this
 COVER_MARGIN = 3.0           # cover stays at least this far inside the case outline
 WALL_POCKET = 0.5            # 3D print: wall top lowered under the cover (cover 2 mm vs plate 1.5 mm)
 TAPE_T = 0.5                 # clear double-sided tape between glass and cover
@@ -183,8 +183,9 @@ class Half:
         self.screws = self._screws()
         self.window_box = self._oled()
         self.cover_screws = self._cover_screws()
-        # perimeter screws under the cover give way to the cover's own screws
-        cov = self.cover_shape().offset(1.5, JoinType.Round)
+        # perimeter screws under the cover or in the plate band right next to it go (the cover has no screws of
+        # its own): a screw head beside the rounded cover corner would spoil the even band
+        cov = self.cover_shape().offset(COVER_FRAME + 2.0, JoinType.Round)
         self.screws = [p for p in self.screws if not inside(cov, p) and
                        all(math.dist(p, c) > 8 for c in self.cover_screws)] + self.cover_screws
 
@@ -288,32 +289,31 @@ class Half:
         f, m = COVER_FRAME, COVER_BORDER
         top = oy0 + f
         caps = self.keycaps()
-        rows = [c for c in caps if c[1] < wy1 + m and c[3] > top]          # keycaps level with the cover
+        rows = [c for c in caps if c[1] < wy1 + COVER_END and c[3] > top]  # keycaps level with the cover
         if self.inner_right:
             x1 = ox1 - f
             x0 = max(c[2] for c in rows if c[2] <= wx0) + f
         else:
             x0 = ox0 + f
             x1 = min(c[0] for c in rows if c[0] >= wx1) - f
-        # bottom: COVER_FRAME above the next row of keycaps under the window, across the whole half (on the left
-        # no key of that row lies under the cover since the inner column went, so the line is kept level with
-        # the right half's, where the row-2 key reaches under the cover)
-        y1 = min(c[1] for c in caps if c[1] >= wy1) - f
+        # bottom: COVER_END past the module's header end (the OLED is placed so its display is the cover's centre);
+        # the band to the row-2 keycap below is narrower there (right half: the Y key), at least COVER_BELOW
+        y1 = wy1 + COVER_END
         m -= 0.1    # the window comes from the courtyard's bounding box, which carries its 0.05 mm line width
         # along the module the cover only has to hide its ends (the display glass, 3 mm toward the top, is centred)
-        assert x0 <= wx0 - m and x1 >= wx1 + m and top <= wy0 - COVER_END and y1 >= wy1 + COVER_END, \
+        assert x0 <= wx0 - m and x1 >= wx1 + m and top <= wy0 - COVER_END and y1 >= wy1 + COVER_END - 1e-9, \
             f'{self.side}: no room for COVER_BORDER round the OLED window'
         return (x0, top, x1, y1), ('tr' if self.inner_right else 'tl')
 
     def cover_shape(self):
-        """The cover: rectangle from cover_box(); the corner at the case corner is concentric with the case
-        outline (so the plate band keeps its width round it), the other three have COVER_R."""
+        """The cover: rectangle from cover_box() with the same radius on all four corners: the one at the case
+        corner is concentric with the case outline, so the plate band keeps its width round it."""
         (x0, y0, x1, y1), outer = self.cover_box()
         rc = self.outer_box[4] - COVER_FRAME
         cs = rect(x0, y0, x1, y1)
         for name, (cx, cy, sx, sy) in {'tl': (x0, y0, 1, 1), 'tr': (x1, y0, -1, 1),
                                        'br': (x1, y1, -1, -1), 'bl': (x0, y1, 1, -1)}.items():
-            r = rc if name == outer else COVER_R
+            r = rc
             px, py = cx + sx * r, cy + sy * r          # corner circle centre
             cs = cs - rect(min(cx, px), min(cy, py), max(cx, px), max(cy, py)) + circle(px, py, 2 * r)
         return cs
@@ -828,7 +828,13 @@ def check(hf, layers):
     caps = CrossSection()
     for c in hf.keycaps():
         caps = caps + rect(*c)
-    assert (hf.cover_shape().offset(COVER_FRAME - 0.01, JoinType.Round) ^ caps).area() < 0.01, 'cover closer than COVER_FRAME to a keycap'
+    (cx0, cy0, cx1, cy1), _ = hf.cover_box()
+    beside = CrossSection()
+    for c in hf.keycaps():
+        if c[1] < cy1:      # keycaps level with the cover: the full band; those below it: at least COVER_BELOW
+            beside = beside + rect(*c)
+    assert (hf.cover_shape().offset(COVER_FRAME - 0.01, JoinType.Round) ^ beside).area() < 0.01, 'cover closer than COVER_FRAME to a keycap'
+    assert (hf.cover_shape().offset(COVER_BELOW - 0.01, JoinType.Round) ^ caps).area() < 0.01, 'cover closer than COVER_BELOW to a keycap'
     assert (hf.cover_shape().offset(COVER_FRAME - 0.01, JoinType.Round) - hf.outer).area() < 0.01, 'cover closer than COVER_FRAME to the outline'
 
     # wheel: clear of standoffs, screws and the OLED; its rim must leave the case outline at the corner

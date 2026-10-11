@@ -25,19 +25,21 @@ TONGUE_W = 12.0
 TONGUE_TIP_R = 2.5             # rounded tongue tips (they stick out of the board: no sharp corners)
 TONGUE_ROOT_R = 1.5            # fillet where each tongue leaves the top edge
 # OLED half-mirror cover (make_case.py): COVER_FRAME of plate all round it, to the case outline and to the keycaps
-COVER_FRAME = 3.5              # = make_case COVER_FRAME
+COVER_FRAME = 5.5              # = make_case COVER_FRAME (cover corners R = 12.5 - 5.5 = 7)
 KEYCAP_INSET = (U - 18.0) / 2  # 18 mm keycaps on the 19.05 mm grid
 OLED_COVER_W = 12.5 + 2 * 0.15 + 2 * 5.0   # module courtyard + window clearance + COVER_BORDER on both sides
-# OLED centre (both halves): rows 0-1, 5 mm above the row boundary. The cover runs from COVER_FRAME below the case's
-# top outline to COVER_FRAME above the row-2 keycaps (centre y 10.56); the module's display glass sits 3 mm toward
-# its top (away from the header), so the display lands at the cover's centre. Higher, the module's top corner would
-# leave the board's rounded corner and meet the link USB-C's shield pins.
-OLED_Y = U - 5.0
+# OLED centre (both halves): the display glass (3 mm toward the module's top, away from the header) sits at the
+# centre of the cover. The cover's top is COVER_FRAME below the case's top outline, its bottom 1.5 mm past the
+# module's header end (make_case COVER_END; window half length 19.45 from the centre), so
+# glass = OLED_Y - 3 = (top + OLED_Y + 19.45 + 1.5) / 2.
+OLED_Y = (-(MARGIN + 6.0) - CASE_WALL + COVER_FRAME) + 2 * 3.0 + 19.45 + 1.5
 CORNER_R = 4.0
 
 # Per-side geometry in board-local mm. Keys are shifted so the board starts at x = -MARGIN.
 # left: rows 0-1 end at 7 u; inner edge = their keycaps + frame + cover + frame, less the case wall
 LEFT_W = 7 * U - KEYCAP_INSET + 2 * COVER_FRAME + OLED_COVER_W - CASE_WALL
+# right: keys one unit in from the old layout, or further out if the cover needs it (rows 0-1 start at 11.25 u)
+RIGHT_SHIFT = min(10.75 * U - 12.6, 11.25 * U + KEYCAP_INSET - (-MARGIN - CASE_WALL + 2 * COVER_FRAME + OLED_COVER_W))
 SIDES = {
     # connectors on the BACK so plugs pass under the PCB and the switch plate needs no cut-outs;
     # each board hugs its own key grid (3 mm margin). The OLEDs sit at the same height too (top two rows, flush with
@@ -51,7 +53,8 @@ SIDES = {
     'left': dict(key_shift=0.0, width=LEFT_W, inner=+1, usb_x=LEFT_W - 35.0,
                  link_x=LEFT_W - 17.0, mcu=(LEFT_W - 12.5625, 45.0),
                  oled=(LEFT_W + CASE_WALL - COVER_FRAME - OLED_COVER_W / 2, OLED_Y, 90), wheel='top-left'),
-    'right': dict(key_shift=10.75 * U - 12.6, width=8.5 * U + MARGIN + 12.6, inner=-1, usb_x=-MARGIN + 35.0,
+    'right': dict(key_shift=RIGHT_SHIFT, width=8.5 * U + MARGIN + 12.6 + (10.75 * U - 12.6 - RIGHT_SHIFT), inner=-1,
+                  usb_x=-MARGIN + 35.0,
                   link_x=-MARGIN + 17.0, mcu=(5.0, 45.0),
                   oled=(-MARGIN - CASE_WALL + COVER_FRAME + OLED_COVER_W / 2, OLED_Y, 90), wheel='top-right',
                   drum=dict(x_key='Backspace', y_key='F12', dx=-(0.4 + 12.0 / 2))),   # drum centred on Backspace
