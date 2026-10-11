@@ -10,6 +10,7 @@ import uuid
 import sexpr
 import make_pro
 from layout import (HERE, ROW_PINS, COL_PINS, SERIAL_PIN, HAND_PIN, I2C_SDA, I2C_SCL, WHEEL_PIN_A, WHEEL_PIN_B,
+                    DRUM_PIN_A, DRUM_PIN_B, DRUM_SIDES,
                     N_ROWS, N_COLS, load)
 from footprints import WIDTHS
 
@@ -31,6 +32,7 @@ FP = {
     'reset': 'Button_Switch_SMD:SW_SPST_PTS810',
     'oled': 'nrsk:OLED_0.91in_128x32_I2C',
     'encoder': 'nrsk:Alps_EC05E1220401',
+    'drum': 'nrsk:Alps_EC10E',
 }
 
 # RP2040 QFN-56: GPIO number -> pin
@@ -230,6 +232,8 @@ def build(side):
     MX, MY = 279.4, 116.84
     sh.text('MCU: RP2040 (QFN-56), 12 MHz, 3.3 V I/O, 16 MB QSPI flash', MX - 25.4, MY - 55.88)
     roles = {SERIAL_PIN: 'DATA', HAND_PIN: 'HAND', I2C_SDA: 'SDA', I2C_SCL: 'SCL', WHEEL_PIN_A: 'ENC_A', WHEEL_PIN_B: 'ENC_B'}
+    if side in DRUM_SIDES:
+        roles.update({DRUM_PIN_A: 'DRUM_A', DRUM_PIN_B: 'DRUM_B'})
     roles.update({p: f'ROW{i}' for i, p in enumerate(ROW_PINS)})
     roles.update({p: f'COL{i}' for i, p in enumerate(COL_PINS)})
     mcu = {str(pin): roles.get(f'GP{g}') for g, pin in RP_GPIO.items()}
@@ -322,6 +326,12 @@ def build(side):
     sh.text('Thumbwheel encoder Alps EC05E1220401 (12 detents / 12 pulses, C = common)', AX - 12.7, AY - 12.7)
     sh.symbol('Device:RotaryEncoder', 'ENC1', 'EC05E1220401', AX, AY, 0, FP['encoder'],
               {'A': 'ENC_A', 'B': 'ENC_B', 'C': 'GND'})
+
+    # drum dial (right half): Alps EC10E1220505 on the front, axis parallel to the board; internal pull-ups
+    if side in DRUM_SIDES:
+        sh.text('Drum dial encoder Alps EC10E1220505 (24 detents / 12 pulses, C = common)', AX - 12.7, AY + 12.7)
+        sh.symbol('Device:RotaryEncoder', 'ENC2', 'EC10E1220505', AX, AY + 25.4, 0, FP['drum'],
+                  {'A': 'DRUM_A', 'B': 'DRUM_B', 'C': 'GND'})
 
     path = os.path.join(HERE, '..', side, project + '.kicad_sch')
     os.makedirs(os.path.dirname(path), exist_ok=True)

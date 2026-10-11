@@ -210,7 +210,7 @@ QMK のエンコーダーの番号は、左半分のエンコーダーが先に�
 | # | 状態 | やること | 触るファイル | 完了条件 | 前提 |
 | --- | --- | --- | --- | --- | --- |
 | 1 | 済 | EC10E のフットプリントと 3D モデルを追加する | `gen/footprints.py`、`gen/models3d.py`、`lib/nrsk.pretty/`、`lib/nrsk.3dshapes/` | KiCad のフットプリントエディタで開き、Alps の寸法図と穴の位置、本体の外形が一致する | なし |
-| 2 | 未 | 右半分の回路図にエンコーダーを足し、GP22、GP23、GND につなぐ。左半分では未接続の印を付ける | `gen/make_sch.py`、`gen/layout.py`、`left/`、`right/` の回路図 | 左右とも ERC のエラーが 0 件 | 1 |
+| 2 | 済 | 右半分の回路図にエンコーダーを足し、GP22、GP23、GND につなぐ。左半分では未接続の印を付ける | `gen/make_sch.py`、`gen/layout.py`、`left/`、`right/` の回路図 | 左右とも ERC のエラーが 0 件 | 1 |
 | 3 | 未 | 右半分の基板にエンコーダーと軸受けブロックの穴を置き、ドラムの位置を `case_data.json` に書き出して配線する | `gen/make_pcb.py`、`right/` の基板と `case_data.json`、`fab/right/` | `./build.sh right` で未配線 0、DRC のエラー 0。取付穴の位置が変わったら、3 章の配置の表と照らして干渉がないことを確かめる | 2 |
 | 4 | 未 | プレートの切り欠き、B の補強の板の削り、ドラム、軸受けブロック、ベゼルと検査を足す | `gen/make_case.py`、`case/` | `.venv/bin/python gen/make_case.py` の検査がすべて通る。3 つの STL が出力される | 3 |
 | 5 | 未 | ファームウェアにドラムを足す | `gen/make_qmk.py`、`firmware/qmk/keyboards/nrsk/` | `qmk compile -kb nrsk -km default` が通る | 2 |

@@ -12,6 +12,8 @@ SERIAL_PIN = 'GP1'  # QMK split serial (PIO, half duplex) on the TRRS tip
 HAND_PIN = 'GP0'    # 10k to 3V3 on left / GND on right
 I2C_SDA, I2C_SCL = 'GP2', 'GP3'   # I2C1: OLED
 WHEEL_PIN_A, WHEEL_PIN_B = 'GP19', 'GP20'   # corner thumbwheel encoder (common to GND, internal pull-ups)
+DRUM_PIN_A, DRUM_PIN_B = 'GP22', 'GP23'     # drum dial encoder, right half only (left: not connected)
+DRUM_SIDES = ('right',)
 N_ROWS, N_COLS = len(ROW_PINS), len(COL_PINS)
 
 
