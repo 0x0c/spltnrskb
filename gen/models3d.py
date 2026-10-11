@@ -53,7 +53,22 @@ def oled():
     return shape(pcb, OLED_PCB) + shape(glass, GLASS, 0.9) + shape(screen, SCREEN, 0.9) + shape(pins, GOLD, 0.6)
 
 
-MODELS = {'OLED_0.91in_128x32.wrl': oled}
+METAL = (0.72, 0.73, 0.75)
+RESIN = (0.15, 0.15, 0.16)
+
+
+def ec10e():
+    """Alps EC10E, axis 7 mm above the board along X, footprint origin (see gen/footprints.py alps_ec10e)."""
+    axis = 7.0
+    bracket = [box(-6.1, -4.9, 0.0, 4.9, 0.0, 2.0), box(-5.15, -4.9, -0.65, 4.9, 2.0, axis + 3.6)]
+    rotor = [box(-1.3, -1.8, -0.6, 1.8, axis - 1.8, axis + 1.8)]
+    hole = [box(-0.61, -0.86, -0.6, 0.86, axis - 0.86, axis + 0.86)]
+    legs = [box(-2.2, sy * 4.5 - 0.15, -1.2, sy * 4.5 + 0.15, -PCB_T - 1.9, 0.5) for sy in (-1, 1)]
+    pins = [box(-3.95, (1 - i) * 2.5 - 0.25, -3.45, (1 - i) * 2.5 + 0.25, -PCB_T - 1.9, 2.0) for i in range(3)]
+    return (shape(bracket, METAL, 0.6) + shape(rotor, RESIN) + shape(hole, GLASS) + shape(legs + pins, METAL, 0.6))
+
+
+MODELS = {'OLED_0.91in_128x32.wrl': oled, 'Alps_EC10E.wrl': ec10e}
 
 def main():
     os.makedirs(OUT, exist_ok=True)

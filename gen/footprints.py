@@ -184,9 +184,49 @@ def alps_ec05e():
     return name, s
 
 
+# Alps EC10E1220505: 10 mm hollow-shaft encoder, horizontal (axis parallel to the board, 7 mm above it),
+# 24 detents / 12 pulses (catalog page EC10E). Origin = the rotor axis projected onto the board at the body's
+# face on the shaft-insert side; +X points out of that face (toward the drum), so the body lies at x < 0.
+# Seen from the shaft-insert side the terminals read A B C from left to right: A at +Y, C (common) at -Y.
+EC10_BODY = (-6.1, -4.9, 0.0, 4.9)      # bracket footprint: 6.1 along the axis, 9.8 across
+EC10_PIN_X, EC10_PIN_PITCH = -3.7, 2.5  # A B C, 3 x 1.0 mm holes, 3.7 mm from the insert-side face
+EC10_LEG = (-1.7, 4.5, 2.1, 1.8)        # mounting legs: x, y (+/-), slot along x, across y (outer edges 10.8 apart)
+
+
+def alps_ec10e():
+    name = 'Alps_EC10E'
+    s = (f'(footprint "{name}"\n  (version 20241229)\n  (generator "nrsk-gen")\n  (layer "F.Cu")\n'
+         '  (descr "Alps EC10E 10 mm hollow-shaft rotary encoder, horizontal, axis 7 mm above the board '
+         '(EC10E1220505: 24 detents / 12 pulses), hex shaft hole 1.73 mm A/F entered from +X")\n'
+         '  (tags "rotary encoder Alps EC10E hollow shaft horizontal")\n  (attr through_hole)\n')
+    s += prop('Reference', 'REF**', (-3.0, -6.6), 'F.SilkS', size=0.8)
+    s += prop('Value', name, (-3.0, 6.6), 'F.Fab', size=0.6)
+    s += prop('Footprint', '', (0, 0), 'F.Fab', hide=True)
+    s += prop('Datasheet', '', (0, 0), 'F.Fab', hide=True)   # catalog: tech.alpsalpine.com, EC10E
+    s += prop('Description', '', (0, 0), 'F.Fab', hide=True)
+    x0, y0, x1, y1 = EC10_BODY
+    lx, ly, lw, lh = EC10_LEG
+    s += rect(x0, y0, x1, y1, 'F.Fab', 0.1)
+    s += line(0.4, -1.0, 0.4, 1.0, 'F.Fab', 0.1)               # shaft-insert side
+    s += text('A', EC10_PIN_X + 1.4, EC10_PIN_PITCH, 'F.Fab', 0.6)
+    s += line(x0 - 0.15, y0 + 1.0, x0 - 0.15, y1 - 1.0, 'F.SilkS')   # back face; the legs cover the sides
+    s += line(x1 + 0.15, -1.6, x1 + 0.15, 1.6, 'F.SilkS')
+    s += rect(x0 - 0.3, -(ly + lh / 2 + 0.65), x1 + 0.3, ly + lh / 2 + 0.65, 'F.CrtYd', 0.05)
+    for sy in (-1, 1):   # mounting legs: plated slots, no net
+        s += (f'  (pad "" thru_hole roundrect (at {lx:.3f} {sy * ly:.3f}) (size {lw + 0.5:.2f} {lh + 0.5:.2f}) '
+              f'(drill oval {lw} {lh}) (roundrect_rratio 0.25) (layers "*.Cu" "*.Mask") (uuid "{uid()}"))\n')
+    for i, num in enumerate(('A', 'B', 'C')):
+        shape = 'rect' if num == 'A' else 'circle'
+        s += (f'  (pad "{num}" thru_hole {shape} (at {EC10_PIN_X:.3f} {(1 - i) * EC10_PIN_PITCH:.3f}) '
+              f'(size 1.7 1.7) (drill 1.0) (layers "*.Cu" "*.Mask") (uuid "{uid()}"))\n')
+    s += model(NRSK_3D + 'Alps_EC10E.wrl')
+    s += ')\n'
+    return name, s
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
-    items = [mx_hotswap(w) for w in WIDTHS] + [oled_module(), alps_ec05e()]
+    items = [mx_hotswap(w) for w in WIDTHS] + [oled_module(), alps_ec05e(), alps_ec10e()]
     for name, s in items:
         open(os.path.join(OUT, name + '.kicad_mod'), 'w').write(s)
     print('wrote', [n for n, _ in items])

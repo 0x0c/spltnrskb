@@ -140,7 +140,7 @@ LCSC の製品番号は C160888 である。検索結果では約 3,200 個の�
 | フットプリント | `nrsk:Alps_EC10E` を `gen/footprints.py` で生成する。端子 3 本と取付用の脚 2 本の穴、本体の外形（F.Fab と F.CrtYd）を含む。穴の位置は Alps の寸法図の「プリント基板の取付穴」から取る |
 | 軸受けブロックの穴 | 直径 2.0 mm の NPTH を 2 つ。ブロックの位置決めピンに合わせる |
 | 配置 | 基板の表、上の配置の表の位置。右半分だけに置く |
-| 3D モデル | Alps が STEP を配布していれば、`gen/fetch_3d.sh` で `tools/` に取得する。配布条件が明記されていなければ、リポジトリには入れない |
+| 3D モデル | Alps の EC10E の STEP は配布先が見つからなかった。OLED と同じく、箱を組み合わせた簡易モデルを `gen/models3d.py` で作る |
 
 GP22 と GP23 は今どこにも使っていない（`gen/layout.py:9` から `gen/layout.py:14`）。RP2040 の QFN では、GP22 が 34 番ピン、GP23 が 35 番ピンで、サムホイールの GP19（30 番）、GP20（31 番）と同じ辺に並ぶ。
 
@@ -207,14 +207,14 @@ QMK のエンコーダーの番号は、左半分のエンコーダーが先に�
 
 各ステップは 1 コミットにまとめる。生成物（回路図、基板、STL、ファームウェア）は、生成スクリプトと同じコミットで再生成する。基板の再生成は右半分だけでよい（`./build.sh right`）。
 
-| # | やること | 触るファイル | 完了条件 | 前提 |
-| --- | --- | --- | --- | --- |
-| 1 | EC10E のフットプリントを追加し、3D モデルの取得を足す | `gen/footprints.py`、`gen/fetch_3d.sh`、`lib/nrsk.pretty/` | KiCad のフットプリントエディタで開き、Alps の寸法図と穴の位置、本体の外形が一致する | なし |
-| 2 | 右半分の回路図にエンコーダーを足し、GP22、GP23、GND につなぐ。左半分では未接続の印を付ける | `gen/make_sch.py`、`gen/layout.py`、`left/`、`right/` の回路図 | 左右とも ERC のエラーが 0 件 | 1 |
-| 3 | 右半分の基板にエンコーダーと軸受けブロックの穴を置き、ドラムの位置を `case_data.json` に書き出して配線する | `gen/make_pcb.py`、`right/` の基板と `case_data.json`、`fab/right/` | `./build.sh right` で未配線 0、DRC のエラー 0。取付穴の位置が変わったら、3 章の配置の表と照らして干渉がないことを確かめる | 2 |
-| 4 | プレートの切り欠き、B の補強の板の削り、ドラム、軸受けブロック、ベゼルと検査を足す | `gen/make_case.py`、`case/` | `.venv/bin/python gen/make_case.py` の検査がすべて通る。3 つの STL が出力される | 3 |
-| 5 | ファームウェアにドラムを足す | `gen/make_qmk.py`、`firmware/qmk/keyboards/nrsk/` | `qmk compile -kb nrsk -km default` が通る | 2 |
-| 6 | BOM を更新する | `gen/make_bom.py`、`gen/bom_sources.json`、`bom/` | BOM に EC10E1220505（右 1 個）、ドラム、軸受けブロック、ベゼルが載る。EC10E は LCSC の製品ページを開き、型番、在庫、価格を確かめてから載せる | 3、4 |
-| 7 | 組み立てガイドと 3D ビューアを更新する | `gen/assembly_guide.py`、`gen/case_viewer.py`、`case/preview/` | 組み立てガイドにドラムの手順が入る。ビューアでドラム、ブロック、ベゼルの位置が基板とプレートに合っている | 4、6 |
-| 8 | README と注文の文書を更新し、レンダリングを作り直す | `README.md`、`docs/ordering.md`、`docs/pre-order-checklist.md`、`gen/render_blender.py`、`docs/img/` | README にドラムの節があり、ピン割り当ての表に GP22、GP23 が載る。注文の文書に EC10E と印刷物が載る。textlint の指摘が 0 件。`./gen/render_all.sh` が通る | 4、5、6、7 |
-| 9 | 実機で確かめる | なし（結果は README に追記） | 六角ピンのはめあいとスナップフィットを試し印刷で決める。転がす向き、1 クリック 1 回の送り、静止中に送りが出ないこと、ベゼルの爪の掛かり、隣の F12 を押したときに指がベゼルに当たらないことを確かめる | 3、4、5 |
+| # | 状態 | やること | 触るファイル | 完了条件 | 前提 |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 済 | EC10E のフットプリントと 3D モデルを追加する | `gen/footprints.py`、`gen/models3d.py`、`lib/nrsk.pretty/`、`lib/nrsk.3dshapes/` | KiCad のフットプリントエディタで開き、Alps の寸法図と穴の位置、本体の外形が一致する | なし |
+| 2 | 未 | 右半分の回路図にエンコーダーを足し、GP22、GP23、GND につなぐ。左半分では未接続の印を付ける | `gen/make_sch.py`、`gen/layout.py`、`left/`、`right/` の回路図 | 左右とも ERC のエラーが 0 件 | 1 |
+| 3 | 未 | 右半分の基板にエンコーダーと軸受けブロックの穴を置き、ドラムの位置を `case_data.json` に書き出して配線する | `gen/make_pcb.py`、`right/` の基板と `case_data.json`、`fab/right/` | `./build.sh right` で未配線 0、DRC のエラー 0。取付穴の位置が変わったら、3 章の配置の表と照らして干渉がないことを確かめる | 2 |
+| 4 | 未 | プレートの切り欠き、B の補強の板の削り、ドラム、軸受けブロック、ベゼルと検査を足す | `gen/make_case.py`、`case/` | `.venv/bin/python gen/make_case.py` の検査がすべて通る。3 つの STL が出力される | 3 |
+| 5 | 未 | ファームウェアにドラムを足す | `gen/make_qmk.py`、`firmware/qmk/keyboards/nrsk/` | `qmk compile -kb nrsk -km default` が通る | 2 |
+| 6 | 未 | BOM を更新する | `gen/make_bom.py`、`gen/bom_sources.json`、`bom/` | BOM に EC10E1220505（右 1 個）、ドラム、軸受けブロック、ベゼルが載る。EC10E は LCSC の製品ページを開き、型番、在庫、価格を確かめてから載せる | 3、4 |
+| 7 | 未 | 組み立てガイドと 3D ビューアを更新する | `gen/assembly_guide.py`、`gen/case_viewer.py`、`case/preview/` | 組み立てガイドにドラムの手順が入る。ビューアでドラム、ブロック、ベゼルの位置が基板とプレートに合っている | 4、6 |
+| 8 | 未 | README と注文の文書を更新し、レンダリングを作り直す | `README.md`、`docs/ordering.md`、`docs/pre-order-checklist.md`、`gen/render_blender.py`、`docs/img/` | README にドラムの節があり、ピン割り当ての表に GP22、GP23 が載る。注文の文書に EC10E と印刷物が載る。textlint の指摘が 0 件。`./gen/render_all.sh` が通る | 4、5、6、7 |
+| 9 | 未 | 実機で確かめる | なし（結果は README に追記） | 六角ピンのはめあいとスナップフィットを試し印刷で決める。転がす向き、1 クリック 1 回の送り、静止中に送りが出ないこと、ベゼルの爪の掛かり、隣の F12 を押したときに指がベゼルに当たらないことを確かめる | 3、4、5 |
