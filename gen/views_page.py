@@ -30,6 +30,7 @@ DETAILS = [
     ('OLED', {'a': 'render-oled-top-acrylic-lowpan.png', 'b': 'render-oled-top-print.png'}),
     ('左のホイール', {'a': 'render-wheel-left-top-acrylic-lowpan.png', 'b': 'render-wheel-left-top-print.png'}),
     ('右のホイール', shot('wheel-right')),
+    ('ドラム式ダイヤル', shot('drum')),
     ('内側の角とケーブル', shot('detail')),
     ('USB-C × 2', shot('ports')),
     ('USB-C × 2・ケーブルなし', shot('ports-nocable')),

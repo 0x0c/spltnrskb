@@ -137,6 +137,13 @@ def main():
             parts.append((side, 'wheel', pack(hf.wheel3d().translate((0, 0, z_floor + WHEEL_GAP))), '#c9ccd1', 1.0))
             if not boards:   # KiCad's board export carries the encoder (ENC1) with Alps' model
                 parts.append((side, 'encoder', pack(hf.encoder3d(z_floor)), '#202225', 1.0))
+            if 'drum' in hf.d:   # drum dial: bearing block, drum and bezel (KiCad's board carries the EC10E, ENC2)
+                zt = z_pcb + PCB_T
+                if not boards:
+                    parts.append((side, 'drumenc', pack(hf.ec10e3d().translate((0, 0, zt))), '#202225', 1.0))
+                parts.append((side, 'drumblock', pack(hf.drum_block3d().translate((0, 0, zt))), '#d9d4c7', 1.0))
+                parts.append((side, 'drum', pack(hf.drum3d().translate((0, 0, zt))), '#c9ccd1', 1.0))
+                parts.append((side, 'drumbezel', pack(hf.drum_bezel3d().translate((0, 0, zt))), '#d9d4c7', 1.0))
             for name, m, color in hardware(hf, variant):
                 if m is not None:
                     parts.append((side, name, pack(m), color, 1.0))
@@ -150,18 +157,21 @@ def main():
         'print': dict(title='A：3D プリントのトレイ + 透明アクリルのプレート', rows=[
             ['外形 mm', size], ['高さ', f"{FLOOR + STANDOFF + PCB_T + PLATE_GAP + PLATE_T:g} mm（プレート上面まで）"],
             ['床 / 壁', f'{FLOOR:g} mm / 幅 8 mm'], ['基板の高さ', f'床から {STANDOFF:g} mm（ボス φ4.6）'],
-            ['プレート', '透明アクリル 1.5 mm、M2 ヒートセットインサートで固定'], ['トレイの角', f'外周の下端 R{TRAY_FILLET:g}・上端 R{TRAY_TOP_FILLET:g} のフィレット'], ['コネクタ', '基板裏面。プレートは切り欠きなし'], ['ホイール', '角にサムホイール × 2（ロータリーエンコーダー Alps EC05E1220401）'],
-            ['OLED', 'ハーフミラーアクリル 2 mm の角丸長方形、両面テープで固定（プレートと面一）']]),
+            ['プレート', '透明アクリル 1.5 mm、上からスリムヘッドの M2 小ねじと壁の中の M2 ナットで固定'], ['トレイの角', f'外周の下端 R{TRAY_FILLET:g}・上端 R{TRAY_TOP_FILLET:g} のフィレット'], ['コネクタ', '基板裏面。プレートは切り欠きなし'], ['ホイール', '角にサムホイール × 2（ロータリーエンコーダー Alps EC05E1220401）'],
+            ['OLED', f'ハーフミラーアクリル 2 mm、四隅 R{mc.CLEAR + mc.WALL + 4.0 - mc.COVER_FRAME:g}、周りの帯 {mc.COVER_FRAME:g} mm、両面テープで固定（プレートと面一）'],
+            ['ドラム', '右上にドラム式ダイヤル（Alps EC10E1220505、24 クリック）、ベゼルはプレートの切り欠きにはめる']]),
         'printtop': dict(title='B：全部 3D プリント（プレートも印刷）', rows=[
             ['外形 mm', size], ['高さ', f"{FLOOR + STANDOFF + PCB_T + PLATE_GAP + PLATE_T:g} mm（プレート上面まで）"],
             ['プレート', f'3D プリント 1.5 mm + 裏の補強 {mc.RIB_T:g} mm（スイッチの周りだけ 1.5 mm）'],
             ['トレイの角', f'外周の下端 R{TRAY_FILLET:g}・上端 R{TRAY_TOP_FILLET:g} のフィレット'],
             ['ホイール', '角にサムホイール × 2（ロータリーエンコーダー Alps EC05E1220401）、壁の上は外せる角キャップ'],
-            ['OLED', 'ハーフミラーアクリル 2 mm の角丸長方形、両面テープで固定（プレートと面一）']]),
+            ['OLED', f'ハーフミラーアクリル 2 mm、四隅 R{mc.CLEAR + mc.WALL + 4.0 - mc.COVER_FRAME:g}、周りの帯 {mc.COVER_FRAME:g} mm、両面テープで固定（プレートと面一）'],
+            ['ドラム', '右上にドラム式ダイヤル（Alps EC10E1220505、24 クリック）、ベゼルはプレートの切り欠きにはめる']]),
         'acrylic': dict(title='アクリル版（積層サンドイッチ）', rows=[
             ['外形 mm', size], ['材料', '枠と底板はマットクリア 3 mm、プレートは透明 1.5 mm、OLED カバーはハーフミラー 2 mm'], ['積層', f'底板 {BOTTOM_T:g} + 枠 {FRAME_T:g} × {N_FRAMES} + プレート {PLATE_T:g} mm'],
             ['高さ', f'{BOTTOM_T + N_FRAMES * FRAME_T + PLATE_T:g} mm'], ['基板の固定', f'M2 スペーサー {STANDOFF:g} mm × 8'], ['コネクタ', '基板裏面。プレートと最上段の枠は切り欠きなし'],
-            ['外周', 'M2 × 20 mm + ナット'], ['ホイール', '角にサムホイール × 2（ロータリーエンコーダー Alps EC05E1220401）'], ['OLED', '0.91 インチ × 2、プレートと面一のハーフミラーアクリル 2 mm']]),
+            ['外周', 'M2 × 20 mm + ナット'], ['ホイール', '角にサムホイール × 2（ロータリーエンコーダー Alps EC05E1220401）'], ['OLED', f'0.91 インチ × 2、ハーフミラーアクリル 2 mm（四隅 R{mc.CLEAR + mc.WALL + 4.0 - mc.COVER_FRAME:g}、プレートより 0.5 mm 高い）'],
+            ['ドラム', '右上にドラム式ダイヤル（Alps EC10E1220505、24 クリック）、ベゼルはプレートの切り欠きにはめる']]),
     }
     z = {v: {'pcb': (FLOOR if v in PRINTED else BOTTOM_T) + STANDOFF} for v in VARIANTS}
     data = dict(DATA=scenes, POOL=pool, BOARDS=boards, SPEC=spec_data, Z=z)
@@ -205,7 +215,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 <div id="ui" class="panel">
  <button id="v-print" data-v="print" class="on">A：プリント + アクリル蓋</button><button id="v-printtop" data-v="printtop">B：全部プリント</button><button id="v-acrylic" data-v="acrylic">アクリル版</button>
  <span class="sep"></span>
- <button id="t-switch" data-t="switch" class="on">スイッチ</button><button id="t-plate" data-t="plate" class="on">プレート</button><button id="t-wheel" data-t="wheel" class="on">ホイール</button>
+ <button id="t-switch" data-t="switch" class="on">スイッチ</button><button id="t-plate" data-t="plate" class="on">プレート</button><button id="t-wheel" data-t="wheel" class="on">ダイヤル</button>
  <button id="t-explode" data-t="explode">分解表示</button>
  <label id="gap" class="gap" hidden>間隔 <input id="gap-in" type="range" min="0" max="40" step="1" value="10" aria-label="分解表示のレイヤー間隔（mm）"> <output id="gap-out">10 mm</output></label>
  <span class="sep"></span>
@@ -241,7 +251,7 @@ const dl = new THREE.DirectionalLight(0xffffff, 0.6); dl.position.set(200, -300,
 let group = null; const state = {v: 'print', switch: true, plate: true, wheel: true, explode: false, gap: 10};
 // exploded view: each layer rises by its level x the gap set on the slider (mm)
 const LEVEL = {tray: 0, bottom: 0, wheel: 0, wheelcap: 2, encoder: 6, frame1: 1, frame2: 2, frame3: 3, frame4: 4, pcb: 6, pcba: 6, oled: 6.5,
-               plate: 9, switch: 11.5, cover: 12.5};
+               drumenc: 6, drumblock: 6.5, drum: 7, plate: 9, drumbezel: 10, switch: 11.5, cover: 12.5};
 const GAP = 25;   // mm between the halves
 // matte (frosted) and clear acrylic, and the half-mirror OLED cover
 const MATERIAL = {matte: {color: '#e6edf1', roughness: 0.95, metalness: 0.0},
@@ -287,7 +297,7 @@ function build() {
   const add = (side, layer, obj, z0 = 0) => { obj.userData = {layer, z0}; place(obj); halves[side].add(obj); };
   for (const [side, name, m, color, op] of DATA[state.v]) {
     if (HIDDEN.includes(name)) continue;
-    const key = name;
+    const key = name.startsWith('drum') ? 'wheel' : name;   // the wheel toggle shows / hides the drum dial too
     if (!state[key] && (key === 'switch' || key === 'plate' || key === 'wheel')) continue;
     if (name === 'pcba') {
       add(side, 'pcba', board(Object.values(BOARDS[side].pcba).flat()), m);

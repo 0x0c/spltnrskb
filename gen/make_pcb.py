@@ -24,24 +24,40 @@ PORT_SKIN = 0.8                # wall left in front of the connector mouth
 TONGUE_W = 12.0
 TONGUE_TIP_R = 2.5             # rounded tongue tips (they stick out of the board: no sharp corners)
 TONGUE_ROOT_R = 1.5            # fillet where each tongue leaves the top edge
-OLED_Y = U - 5.0               # OLED centre (both halves): rows 0-1, raised 5 mm to clear the row-2 switches
+# OLED half-mirror cover (make_case.py): COVER_FRAME of plate all round it, to the case outline and to the keycaps
+COVER_FRAME = 5.5              # = make_case COVER_FRAME (cover corners R = 12.5 - 5.5 = 7)
+KEYCAP_INSET = (U - 18.0) / 2  # 18 mm keycaps on the 19.05 mm grid
+OLED_COVER_W = 12.5 + 2 * 0.15 + 2 * 5.0   # module courtyard + window clearance + COVER_BORDER on both sides
+# OLED centre (both halves): the display glass (3 mm toward the module's top, away from the header) sits at the
+# centre of the cover. The cover's top is COVER_FRAME below the case's top outline, its bottom 1.5 mm past the
+# module's header end (make_case COVER_END; window half length 19.45 from the centre), so
+# glass = OLED_Y - 3 = (top + OLED_Y + 19.45 + 1.5) / 2.
+OLED_Y = (-(MARGIN + 6.0) - CASE_WALL + COVER_FRAME) + 2 * 3.0 + 19.45 + 1.5
 CORNER_R = 4.0
 
 # Per-side geometry in board-local mm. Keys are shifted so the board starts at x = -MARGIN.
+# left: rows 0-1 end at 7 u; inner edge = their keycaps + frame + cover + frame, less the case wall
+LEFT_W = 7 * U - KEYCAP_INSET + 2 * COVER_FRAME + OLED_COVER_W - CASE_WALL
+# right: keys one unit in from the old layout, or further out if the cover needs it (rows 0-1 start at 11.25 u)
+RIGHT_SHIFT = min(10.75 * U - 12.6, 11.25 * U + KEYCAP_INSET - (-MARGIN - CASE_WALL + 2 * COVER_FRAME + OLED_COVER_W))
 SIDES = {
     # connectors on the BACK so plugs pass under the PCB and the switch plate needs no cut-outs;
-    # each board hugs its own key grid (3 mm margin). The OLEDs sit at the same height too (top two rows, flush with the inner edge). Both boards are widened on
-    # the inner edge so the OLED sits 5 mm clear of the switch tops (room for a half-mirror cover centred on it);
-    # the right one 8 mm more, so its MCU fits between the inner edge and the first column of sockets.
+    # each board hugs its own key grid (3 mm margin). The OLEDs sit at the same height too (top two rows, flush with
+    # the inner edge). The left board is widened on the inner edge just enough for the OLED's cover with COVER_FRAME
+    # on both sides (to the row 0-1 keycaps and to the case outline); the right one has the cover in the notch above
+    # its row-2 key and is widened 12.6 mm, so its MCU fits between the inner edge and the first column of sockets.
     # Two USB-C on the top (back) edge, plugs pointing away from the user: the split link next to the inner
     # corner (above the OLED), the host port further out; the MCU on the back below them. The same receptacle on
     # both tongues puts both openings at the same height. Both OLEDs are turned the same
     # way (header at the bottom), so one firmware rotation fits both.
-    'left': dict(key_shift=0.0, width=8.25 * U + MARGIN + 9.4, inner=+1, usb_x=8.25 * U + MARGIN + 9.4 - 35.0,
-                 link_x=8.25 * U + MARGIN + 9.4 - 17.0, mcu=(157.0, 45.0),
-                 oled=(8.25 * U + MARGIN + 9.4 - 6.3, OLED_Y, 90), wheel='top-left'),
-    'right': dict(key_shift=9.75 * U - 12.6, width=9.5 * U + MARGIN + 12.6, inner=-1, usb_x=-MARGIN + 35.0,
-                  link_x=-MARGIN + 17.0, mcu=(5.0, 45.0), oled=(3.3, OLED_Y, 90), wheel='top-right'),
+    'left': dict(key_shift=0.0, width=LEFT_W, inner=+1, usb_x=LEFT_W - 35.0,
+                 link_x=LEFT_W - 17.0, mcu=(LEFT_W - 12.5625, 45.0),
+                 oled=(LEFT_W + CASE_WALL - COVER_FRAME - OLED_COVER_W / 2, OLED_Y, 90), wheel='top-left'),
+    'right': dict(key_shift=RIGHT_SHIFT, width=8.5 * U + MARGIN + 12.6 + (10.75 * U - 12.6 - RIGHT_SHIFT), inner=-1,
+                  usb_x=-MARGIN + 35.0,
+                  link_x=-MARGIN + 17.0, mcu=(5.0, 45.0),
+                  oled=(-MARGIN - CASE_WALL + COVER_FRAME + OLED_COVER_W / 2, OLED_Y, 90), wheel='top-right',
+                  drum=dict(x_key='Backspace', y_key='F12', dx=-(0.4 + 12.0 / 2))),   # drum centred on Backspace
 }
 
 # Support parts: (ref, list of (footprint ref, pad) the part should sit close to)
@@ -324,6 +340,12 @@ SOCKET_BOX = (-8.6, -7.4, 7.35, -0.6)
 ENC_KEEP = 0.5            # gap kept between the two
 
 
+# drum dial: Alps EC10E (ENC2) on the front in the free 2 u of the top row, axis along X, on the row of
+# drum['y_key']; its shaft-insert face dx right of drum['x_key']'s centre, so the drum (0.4 mm gap, 12 mm wide)
+# is centred on that key. The drum and its bearing block (Drum_Dial_Bearing, board only) continue to +X; the
+# block's pegs stop inside the board, clear of the thumbwheel underneath.
+
+
 # courtyard overhang beyond the connector mouth (mouth ends flush with the board edge)
 MOUTH_OVERHANG = {'usb': 0.5, 'link': 0.5}
 
@@ -394,6 +416,9 @@ def write_case_data(side, board, fps, keys, holes, w, h, shift):
         oled=dict(box=local_box(fps['J3']), rot=round(fps['J3'].GetOrientationDegrees()) % 360),
         wheel=dict(center=list(wheel_centre(side, w)), r=WHEEL_R),
     )
+    if 'DRUM1' in fps:   # drum dial: encoder origin (shaft-insert face on the axis) and the block peg holes
+        data['drum'] = dict(origin=local(fps['ENC2'].GetPosition()),
+                            pegs=[local(p.GetPosition()) for p in fps['DRUM1'].Pads()])
     import json
     json.dump(data, open(os.path.join(ROOT, side, 'case_data.json'), 'w'), indent=1, ensure_ascii=False)
 
@@ -507,6 +532,19 @@ def build(side):
     wx, wy = wheel_centre(side, w)
     enc = place('ENC1', wx, wy, 180, back=True)     # on the back, 180 deg puts the terminals at +y
     assert min(pad(enc, n).y for n in ('A', 'B', 'C')) > enc.GetPosition().y, 'encoder terminals not toward +y'
+    if 'drum' in cfg:
+        kx = next(k for k in keys.values() if k['name'] == cfg['drum']['x_key'])
+        ky = next(k for k in keys.values() if k['name'] == cfg['drum']['y_key'])
+        dx, dy = kx['cx'] - shift + cfg['drum']['dx'], ky['cy']
+        place('ENC2', dx, dy, 0)
+        brg = pcbnew.FootprintLoad(lib_path('nrsk'), 'Drum_Dial_Bearing')
+        brg.SetFPID(pcbnew.LIB_ID('nrsk', 'Drum_Dial_Bearing'))
+        brg.SetReference('DRUM1'); brg.SetValue('Drum_Dial_Bearing')
+        brg.SetBoardOnly(True)
+        brg.SetExcludedFromBOM(True)
+        brg.SetPosition(mm(dx, dy))
+        board.Add(brg)
+        fps['DRUM1'] = brg
     u1 = place('U1', *cfg['mcu'], 0, back=True)
     # orientation: shortest total ratsnest from the MCU pins to the rest of their nets (USB pair weighted),
     # so the matrix pins face the keys instead of the board edge

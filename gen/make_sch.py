@@ -10,6 +10,7 @@ import uuid
 import sexpr
 import make_pro
 from layout import (HERE, ROW_PINS, COL_PINS, SERIAL_PIN, HAND_PIN, I2C_SDA, I2C_SCL, WHEEL_PIN_A, WHEEL_PIN_B,
+                    DRUM_PIN_A, DRUM_PIN_B, DRUM_SIDES,
                     N_ROWS, N_COLS, load)
 from footprints import WIDTHS
 
@@ -30,6 +31,7 @@ FP = {
     'reset': 'Button_Switch_SMD:SW_SPST_PTS810',
     'oled': 'nrsk:OLED_0.91in_128x32_I2C',
     'encoder': 'nrsk:Alps_EC05E1220401',
+    'drum': 'nrsk:Alps_EC10E',
 }
 
 # RP2040 QFN-56: GPIO number -> pin
@@ -214,7 +216,7 @@ def build(side):
     # --- key matrix ---------------------------------------------------------
     X0, Y0, DX, DY = 38.1, 50.8, 22.86, 20.32
     sh.text(f'Key matrix ({side} half, COL2ROW, {len(keys)} keys)', X0 - 10.16, Y0 - 12.7)
-    for c in range(N_COLS):
+    for c in sorted({k['col'] for k in keys}):
         sh.text(f'COL{c}', X0 + c * DX - 7.62, Y0 - 6.35, 1.27)
     for r in range(N_ROWS):
         sh.text(f'ROW{r}', X0 - 20.32, Y0 + r * DY + 1.27, 1.27)
@@ -229,8 +231,11 @@ def build(side):
     MX, MY = 279.4, 116.84
     sh.text('MCU: RP2040 (QFN-56), 12 MHz, 3.3 V I/O, 16 MB QSPI flash', MX - 25.4, MY - 55.88)
     roles = {SERIAL_PIN: 'DATA', HAND_PIN: 'HAND', I2C_SDA: 'SDA', I2C_SCL: 'SCL', WHEEL_PIN_A: 'ENC_A', WHEEL_PIN_B: 'ENC_B'}
+    if side in DRUM_SIDES:
+        roles.update({DRUM_PIN_A: 'DRUM_A', DRUM_PIN_B: 'DRUM_B'})
     roles.update({p: f'ROW{i}' for i, p in enumerate(ROW_PINS)})
-    roles.update({p: f'COL{i}' for i, p in enumerate(COL_PINS)})
+    used_cols = {k['col'] for k in keys}   # a column without keys on this half (COL7 on the left) stays unconnected
+    roles.update({p: f'COL{i}' for i, p in enumerate(COL_PINS) if i in used_cols})
     mcu = {str(pin): roles.get(f'GP{g}') for g, pin in RP_GPIO.items()}
     mcu.update({str(p): '3V3' for p in (1, 10, 22, 33, 42, 49, 43, 44, 48)})   # IOVDD, ADC_AVDD, VREG_VIN, USB_VDD
     mcu.update({'23': '1V1', '50': '1V1', '45': '1V1',                       # DVDD <- internal regulator
@@ -324,6 +329,12 @@ def build(side):
     sh.text('Thumbwheel encoder Alps EC05E1220401 (12 detents / 12 pulses, C = common)', AX - 12.7, AY - 12.7)
     sh.symbol('Device:RotaryEncoder', 'ENC1', 'EC05E1220401', AX, AY, 0, FP['encoder'],
               {'A': 'ENC_A', 'B': 'ENC_B', 'C': 'GND'})
+
+    # drum dial (right half): Alps EC10E1220505 on the front, axis parallel to the board; internal pull-ups
+    if side in DRUM_SIDES:
+        sh.text('Drum dial encoder Alps EC10E1220505 (24 detents / 12 pulses, C = common)', AX - 12.7, AY + 12.7)
+        sh.symbol('Device:RotaryEncoder', 'ENC2', 'EC10E1220505', AX, AY + 25.4, 0, FP['drum'],
+                  {'A': 'DRUM_A', 'B': 'DRUM_B', 'C': 'GND'})
 
     path = os.path.join(HERE, '..', side, project + '.kicad_sch')
     os.makedirs(os.path.dirname(path), exist_ok=True)

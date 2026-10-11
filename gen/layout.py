@@ -12,6 +12,8 @@ SERIAL_PIN = 'GP1'  # QMK split serial (PIO, half duplex) on D+ of the link USB-
 HAND_PIN = 'GP0'    # 10k to 3V3 on left / GND on right
 I2C_SDA, I2C_SCL = 'GP2', 'GP3'   # I2C1: OLED
 WHEEL_PIN_A, WHEEL_PIN_B = 'GP19', 'GP20'   # corner thumbwheel encoder (common to GND, internal pull-ups)
+DRUM_PIN_A, DRUM_PIN_B = 'GP22', 'GP23'     # drum dial encoder, right half only (left: not connected)
+DRUM_SIDES = ('right',)
 N_ROWS, N_COLS = len(ROW_PINS), len(COL_PINS)
 
 
@@ -47,8 +49,6 @@ def load(side):
     keys = parse_kle(os.path.join(HERE, '..', 'kle', f'{side}.json'))
     for k in keys:
         r, c = k['prow'], k['pidx']
-        if side == 'right' and r == 2 and c == 8:
-            r, c = 0, 7   # "\" key: right half row2 has 9 keys, row0 only 7
         k['row'], k['col'] = r, c
         k['cx'] = (k['x'] + k['w'] / 2) * U
         k['cy'] = (k['y'] + k['h'] / 2) * U

@@ -10,7 +10,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from make_case import Half, OUT, STANDOFF, PORT_LIFT  # noqa: E402
 
-BOARD = ['board', 'smd', 'encoder', 'conn', 'diode', 'socket', 'stab', 'oled']
+BOARD = ['board', 'smd', 'encoder', 'drumenc', 'conn', 'diode', 'socket', 'stab', 'oled']
 
 
 def steps(variant, n_screws, n_holes, n_cover):
@@ -36,7 +36,7 @@ def steps(variant, n_screws, n_holes, n_cover):
         '回転部の下の基板には 3 mm 角の穴があります。',
         ['encoder'], 'cornerBottom', ['Alps EC05E1220401'], 'bottom', True)
     add('ダイオード',
-        '各キーのダイオード 1N4148W を裏面に付けます（左 44 個、右 48 個）。カソード（帯のある側）の向きをシルクの線に合わせます。',
+        '各キーのダイオード 1N4148W を裏面に付けます（左 38 個、右 42 個）。カソード（帯のある側）の向きをシルクの線に合わせます。',
         ['diode'], 'bottom', ['1N4148W'], 'bottom', True)
     add('ホットスワップソケット',
         'Kailh の MX 用ホットスワップソケットを裏面に付けます。2 つのパッドに半田を盛り、ソケットを押し当てながら溶かすと浮きません。',
@@ -48,7 +48,25 @@ def steps(variant, n_screws, n_holes, n_cover):
         'OLED モジュールのピンヘッダの黒いスペーサーを外し、ガラス上面が基板から 2.5 mm になる高さで表面に半田付けします。'
         '上にハーフミラーのカバーが載り、プレートと面一になります。ピン順が GND / VCC / SCL / SDA であることを先に確認してください。',
         ['oled'], 'top', ['OLED 0.91 インチ'], board_only=True)
+    add('ドラムのエンコーダー（右だけ）',
+        '右半分の上段、F12 の右の空きに、横型のロータリーエンコーダー EC10E1220505 を表面から差し込みます。'
+        '六角穴のある面を右（ドラムの側）へ向け、取付用の脚 2 本と端子 3 本を裏面で半田付けします。'
+        'すぐ右の小さな穴 2 つは、あとで軸受けブロックを差し込む穴です。',
+        ['drumenc'], 'top', ['Alps EC10E1220505'], board_only=True)
     n_plate = n_screws - n_cover
+
+    def drum():
+        add('ドラムと軸受けブロック（右だけ）',
+            '軸受けブロックの下の突起 2 本を、エンコーダーの右の穴に差し込みます。'
+            'ドラムを少し傾けて左端の六角ピンをエンコーダーの六角穴に入れ、右端の丸ピンを軸受けブロックの U 字の溝に上から押し込みます。'
+            'カチッと溝にはまれば、ドラムは抜けません。指で転がしてクリックを確かめます。',
+            ['drumblock', 'drum'], 'top', ['軸受けブロック（3D プリント）', 'ドラム（光造形）'])
+
+    def bezel():
+        add('ドラムのベゼル（右だけ）',
+            'ベゼルをプレートの切り欠きに上から押し込みます。両側の爪がプレートの下面に掛かり、'
+            'フードがエンコーダーを覆って、もう一方のフードの天井が軸受けブロックを押さえます。',
+            ['drumbezel'], 'top', ['ベゼル（3D プリント）'])
     if variant in ('print', 'printtop'):
         add('トレイ',
             f'3D プリントのトレイです（A と B で共通）。壁の中を縦にネジ穴（{n_screws} か所）が通り、上面には丸いくぼみ、その下に六角のナット受けがあります。'
@@ -70,11 +88,13 @@ def steps(variant, n_screws, n_holes, n_cover):
         add('基板をネジ止め',
             f'{n_holes} 本の M2 × 6 mm タッピングネジで基板をボスに固定します。差込口は外面の穴のすぐ裏に来ます。',
             ['pcb_screw'], 'top', [f'M2 × 6 mm タッピングネジ × {n_holes}'])
+        drum()
         if variant == 'print':
             add('プレート',
                 f'壁の上面のくぼみの奥にある六角のナット受け（{n_plate} か所）に M2 ナットを落とし込み、透明アクリルのプレートを載せて、'
                 f'スリムヘッド小ねじ M2 × 6 mm で上から留めます。ナットは六角の穴で回り止めされます。',
                 ['insert', 'plate', 'plate_screw'], 'top', ['プレート（透明アクリル 1.5 mm）', f'M2 ナット × {n_plate}', f'スリムヘッド M2 × 6 mm × {n_plate}'])
+            bezel()
         else:
             add('プレート',
                 f'3D プリントのプレートの裏のボス（{n_plate} か所）に、はんだごてで M2 ヒートセットインサートを押し込み、補強のある面を下にして載せます。'
@@ -83,6 +103,7 @@ def steps(variant, n_screws, n_holes, n_cover):
             add('底からネジ止め',
                 f'トレイを裏返し、底の座ぐりから M2 × 12 mm のなべネジ {n_plate} 本を締めてプレートを引き寄せます。プレートの上面にネジは見えません。',
                 ['plate_screw'], 'bottom', [f'M2 × 12 mm × {n_plate}'], 'bottom')
+            bezel()
     else:
         add('底板とホイール',
             '底板の角の穴に下から M3 × 8 mm のネジを通して軸にし、ホイールを差し込みます。'
@@ -98,9 +119,11 @@ def steps(variant, n_screws, n_holes, n_cover):
             f'基板をスペーサーに載せ、M2 × 4 mm のネジ {n_holes} 本で留めます。'
             '載せるときにホイールの縁を指で少し回すと、六角ピンがエンコーダーの穴に入ります。',
             BOARD + ['pcb_screw'], 'top', [f'M2 × 4 mm × {n_holes}'])
+        drum()
         add('プレートと外周のネジ',
             f'プレートを載せ、外周の {n_screws} か所を上から M2 × 20 mm のネジで、底板の下のナットまで共締めします。',
             ['plate', 'case_screw', 'nut'], 'top', ['プレート（透明アクリル 1.5 mm）', f'M2 × 20 mm × {n_screws}', f'M2 ナット × {n_screws}'])
+        bezel()
     add('OLED カバー',
         'OLED のガラス面と、カバーの縁が載る壁の上面に透明両面テープを貼り、角丸長方形のハーフミラーをプレートの切り欠きにはめて押さえます。ネジは使いません。'
         + ('3D プリント版は壁の上面が 0.5 mm 下がっているので、上面がプレートと面一になります。' if variant != 'acrylic'
@@ -201,7 +224,7 @@ button:disabled{opacity:.4;cursor:default}
 const {DATA, POOL, BOARDS, Z} = window.NRSK;
 const STEPS = __STEPS__;
 const FOCUS = __FOCUS__;   // wheel centre per side (viewer frame)
-const PCBA = ['board', 'smd', 'encoder', 'conn', 'diode', 'socket', 'stab', 'oled', 'switch'];
+const PCBA = ['board', 'smd', 'encoder', 'drumenc', 'conn', 'diode', 'socket', 'stab', 'oled', 'switch'];
 const MATERIAL = {matte: {color: '#e6edf1', roughness: 0.95, metalness: 0.0}, clear: {color: '#d8e6ee', roughness: 0.1, metalness: 0.0},
                   mirror: {color: '#3a4048', roughness: 0.08, metalness: 0.9}};
 const OPACITY = {plate: 0.45, bottom: 0.6, frame1: 0.6, frame2: 0.6, frame3: 0.6, frame4: 0.6, cover: 0.85};

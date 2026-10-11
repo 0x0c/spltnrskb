@@ -79,8 +79,11 @@ SWITCH_CUT = 14.0
 OLED_WINDOW_CLEAR = 0.15     # added to the module courtyard (courtyard = module + 0.25)
 COVER_T = 2.0                # half-mirror acrylic; top flush with the plate top
 COVER_FIT = 0.1              # cover edge to plate opening
-COVER_BORDER = 5.0           # cover: rounded rectangle, this much larger than the OLED window all round
-COVER_R = 5.0                 # follows the rounded case corner it sits next to
+COVER_BORDER = 5.0           # cover: at least this much wider than the OLED window on both sides
+COVER_FRAME = 5.5            # plate band round the cover, the same on every side: to the case outline (top and
+                             # inner edge) and to the keycaps (keys side and below); = make_pcb COVER_FRAME
+COVER_END = 1.5              # at least this much cover past both ends of the module (header end included)
+COVER_BELOW = 2.5            # the band below the cover, to the row-2 keycap, may narrow to this
 COVER_MARGIN = 3.0           # cover stays at least this far inside the case outline
 WALL_POCKET = 0.5            # 3D print: wall top lowered under the cover (cover 2 mm vs plate 1.5 mm)
 TAPE_T = 0.5                 # clear double-sided tape between glass and cover
@@ -109,6 +112,30 @@ PIN_ENGAGE = 2.0             # pin length inside the rotor
 PIN_CHAMFER = 0.25
 STAB_CUT = (7.0, 15.4, 0.5)   # w, h, centre y offset (down) of each stabilizer housing cut-out
 STAB_X = 11.938
+# drum dial (right half, docs/specs/drum-dial.md). Local frame: origin = Alps EC10E footprint origin (rotor axis
+# projected onto the board at the encoder's shaft-insert face, from case_data 'drum'), +x along the axis toward
+# the drum, y across (board y), z above the PCB top. The drum spins between the encoder rotor (hex pin) and a
+# printed bearing block on the PCB (round pin in a snap-in U slot); a printed bezel clipped into a plate opening
+# hoods the encoder and the block and holds the block down.
+EC10_AXIS = 7.0                       # EC10E1220505: axis 7 mm above the board
+EC10_BRACKET = (-6.1, -4.9, 0.0, 4.9, 2.0)    # metal bracket: x0, y0, x1, y1, top z
+EC10_BODY = (-5.15, -4.9, -0.65, 4.9, EC10_AXIS + 3.6)   # upper body (top 3.6 above the axis)
+EC10_ROTOR_FACE = -1.3                # hex hole entrance (1.73 A/F, 1.7 deep, then a 2.2 mm bore)
+EC10_HEX_DEPTH = 1.7
+DRUM_GAP, DRUM_W, DRUM_D = 0.4, 12.0, 13.0
+DRUM_GROOVES, DRUM_GROOVE_DEPTH, DRUM_HELIX = 36, 0.4, 30.0   # diagonal knurl: rounded grooves, helix angle
+DRUM_CHAMFER = 0.5
+DRUM_PIN_ENGAGE = 1.6                 # hex pin length inside the rotor (<= EC10_HEX_DEPTH)
+DRUM_ROUND_PIN = (2.0, 2.5)           # bearing end: diameter, length
+BLOCK_T, BLOCK_HALF_W = 3.0, 3.5      # bearing block: thickness along the axis, half width across
+BLOCK_TOP = EC10_AXIS + 1.5
+BLOCK_SLOT_R, BLOCK_LIP = 1.1, 1.8    # slot radius around the round pin, snap-in mouth width
+BLOCK_PEG = (1.9, 1.4)                # pegs into the 2.0 mm NPTH: diameter, length
+PLATE_TOP_Z = PLATE_GAP + PLATE_T     # plate top above the PCB top (5.0)
+DRUM_OPENING = (-7.1, -7.6, 16.4, 7.6, 1.0)   # plate opening: x0, y0, x1, y1, corner r
+BEZEL_BORDER, BEZEL_T, BEZEL_R = 1.5, 1.0, 2.5  # flange: beyond the opening, thickness, corner r
+BEZEL_WALL, BEZEL_CLEAR = 1.0, 0.3
+BEZEL_HOOK = (3.5, 8.5, 1.0, 0.25)    # snap hooks on both long sides: x0, x1, arm thickness, lip under the plate
 
 
 def cs_poly(pts):
@@ -156,8 +183,9 @@ class Half:
         self.screws = self._screws()
         self.window_box = self._oled()
         self.cover_screws = self._cover_screws()
-        # perimeter screws under the cover give way to the cover's own screws
-        cov = self.cover_shape().offset(1.5, JoinType.Round)
+        # perimeter screws under the cover or in the plate band right next to it go (the cover has no screws of
+        # its own): a screw head beside the rounded cover corner would spoil the even band
+        cov = self.cover_shape().offset(COVER_FRAME + 2.0, JoinType.Round)
         self.screws = [p for p in self.screws if not inside(cov, p) and
                        all(math.dist(p, c) > 8 for c in self.cover_screws)] + self.cover_screws
 
@@ -246,11 +274,49 @@ class Half:
             cs = cs + rect(k['cx'] - h, k['cy'] - h, k['cx'] + h, k['cy'] + h)
         return cs
 
+    def keycaps(self):
+        """Keycap outlines seen from above (18 mm keycaps on the 19.05 mm grid): (x0, y0, x1, y1) per key."""
+        ins = (19.05 - 18.0) / 2
+        return [(k['cx'] - k['w'] * 19.05 / 2 + ins, k['cy'] - k['h'] * 19.05 / 2 + ins,
+                 k['cx'] + k['w'] * 19.05 / 2 - ins, k['cy'] + k['h'] * 19.05 / 2 - ins) for k in self.d['keys']]
+
+    def cover_box(self):
+        """Half-mirror inlay round the OLED window, with a plate band of COVER_FRAME on every side: to the case
+        outline at the top and on the inner edge, to the nearest keycaps on the keys side, and to the top line of
+        the keycap row below. Returns (x0, y0, x1, y1) and the outer-top corner."""
+        wx0, wy0, wx1, wy1 = self.window_box
+        ox0, oy0, ox1, oy1, _ = self.outer_box
+        f, m = COVER_FRAME, COVER_BORDER
+        top = oy0 + f
+        caps = self.keycaps()
+        rows = [c for c in caps if c[1] < wy1 + COVER_END and c[3] > top]  # keycaps level with the cover
+        if self.inner_right:
+            x1 = ox1 - f
+            x0 = max(c[2] for c in rows if c[2] <= wx0) + f
+        else:
+            x0 = ox0 + f
+            x1 = min(c[0] for c in rows if c[0] >= wx1) - f
+        # bottom: COVER_END past the module's header end (the OLED is placed so its display is the cover's centre);
+        # the band to the row-2 keycap below is narrower there (right half: the Y key), at least COVER_BELOW
+        y1 = wy1 + COVER_END
+        m -= 0.1    # the window comes from the courtyard's bounding box, which carries its 0.05 mm line width
+        # along the module the cover only has to hide its ends (the display glass, 3 mm toward the top, is centred)
+        assert x0 <= wx0 - m and x1 >= wx1 + m and top <= wy0 - COVER_END and y1 >= wy1 + COVER_END - 1e-9, \
+            f'{self.side}: no room for COVER_BORDER round the OLED window'
+        return (x0, top, x1, y1), ('tr' if self.inner_right else 'tl')
+
     def cover_shape(self):
-        """Half-mirror inlay: rounded rectangle centred on the OLED window, COVER_BORDER wide all round."""
-        x0, y0, x1, y1 = self.window_box
-        m = COVER_BORDER
-        return rounded_rect(x0 - m, y0 - m, x1 + m, y1 + m, COVER_R)
+        """The cover: rectangle from cover_box() with the same radius on all four corners: the one at the case
+        corner is concentric with the case outline, so the plate band keeps its width round it."""
+        (x0, y0, x1, y1), outer = self.cover_box()
+        rc = self.outer_box[4] - COVER_FRAME
+        cs = rect(x0, y0, x1, y1)
+        for name, (cx, cy, sx, sy) in {'tl': (x0, y0, 1, 1), 'tr': (x1, y0, -1, 1),
+                                       'br': (x1, y1, -1, -1), 'bl': (x0, y1, 1, -1)}.items():
+            r = rc
+            px, py = cx + sx * r, cy + sy * r          # corner circle centre
+            cs = cs - rect(min(cx, px), min(cy, py), max(cx, px), max(cy, py)) + circle(px, py, 2 * r)
+        return cs
 
     def _cover_screws(self):
         """The cover is held by clear double-sided tape (on the OLED glass and the wall ledge), not screws."""
@@ -312,6 +378,8 @@ class Half:
                 for sx in (-1, 1):
                     cx = k['cx'] + sx * STAB_X
                     cut = cut + rect(cx - w / 2, k['cy'] + dy - hh / 2, cx + w / 2, k['cy'] + dy + hh / 2)
+        if 'drum' in self.d:
+            cut = cut + self.drum_opening()
         return self.outer - cut - self.cover_shape().offset(COVER_FIT, JoinType.Round) - self.holes(self.screws, SCREW_D)
 
     def frame(self, layer):
@@ -445,6 +513,113 @@ class Half:
             m = m + Manifold.cube((0.5, 0.9, 0.2)).translate((i * 2.0 - 0.25, -ENC_DOWN - 0.9, ENC_H - 0.2))
         return m.translate((x, -y, z_base + self.enc_bottom()))
 
+    # drum dial ---------------------------------------------------------------------
+    def _dl(self, x, y):
+        """Drum local (x along the axis, y across) -> board coordinates."""
+        ox, oy = self.d['drum']['origin']
+        return ox + x, oy + y
+
+    def _dbox(self, x0, y0, z0, x1, y1, z1):
+        """Box in the drum's local frame (z above the PCB top)."""
+        bx0, by0 = self._dl(x0, y0)
+        return Manifold.cube((x1 - x0, y1 - y0, z1 - z0)).translate((bx0, -(by0 + y1 - y0), z0))
+
+    def _daxis(self, m, x):
+        """Place a solid built along +x on the drum axis, its x = 0 at local x."""
+        bx, by = self._dl(x, 0)
+        return m.translate((bx, -by, EC10_AXIS))
+
+    @staticmethod
+    def _along_x(m):
+        return m.rotate((0, 90, 0))
+
+    def drum_opening(self, grow=0.0):
+        x0, y0, x1, y1, r = DRUM_OPENING
+        (bx0, by0), (bx1, by1) = self._dl(x0, y0), self._dl(x1, y1)
+        return rounded_rect(bx0 - grow, by0 - grow, bx1 + grow, by1 + grow, r + grow)
+
+    def ec10e3d(self):
+        """EC10E body as a few boxes (checks and viewer); bore along the axis for the drum's hex pin."""
+        x0, y0, x1, y1, zt = EC10_BRACKET
+        m = self._dbox(x0, y0, 0, x1, y1, zt)
+        x0, y0, x1, y1, zt = EC10_BODY
+        m = m + self._dbox(x0, y0, EC10_BRACKET[4], x1, y1, zt)
+        m = m + self._daxis(self._along_x(Manifold.cylinder(-0.6 - EC10_ROTOR_FACE, 1.8, 1.8, 48)), EC10_ROTOR_FACE)
+        bore = self._along_x(Manifold.cylinder(8.0, 1.1, 1.1, 32))
+        return m - self._daxis(bore, -7.0)
+
+    def drum3d(self):
+        """Knurled drum: hex pin into the encoder rotor on the -x end, round pin into the block on the +x end."""
+        r = DRUM_D / 2
+        n = DRUM_GROOVES * 12
+        pts = []
+        for i in range(n):
+            a = 2 * math.pi * i / n
+            rr = r - DRUM_GROOVE_DEPTH * (1 - math.cos(DRUM_GROOVES * a)) / 2
+            pts.append((rr * math.cos(a), rr * math.sin(a)))
+        twist = math.degrees(DRUM_W * math.tan(math.radians(DRUM_HELIX)) / r)
+        body = Manifold.extrude(CrossSection([pts]), DRUM_W, 48, twist)
+        c = DRUM_CHAMFER
+        env = (Manifold.cylinder(c, r - c, r + 0.01, 96) + Manifold.cylinder(DRUM_W - 2 * c, r + 0.01, r + 0.01, 96).translate((0, 0, c))
+               + Manifold.cylinder(c, r + 0.01, r - c, 96).translate((0, 0, DRUM_W - c)))
+        body = self._along_x(body ^ env)
+        pin_len = DRUM_GAP - EC10_ROTOR_FACE + DRUM_PIN_ENGAGE
+        corner = PIN_AF / math.sqrt(3)
+        pin = hexagon(PIN_AF, pin_len) ^ Manifold.cylinder(pin_len, corner, PIN_AF / 2 - PIN_CHAMFER, 24)
+        pin = pin.rotate((0, -90, 0))            # tip toward -x
+        d, l = DRUM_ROUND_PIN
+        rpin = self._along_x(Manifold.cylinder(l, d / 2, d / 2, 32))
+        return self._daxis(body + pin + rpin.translate((DRUM_W, 0, 0)), DRUM_GAP)
+
+    def _block_x(self):
+        x0 = DRUM_GAP + DRUM_W + DRUM_GAP
+        return x0, x0 + BLOCK_T
+
+    def drum_block3d(self):
+        """Bearing block on the PCB: U slot open upward with a narrowed (snap-in) mouth, two locating pegs."""
+        x0, x1 = self._block_x()
+        b = self._dbox(x0, -BLOCK_HALF_W, 0, x1, BLOCK_HALF_W, BLOCK_TOP)
+        pin_end = DRUM_GAP + DRUM_W + DRUM_ROUND_PIN[1]
+        slot_x1 = pin_end + 0.3
+        b = b - self._daxis(self._along_x(Manifold.cylinder(slot_x1 - x0 + 0.1, BLOCK_SLOT_R, BLOCK_SLOT_R, 48)), x0 - 0.1)
+        b = b - self._dbox(x0 - 0.1, -BLOCK_LIP / 2, EC10_AXIS, slot_x1, BLOCK_LIP / 2, BLOCK_TOP + 0.1)
+        d, l = BLOCK_PEG
+        for px, py in self.d['drum']['pegs']:
+            b = b + Manifold.cylinder(l + 0.01, d / 2, d / 2, 24).translate((px, -py, -l))
+        return b
+
+    def drum_bezel3d(self):
+        """Flange on the plate top round the opening, a hood over the encoder and one over the block (its roof
+        holds the block down), open toward the drum; snap hooks under the plate on both long sides."""
+        x0, y0, x1, y1, r = DRUM_OPENING
+        z0, z1 = PLATE_TOP_Z, PLATE_TOP_Z + BEZEL_T
+        bb = BEZEL_BORDER
+        (fx0, fy0), (fx1, fy1) = self._dl(x0 - bb, y0 - bb), self._dl(x1 + bb, y1 + bb)
+        m = Manifold.extrude(rounded_rect(fx0, fy0, fx1, fy1, BEZEL_R), BEZEL_T).translate((0, 0, z0))
+        w, c = BEZEL_WALL, BEZEL_CLEAR
+        # encoder hood
+        ex0, ey, etop = EC10_BRACKET[0] - c, EC10_BODY[3] + c, EC10_BODY[4] + c
+        m = m + (self._dbox(ex0 - w, -ey - w, z0, 0.2, ey + w, etop + w) - self._dbox(ex0, -ey, z0 - 0.1, 0.3, ey, etop))
+        # block hood: roof on the block top
+        bx0, bx1 = self._block_x()
+        by, btop = BLOCK_HALF_W + c, BLOCK_TOP
+        m = m + (self._dbox(bx0 - 0.1, -by - w, z0, bx1 + c + w, by + w, btop + w)
+                 - self._dbox(bx0 - 0.2, -by, z0 - 0.1, bx1 + c, by, btop))
+        # through the flange: under both hoods and the drum
+        rr = DRUM_D / 2
+        m = m - self._dbox(DRUM_GAP - c, -(rr + 0.2), z0 - 0.1, bx0, rr + 0.2, z1 + 0.1)
+        m = m - self._dbox(ex0, -ey, z0 - 0.1, 0.3, ey, z1 + 0.1)
+        m = m - self._dbox(bx0 - 0.2, -by, z0 - 0.1, bx1 + c, by, z1 + 0.1)
+        # snap hooks: arm down through the opening along the long edge, lip under the plate
+        hx0, hx1, ht, lip = BEZEL_HOOK
+        zb = PLATE_GAP - 0.55
+        for sy in (-1, 1):
+            ya, yb = sorted((sy * (y1 - 0.1 - ht), sy * (y1 - 0.1)))
+            m = m + self._dbox(hx0, ya, zb, hx1, yb, z0 + 0.01)
+            la, lb = sorted((sy * (y1 - 0.1), sy * (y1 + lip)))
+            m = m + self._dbox(hx0, la, zb, hx1, lb, PLATE_GAP - 0.15)
+        return m
+
     def plate3d(self):
         return Manifold.extrude(self.plate(), PLATE_T)
 
@@ -463,6 +638,8 @@ class Half:
                     keep = keep + rect(cx - w / 2 - 1.0, k['cy'] + dy - hh / 2 - 1.0, cx + w / 2 + 1.0, k['cy'] + dy + hh / 2 + 1.0)
         web = self.inner.offset(-0.3, JoinType.Round) - keep - self.cover_shape().offset(1.0, JoinType.Round) \
             - self.holes(self.d['holes'], BOSS_D + 2.0)
+        if 'drum' in self.d:   # room for the bezel's hooks and the encoder / block under the opening
+            web = web - self.drum_opening().offset(2.0, JoinType.Round)
         web = web.offset(-0.4, JoinType.Round).offset(0.4, JoinType.Round)
         plate = self.plate3d() + Manifold.extrude(web, RIB_T).translate((0, 0, -RIB_T))
         plate = plate + Manifold.extrude(self.holes(self.screws, SCREW_D + 0.4), PLATE_T)   # no holes on top: fixed from below
@@ -548,12 +725,18 @@ def main(sides):
         write_stl(os.path.join(OUT, 'print', f'{side}-plate.stl'), hf.plate3d_printed())   # all-printed variant
         write_stl(os.path.join(OUT, 'print', f'{side}-wheel.stl'), hf.wheel3d())
         write_stl(os.path.join(OUT, 'print', f'{side}-wheel-cap.stl'), hf.wheel_cap())   # 3D-print variant
+        if 'drum' in hf.d:   # drum dial: drum (resin print), bearing block and bezel, each with its bottom at z = 0
+            for name, m in (('drum', hf.drum3d()), ('drum-block', hf.drum_block3d()), ('drum-bezel', hf.drum_bezel3d())):
+                write_stl(os.path.join(OUT, 'print', f'{side}-{name}.stl'), m.translate((0, 0, -m.bounding_box()[2])))
         write_stl(os.path.join(OUT, 'preview', f'{side}-oled-cover.stl'), Manifold.extrude(hf.cover(), COVER_T))
         # assembly preview (print variant): tray + PCB + plate in place
         z_pcb = FLOOR + STANDOFF
         write_stl(os.path.join(OUT, 'preview', f'{side}-pcb.stl'), hf.pcb3d().translate((0, 0, z_pcb)))
         write_stl(os.path.join(OUT, 'preview', f'{side}-plate-placed.stl'),
                   plate.translate((0, 0, z_pcb + PCB_T + PLATE_GAP)))
+        if 'drum' in hf.d:   # drum dial parts in place (print variant), for the renders
+            for name, m in (('drum', hf.drum3d()), ('drum-block', hf.drum_block3d()), ('drum-bezel', hf.drum_bezel3d())):
+                write_stl(os.path.join(OUT, 'preview', f'{side}-{name}-placed.stl'), m.translate((0, 0, z_pcb + PCB_T)))
         ox0, oy0, ox1, oy1, _ = hf.outer_box
         report[side] = dict(case_mm=[round(ox1 - ox0, 1), round(oy1 - oy0, 1)],
                             height_print=round(FLOOR + STANDOFF + PCB_T + PLATE_GAP + PLATE_T, 2),
@@ -564,6 +747,45 @@ def main(sides):
         check(hf, layers)
     json.dump(report, open(os.path.join(OUT, 'case_report.json'), 'w'), indent=1)
     print(json.dumps(report, indent=1))
+
+
+def check_drum(hf):
+    """Drum dial: parts clear of each other and of the plate, pin into the rotor, hood clear of the neighbours."""
+    drum, enc, block, bezel = hf.drum3d(), hf.ec10e3d(), hf.drum_block3d(), hf.drum_bezel3d()
+    plate = hf.plate3d().translate((0, 0, PLATE_GAP))
+    for a, b, name in ((drum, enc, 'drum hits the encoder'), (drum, block, 'drum hits the block'),
+                       (drum, bezel, 'drum hits the bezel'), (bezel, enc, 'bezel hits the encoder'),
+                       (bezel, block, 'bezel hits the block'), (bezel, plate, 'bezel hits the plate'),
+                       (drum, plate, 'drum hits the plate'), (enc, plate, 'encoder hits the plate'),
+                       (block, plate, 'block hits the plate'), (block, enc, 'block hits the encoder')):
+        assert (a ^ b).volume() < 1e-3, name
+    assert drum.bounding_box()[2] >= 0.3, 'drum too close to the PCB'
+    tip = DRUM_GAP - (DRUM_GAP - EC10_ROTOR_FACE + DRUM_PIN_ENGAGE)
+    assert abs((EC10_ROTOR_FACE - tip) - DRUM_PIN_ENGAGE) < 1e-9 and DRUM_PIN_ENGAGE <= EC10_HEX_DEPTH
+    assert abs(float(drum.bounding_box()[0]) - (hf._dl(tip, 0)[0])) < 0.01, 'hex pin does not reach the rotor'
+    # the bezel's footprint above the plate stays off the switch tops; the hoods stay off the keycaps
+    above = bezel.trim_by_plane((0, 0, 1), PLATE_TOP_Z + 0.01).project()
+    assert (above ^ hf.switch_tops()).area() < 0.01, 'bezel hits a switch top'
+    hoods = bezel.trim_by_plane((0, 0, 1), PLATE_TOP_Z + BEZEL_T + 0.01).project()
+    caps = CrossSection()
+    for k in hf.d['keys']:
+        hw = k['w'] * 19.05 / 2 - 0.5
+        caps = caps + rect(k['cx'] - hw, k['cy'] - 8.9, k['cx'] + hw, k['cy'] + 8.9)
+    assert (hoods ^ caps).area() < 0.01, 'bezel hood under a keycap'
+    # the opening leaves a web to the switch and stabilizer cut-outs; no PCB mounting hole under it
+    cut = CrossSection()
+    for k in hf.d['keys']:
+        h = SWITCH_CUT / 2
+        cut = cut + rect(k['cx'] - h, k['cy'] - h, k['cx'] + h, k['cy'] + h)
+        if k['w'] >= 2:
+            w, hh, dy = STAB_CUT
+            for sx in (-1, 1):
+                cx = k['cx'] + sx * STAB_X
+                cut = cut + rect(cx - w / 2, k['cy'] + dy - hh / 2, cx + w / 2, k['cy'] + dy + hh / 2)
+    assert (hf.drum_opening(1.5) ^ cut).area() < 0.01, 'drum opening too close to a switch / stabilizer cut-out'
+    for p in hf.d['holes']:
+        assert not inside(hf.drum_opening(), p), 'PCB mounting hole under the drum opening'
+    print(hf.side, 'drum dial checks ok')
 
 
 def check(hf, layers):
@@ -603,6 +825,17 @@ def check(hf, layers):
     assert (win - hf.cover_shape()).area() < 0.01, 'cover does not span the OLED window'
     assert (hf.cover_shape() ^ hf.switch_tops()).area() < 0.01, 'cover hits a switch'
     assert (hf.cover_shape() - hf.outer.offset(-COVER_MARGIN + 0.01)).area() < 0.01, 'cover leaves the case outline margin'
+    caps = CrossSection()
+    for c in hf.keycaps():
+        caps = caps + rect(*c)
+    (cx0, cy0, cx1, cy1), _ = hf.cover_box()
+    beside = CrossSection()
+    for c in hf.keycaps():
+        if c[1] < cy1:      # keycaps level with the cover: the full band; those below it: at least COVER_BELOW
+            beside = beside + rect(*c)
+    assert (hf.cover_shape().offset(COVER_FRAME - 0.01, JoinType.Round) ^ beside).area() < 0.01, 'cover closer than COVER_FRAME to a keycap'
+    assert (hf.cover_shape().offset(COVER_BELOW - 0.01, JoinType.Round) ^ caps).area() < 0.01, 'cover closer than COVER_BELOW to a keycap'
+    assert (hf.cover_shape().offset(COVER_FRAME - 0.01, JoinType.Round) - hf.outer).area() < 0.01, 'cover closer than COVER_FRAME to the outline'
 
     # wheel: clear of standoffs, screws and the OLED; its rim must leave the case outline at the corner
     (wx, wy), wr = hf.wheel_xy()
@@ -620,6 +853,9 @@ def check(hf, layers):
     assert abs(pin_top - (FLOOR + hf.enc_bottom() + PIN_ENGAGE)) < 1e-6, 'pin does not reach into the rotor'
     assert pin_top < FLOOR + STANDOFF - 0.3, 'pin reaches the PCB'
     assert FLOOR + WHEEL_GAP + WHEEL_T > FLOOR + hf.enc_bottom(), 'rim no longer overlaps the encoder (hub not needed)'
+
+    if 'drum' in hf.d:
+        check_drum(hf)
 
     # the switch plate and the top frame must keep an unbroken outer edge (no connector notches)
     for name in ('plate', f'frame{N_FRAMES}'):
