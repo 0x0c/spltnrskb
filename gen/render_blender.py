@@ -264,24 +264,58 @@ def drum_dial(side):
     return out
 
 
-def knurled_plug(name, length=16.0, radius=3.6):
-    bpy.ops.mesh.primitive_cylinder_add(vertices=48, radius=radius * MM, depth=length * MM)
-    body = bpy.context.active_object
-    body.name = name
-    body.data.materials.append(MAT['metal'])
-    # knurl: displace with a fine checker-like wave along the circumference
-    tex = bpy.data.textures.new('knurl', 'WOOD')
-    tex.wood_type = 'BANDNOISE'
-    tex.noise_scale = 0.03
-    sub = body.modifiers.new('sub', 'SUBSURF')
-    sub.levels = sub.render_levels = 2
-    sub.subdivision_type = 'SIMPLE'
-    disp = body.modifiers.new('knurl', 'DISPLACE')
-    disp.texture = tex
-    disp.strength = 0.25 * MM
-    for p in body.data.polygons:
-        p.use_smooth = True
-    return body
+# USB-C plug as rendered: the metal shell fills the case opening (USB_SHELL 8.94 x 3.26 + 0.2 clearance each side in
+# make_case.py), then a short strain-relief boot down to the cable.
+PLUG_W, PLUG_H = 8.94 + 0.4, 3.26 + 0.4   # metal shell cross-section (a stadium, like the opening)
+CABLE_R = 1.6                   # cable radius (a 3.2 mm USB-C cable, no thicker than the shell)
+
+
+def stadium_prism(name, w, h, length, mat, seg=12):
+    """Rounded-slot prism along +z from 0 to length: width w along x, height h along y."""
+    r = h / 2
+    ring = []
+    for cx, a0 in ((w / 2 - r, -90), (-(w / 2 - r), 90)):
+        for i in range(seg + 1):
+            a = math.radians(a0 + 180 * i / seg)
+            ring.append((cx + r * math.cos(a), r * math.sin(a)))
+    bm = bmesh.new()
+    bot = [bm.verts.new((x * MM, y * MM, 0)) for x, y in ring]
+    top = [bm.verts.new((x * MM, y * MM, length * MM)) for x, y in ring]
+    bm.faces.new(bot[::-1])
+    bm.faces.new(top)
+    n = len(ring)
+    for i in range(n):
+        j = (i + 1) % n
+        bm.faces.new((bot[i], bot[j], top[j], top[i]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    obj = link(bpy.data.objects.new(name, me))
+    obj.data.materials.append(mat)
+    bev = obj.modifiers.new('bevel', 'BEVEL')
+    bev.width = 0.3 * MM
+    bev.segments = 3
+    bev.limit_method = 'ANGLE'
+    for f in me.polygons:
+        f.use_smooth = True
+    obj.modifiers.new('wn', 'WEIGHTED_NORMAL')
+    return obj
+
+
+def usb_c_plug(name, length):
+    """Plug along +z: metal shell (length - 5 mm) and a tapered boot (5 mm) in the cable colour."""
+    boot = 5.0
+    shell = stadium_prism(name, PLUG_W, PLUG_H, length - boot, MAT['metal'])
+    bpy.ops.mesh.primitive_cone_add(vertices=32, radius1=PLUG_H / 2 * MM, radius2=CABLE_R * MM,
+                                    depth=boot * MM, location=(0, 0, (length - boot / 2) * MM))
+    tip = bpy.context.active_object
+    tip.name = name + ' boot'
+    tip.data.materials.append(MAT['cable'])
+    for f in tip.data.polygons:
+        f.use_smooth = True
+    tip.parent = shell
+    return shell
 
 
 # --- one keyboard half ------------------------------------------------------------------
@@ -414,7 +448,7 @@ def board_point(world, x, y, z):
     return world @ Vector((x * MM, -y * MM, z * MM))
 
 
-def cable_path(p0, t0, p3, t3, reach=0.05, floor=2.6 * MM, n=48):
+def cable_path(p0, t0, p3, t3, reach=0.05, floor=CABLE_R * MM, n=48):
     """Smooth path leaving p0 along t0 and arriving at p3 along -t3, resting on the floor in between."""
     c1, c2 = p0 + t0 * reach, p3 + t3 * reach
     pts = []
@@ -428,7 +462,7 @@ def cable_path(p0, t0, p3, t3, reach=0.05, floor=2.6 * MM, n=48):
     return pts
 
 
-def cable(name, pts, radius=2.6):
+def cable(name, pts, radius=CABLE_R):
     cu = bpy.data.curves.new(name, 'CURVE')
     cu.dimensions = '3D'
     cu.bevel_depth = radius * MM
@@ -444,15 +478,20 @@ def cable(name, pts, radius=2.6):
 
 
 def plug_at(name, world, mouth_xy, z, outward, length=16.0):
-    """Metal plug head sitting in the wall opening; outward = (dx, dy) in board coordinates (y down)."""
+    """USB-C plug sitting in the wall opening; outward = (dx, dy) in board coordinates (y down). The shell's
+    width lies along the wall, its height vertical, like the receptacle; length counts from 2 mm inside the wall."""
     x, y = mouth_xy
-    head = knurled_plug(name, length)
+    head = usb_c_plug(name, length)
     axis = (world.to_3x3() @ Vector((outward[0], -outward[1], 0))).normalized()
-    start = board_point(world, x, y, z)
-    head.rotation_mode = 'QUATERNION'
-    head.rotation_quaternion = Vector((0, 0, 1)).rotation_difference(axis)
-    head.location = start + axis * (length / 2 + 1.0) * MM
-    tail = start + axis * (length + 1.0) * MM
+    up = Vector((0, 0, 1))
+    side = up.cross(axis).normalized()
+    start = board_point(world, x, y, z) - axis * 2.0 * MM     # shell 2 mm into the opening
+    head.matrix_world = Matrix((
+        (side.x, up.x, axis.x, start.x),
+        (side.y, up.y, axis.y, start.y),
+        (side.z, up.z, axis.z, start.z),
+        (0, 0, 0, 1)))
+    tail = start + axis * length * MM
     return tail, axis
 
 
@@ -563,16 +602,16 @@ def main():
                 mouth, direction = (c['center'][0], d['outline']['y0'] - 8.5), (0, -1)
             else:
                 mouth, direction = (edge, c['center'][1]), (out, 0)
-            tail, axis = plug_at(f'{side} {kind}', W[side], mouth, z_conn, direction, 17.0)
+            tail, axis = plug_at(f'{side} {kind}', W[side], mouth, z_conn, direction, 20.0)
             ends[(side, kind)] = (tail, axis)
     (a, aa), (b, ba) = ends[('left', 'link')], ends[('right', 'link')]
     cable('link cable', cable_path(a, aa, b, ba, reach=0.06))
     u, ua = ends[('left', 'usb')]
     # USB cable leaves the back edge and runs off behind the keyboard (to the computer)
-    far = u + Vector((-0.06, 0.40, 0)); far.z = 2.6 * MM
+    far = u + Vector((-0.06, 0.40, 0)); far.z = CABLE_R * MM
     pts = cable_path(u, ua, far, Vector((-0.1, 0.99, 0)).normalized(), reach=0.12)
     for p in pts[6:]:
-        p.z = max(p.z, 2.6 * MM)
+        p.z = max(p.z, CABLE_R * MM)
     cable('usb cable', pts)
 
     finish(W, data)
