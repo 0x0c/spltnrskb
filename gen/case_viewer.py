@@ -197,7 +197,10 @@ body{background:var(--bg);color:var(--fg);font:14px/1.5 var(--sans);overflow:hid
 .panel{position:fixed;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;backdrop-filter:blur(6px)}
 #ui{left:16px;top:calc(16px + env(safe-area-inset-top,0px));display:flex;flex-wrap:wrap;gap:6px;max-width:calc(100vw - 32px);box-sizing:border-box}
 #spec{left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));font-size:12px;max-width:min(360px,calc(100vw - 32px));box-sizing:border-box}
-#spec h1{font-size:14px;margin:0 0 4px;font-weight:600;text-wrap:balance}
+#spec-head{display:flex;align-items:flex-start;gap:8px;cursor:pointer}
+#spec h1{font-size:14px;margin:0 0 4px;font-weight:600;text-wrap:balance;flex:1}
+#spec-min{font-size:12px;line-height:1;padding:3px 7px;margin:-2px -4px 0 0;color:var(--muted)}
+#spec.min{padding:6px 10px}#spec.min h1{margin:0;font-size:13px}#spec.min dl{display:none}
 #spec dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:0;font-size:12px}
 @media (max-height:520px){#spec{display:none}}
 #spec dt{color:var(--muted)}#spec dd{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums}
@@ -223,7 +226,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
  <a class="link" href="assembly.html">組み立てガイド</a>
  <a class="link" href="../../docs/views.html">レンダリング</a>
 </div>
-<div id="spec" class="panel"><h1 id="spec-title"></h1><dl id="spec-dl"></dl></div>
+<div id="spec" class="panel"><div id="spec-head"><h1 id="spec-title"></h1><button id="spec-min" type="button" aria-expanded="true" aria-controls="spec-dl" aria-label="仕様を折りたたむ" title="仕様を折りたたむ">−</button></div><dl id="spec-dl"></dl></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="model-data.js"></script>
@@ -373,6 +376,18 @@ addEventListener('resize', onResize);
 bg(); resize(); build(); lastWide = cam.aspect >= 1; fit();
 canvas.addEventListener('dblclick', fit);
 document.getElementById('t-reset').addEventListener('click', fit);
+// spec card collapses to its title line so it stays out of the way of the model; remembered per viewer
+const specEl = document.getElementById('spec'), specMin = document.getElementById('spec-min');
+function setSpecMin(min) {
+  specEl.classList.toggle('min', min);
+  specMin.textContent = min ? '+' : '−';
+  specMin.setAttribute('aria-expanded', String(!min));
+  const label = min ? '仕様を展開' : '仕様を折りたたむ';
+  specMin.setAttribute('aria-label', label); specMin.title = label;
+  try { localStorage.setItem('viewer.specMin', min ? '1' : '0'); } catch (e) {}
+}
+document.getElementById('spec-head').addEventListener('click', () => setSpecMin(!specEl.classList.contains('min')));
+try { if (localStorage.getItem('viewer.specMin') === '1') setSpecMin(true); } catch (e) {}
 (function loop() { requestAnimationFrame(loop); ctl.update(); renderer.render(scene, cam); })();
 </script>
 '''
