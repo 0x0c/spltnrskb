@@ -2,7 +2,8 @@
 import json
 import os
 
-from layout import HERE, ROW_PINS, COL_PINS, SERIAL_PIN, HAND_PIN, I2C_SDA, I2C_SCL, WHEEL_PIN_A, WHEEL_PIN_B, N_ROWS, load
+from layout import (HERE, ROW_PINS, COL_PINS, SERIAL_PIN, HAND_PIN, I2C_SDA, I2C_SCL, WHEEL_PIN_A, WHEEL_PIN_B,
+                    DRUM_PIN_A, DRUM_PIN_B, DRUM_SIDES, N_ROWS, load)
 
 OUT = os.path.join(HERE, '..', 'firmware', 'qmk', 'keyboards', 'nrsk')
 
@@ -31,14 +32,18 @@ def keycode(name, side):
 
 
 ENCODER_KEYMAP_C = r'''
-// Corner thumbwheels, one click = one call (index 0 = left half, 1 = right half; clockwise seen from above).
+// Encoders, one click = one call (clockwise seen from above / rolled away from the typist):
+//   0 = left thumbwheel, 1 = right thumbwheel, 2 = drum dial (right half, top right).
 // Returning false skips QMK's default action (volume up / down).
 bool encoder_update_user(uint8_t index, bool clockwise) {
     bool fn = get_highest_layer(layer_state) == 1;
     if (index == 0) {
         tap_code(fn ? (clockwise ? KC_BRIU : KC_BRID) : (clockwise ? KC_VOLU : KC_VOLD));
-    } else {
+    } else if (index == 1) {
         tap_code(fn ? (clockwise ? KC_RGHT : KC_LEFT) : (clockwise ? KC_PGDN : KC_PGUP));
+    } else {
+        // drum: roll away = scroll up (layer 1: right), like a mouse wheel
+        tap_code(fn ? (clockwise ? MS_WHLR : MS_WHLL) : (clockwise ? MS_WHLU : MS_WHLD));
     }
     return false;
 }
@@ -117,6 +122,11 @@ def main():
     # It sits upside down on the PCB back, so its own clockwise is counter-clockwise seen from above: A and B
     # are swapped here to report clockwise as seen by the user.
     wheel = {'pin_a': WHEEL_PIN_B, 'pin_b': WHEEL_PIN_A}
+    # drum dial (right half): Alps EC10E1220505, 24 detents / 12 pulses, so one click is half an A/B cycle
+    # (resolution 2). Its rotor faces the drum (+x); "clockwise" is the drum rolled away from the typist.
+    # If it scrolls the wrong way on the real board, swap pin_a and pin_b.
+    drum = {'pin_a': DRUM_PIN_A, 'pin_b': DRUM_PIN_B, 'resolution': 2}
+    assert DRUM_SIDES == ('right',)
     kb = {
         'manufacturer': 'nrsk',
         'keyboard_name': 'nrsk',
@@ -125,14 +135,14 @@ def main():
         'processor': 'RP2040',
         'bootloader': 'rp2040',
         'usb': {'vid': '0xFEED', 'pid': '0x4E52', 'device_version': '1.0.0'},
-        'features': {'bootmagic': True, 'encoder': True, 'extrakey': True, 'mousekey': False, 'nkro': True, 'oled': True,
+        'features': {'bootmagic': True, 'encoder': True, 'extrakey': True, 'mousekey': True, 'nkro': True, 'oled': True,
                      'wpm': True},
         'diode_direction': 'COL2ROW',
         'matrix_pins': {'rows': ROW_PINS, 'cols': COL_PINS},
         'encoder': {'rotary': [wheel]},
         'split': {
             'enabled': True,
-            'encoder': {'right': {'rotary': [wheel]}},
+            'encoder': {'right': {'rotary': [wheel, drum]}},
             'serial': {'driver': 'vendor', 'pin': SERIAL_PIN},
             'handedness': {'pin': HAND_PIN},
             'transport': {'sync': {'layer_state': True, 'indicators': True, 'wpm': True}},

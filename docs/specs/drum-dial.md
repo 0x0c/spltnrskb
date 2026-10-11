@@ -213,7 +213,7 @@ QMK のエンコーダーの番号は、左半分のエンコーダーが先に�
 | 2 | 済 | 右半分の回路図にエンコーダーを足し、GP22、GP23、GND につなぐ。左半分では未接続の印を付ける | `gen/make_sch.py`、`gen/layout.py`、`left/`、`right/` の回路図 | 左右とも ERC のエラーが 0 件 | 1 |
 | 3 | 済 | 右半分の基板にエンコーダーと軸受けブロックの穴を置き、ドラムの位置を `case_data.json` に書き出して配線する | `gen/make_pcb.py`、`right/` の基板と `case_data.json`、`fab/right/` | `./build.sh right` で未配線 0、DRC のエラー 0。取付穴の位置が変わったら、3 章の配置の表と照らして干渉がないことを確かめる | 2 |
 | 4 | 済 | プレートの切り欠き、B の補強の板の削り、ドラム、軸受けブロック、ベゼルと検査を足す | `gen/make_case.py`、`case/` | `.venv/bin/python gen/make_case.py` の検査がすべて通る。3 つの STL が出力される | 3 |
-| 5 | 未 | ファームウェアにドラムを足す | `gen/make_qmk.py`、`firmware/qmk/keyboards/nrsk/` | `qmk compile -kb nrsk -km default` が通る | 2 |
+| 5 | 済 | ファームウェアにドラムを足す | `gen/make_qmk.py`、`firmware/qmk/keyboards/nrsk/` | `qmk compile -kb nrsk -km default` が通る | 2 |
 | 6 | 未 | BOM を更新する | `gen/make_bom.py`、`gen/bom_sources.json`、`bom/` | BOM に EC10E1220505（右 1 個）、ドラム、軸受けブロック、ベゼルが載る。EC10E は LCSC の製品ページを開き、型番、在庫、価格を確かめてから載せる | 3、4 |
 | 7 | 未 | 組み立てガイドと 3D ビューアを更新する | `gen/assembly_guide.py`、`gen/case_viewer.py`、`case/preview/` | 組み立てガイドにドラムの手順が入る。ビューアでドラム、ブロック、ベゼルの位置が基板とプレートに合っている | 4、6 |
 | 8 | 未 | README と注文の文書を更新し、レンダリングを作り直す | `README.md`、`docs/ordering.md`、`docs/pre-order-checklist.md`、`gen/render_blender.py`、`docs/img/` | README にドラムの節があり、ピン割り当ての表に GP22、GP23 が載る。注文の文書に EC10E と印刷物が載る。textlint の指摘が 0 件。`./gen/render_all.sh` が通る | 4、5、6、7 |

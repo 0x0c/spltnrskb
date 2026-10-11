@@ -35,14 +35,18 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 
 
-// Corner thumbwheels, one click = one call (index 0 = left half, 1 = right half; clockwise seen from above).
+// Encoders, one click = one call (clockwise seen from above / rolled away from the typist):
+//   0 = left thumbwheel, 1 = right thumbwheel, 2 = drum dial (right half, top right).
 // Returning false skips QMK's default action (volume up / down).
 bool encoder_update_user(uint8_t index, bool clockwise) {
     bool fn = get_highest_layer(layer_state) == 1;
     if (index == 0) {
         tap_code(fn ? (clockwise ? KC_BRIU : KC_BRID) : (clockwise ? KC_VOLU : KC_VOLD));
-    } else {
+    } else if (index == 1) {
         tap_code(fn ? (clockwise ? KC_RGHT : KC_LEFT) : (clockwise ? KC_PGDN : KC_PGUP));
+    } else {
+        // drum: roll away = scroll up (layer 1: right), like a mouse wheel
+        tap_code(fn ? (clockwise ? MS_WHLR : MS_WHLL) : (clockwise ? MS_WHLU : MS_WHLD));
     }
     return false;
 }

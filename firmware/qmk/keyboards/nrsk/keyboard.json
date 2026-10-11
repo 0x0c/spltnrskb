@@ -14,7 +14,7 @@
         "bootmagic": true,
         "encoder": true,
         "extrakey": true,
-        "mousekey": false,
+        "mousekey": true,
         "nkro": true,
         "oled": true,
         "wpm": true
@@ -56,6 +56,11 @@
                     {
                         "pin_a": "GP20",
                         "pin_b": "GP19"
+                    },
+                    {
+                        "pin_a": "GP22",
+                        "pin_b": "GP23",
+                        "resolution": 2
                     }
                 ]
             }
