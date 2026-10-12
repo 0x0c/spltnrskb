@@ -21,9 +21,13 @@ for s in $SIDES; do
     if ! "$KPY" gen/route.py "$s" > "$NRSK_WORK/route.log" 2>&1; then
       echo "$s: routing try $i failed:"; grep -E "Error|Exception|Traceback|line [0-9]+" "$NRSK_WORK/route.log" | grep -v GetWidth | tail -3; continue
     fi
-    u=$("$KC" pcb drc -o "$NRSK_WORK/u.rpt" "$s/nrsk-$s.kicad_pcb" 2>/dev/null | grep -oE "Found [0-9]+ unconnected" | grep -oE "[0-9]+" || echo "?")
-    echo "$s: routing try $i -> $u unconnected"
-    [ "$u" = "0" ] && break
+    # done when nothing is left unconnected and DRC is clean (Freerouting now and then puts a via a little
+    # too close to a pad: another try routes it differently)
+    r=$("$KC" pcb drc --schematic-parity --severity-all -o "$NRSK_WORK/u.rpt" "$s/nrsk-$s.kicad_pcb" 2>/dev/null)
+    u=$(echo "$r" | grep -oE "Found [0-9]+ unconnected" | grep -oE "[0-9]+" || echo "?")
+    v=$(echo "$r" | grep -oE "Found [0-9]+ violations" | grep -oE "[0-9]+" || echo "?")
+    echo "$s: routing try $i -> $u unconnected, $v violations"
+    [ "$u" = "0" ] && [ "$v" = "0" ] && break
   done
   "$KC" sch erc --severity-all -o "$s/erc.rpt" "$s/nrsk-$s.kicad_sch" 2>/dev/null | grep -i found || true
   "$KC" pcb drc --schematic-parity --severity-all -o "$s/drc.rpt" "$s/nrsk-$s.kicad_pcb" 2>/dev/null | grep -i found || true
@@ -41,7 +45,9 @@ for s in $SIDES; do
   # copper check sheet: page 1 = front (F.Cu), page 2 = back (B.Cu), both with the board outline
   "$KC" pcb export pdf --mode-multipage -l F.Cu,B.Cu --cl Edge.Cuts --include-border-title \
     -o "$out/nrsk-$s-copper.pdf" "$s/nrsk-$s.kicad_pcb" >/dev/null 2>&1
-  # assembly drawing of the back side (MCU area references live on B.Fab)
+  # assembly drawings: front (MCU area, references on F.Fab) and back (connectors, references on B.Fab)
+  "$KC" pcb export pdf --mode-single -l F.Fab,F.SilkS,F.Cu,Edge.Cuts \
+    -o "$out/nrsk-$s-assembly-front.pdf" "$s/nrsk-$s.kicad_pcb" >/dev/null 2>&1
   "$KC" pcb export pdf --mode-single -l B.Fab,B.SilkS,B.Cu,Edge.Cuts --mirror \
     -o "$out/nrsk-$s-assembly-back.pdf" "$s/nrsk-$s.kicad_pcb" >/dev/null 2>&1
 done

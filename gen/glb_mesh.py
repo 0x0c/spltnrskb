@@ -46,7 +46,7 @@ def category(ref, mesh_name):
         return 'switch' if 'Cherry_MX' in mesh_name else 'socket'
     if re.fullmatch(r'D\d+', ref) and ref != 'D99':
         return 'diode'
-    if ref in ('J1', 'J2'):
+    if ref in ('J1', 'J2', 'U2', 'R4', 'R5', 'F1', 'D99', 'RSW1', 'JP1'):   # back: the ports and their parts
         return 'conn'
     if ref == 'J3':
         return 'oled'
