@@ -1,0 +1,53 @@
+{
+    "manufacturer": "nrsk",
+    "keyboard_name": "nrsk encoder test",
+    "maintainer": "nrsk",
+    "url": "https://github.com/0x0c/spltnrskb",
+    "processor": "RP2040",
+    "bootloader": "rp2040",
+    "usb": {
+        "vid": "0xFEED",
+        "pid": "0x4E54",
+        "device_version": "1.0.0"
+    },
+    "features": {
+        "bootmagic": true,
+        "encoder": true,
+        "extrakey": true,
+        "mousekey": true
+    },
+    "matrix_pins": {
+        "direct": [
+            [
+                "GP4"
+            ]
+        ]
+    },
+    "encoder": {
+        "rotary": [
+            {
+                "pin_a": "GP6",
+                "pin_b": "GP5"
+            },
+            {
+                "pin_a": "GP7",
+                "pin_b": "GP8",
+                "resolution": 2
+            }
+        ]
+    },
+    "layouts": {
+        "LAYOUT": {
+            "layout": [
+                {
+                    "matrix": [
+                        0,
+                        0
+                    ],
+                    "x": 0,
+                    "y": 0
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,37 @@
+{
+ "enctest": {
+  "case_mm": [
+   80.2,
+   49.0
+  ],
+  "height_print": 15.6,
+  "height_acrylic": 16.5,
+  "screws": 5,
+  "screws_xy": [
+   [
+    118.85,
+    -13.5
+   ],
+   [
+    155.381,
+    -13.5
+   ],
+   [
+    182.025,
+    13.144
+   ],
+   [
+    112.365,
+    25.06
+   ],
+   [
+    145.95,
+    27.55
+   ]
+  ],
+  "pcb_holes": 4,
+  "tray_volume_cm3": 21.9,
+  "plate_genus": 7,
+  "tray_status": "Error.NoError"
+ }
+}
