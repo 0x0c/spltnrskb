@@ -10,6 +10,7 @@ __pycache__/
 fp-info-cache
 _autosave-*
 *.bak
+.history/
 
 # intermediate fabrication output (zips are committed)
 fab/*/gerber/
