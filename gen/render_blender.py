@@ -44,6 +44,7 @@ SCREWS = arg('--screws', 'none')             # case screws on the plate: 'none',
 TOP = arg('--top', 'acrylic')
 PORTS = arg('--ports', None)                 # USB-C/TRRS opening study style (case/preview/port-variants, made for the former TRRS link), left half only
 NO_CABLES = '--no-cables' in args                # switch plate: 'acrylic' (clear, laser cut) or 'print' (printed, with web)
+WEB = arg('--web', None)                     # 'glb:<path>', 'env:<path>' or 'shadow:<path>': assets of the 3D page instead of shots
 VIEWS_DIR = arg('--views-dir', None)         # shots go here as <name><suffix>.png instead of docs/img/render-<name><suffix>.png
 VARIANTS = os.path.join(ROOT, 'case', 'preview', 'oled-variants')
 
@@ -585,6 +586,7 @@ def main():
     ob = data['left']['oled_module'] or data['left']['oled']['box']
     oled_c = board_point(W['left'], (ob[0] + ob[2]) / 2, (ob[1] + ob[3]) / 2, Z_PLATE_TOP)
 
+    BODY.update(o.name for o in bpy.data.objects)
     if NO_CABLES:
         return finish(W, data)
     # cables ------------------------------------------------------------------------------
@@ -618,6 +620,8 @@ def main():
 
 
 def finish(W, data):
+    if WEB:
+        return web_asset(*WEB.split(':', 1))
     ob = data['left']['oled_module'] or data['left']['oled']['box']
     oled_c = board_point(W['left'], (ob[0] + ob[2]) / 2, (ob[1] + ob[3]) / 2, Z_PLATE_TOP)
     sc = bpy.context.scene
@@ -686,26 +690,12 @@ def finish(W, data):
         if s.get('orbit'):
             d = Vector(s['loc']) - Vector(s['target'])
             s['turn'] = math.atan2(d.x, -d.y)
-    # design-review orbit around both halves: 'view-a<azimuth>-e<elevation>' (azimuth 0 = from the front,
-    # 90 = from the right), same distance and lens for every view; the lights turn with the camera
-    centre = Vector((0.0, 0.0, 0.008))
-    for name in SHOTS:
-        if not name.startswith('view-'):
-            continue
-        az, el = (float(t[1:]) for t in name[5:].split('-'))
-        dist = 1.0
-        a, e = math.radians(az), math.radians(el)
-        d = Vector((math.sin(a) * math.cos(e), -math.cos(a) * math.cos(e), math.sin(e)))
-        shots[name] = dict(loc=tuple(centre + d * dist), target=tuple(centre), lens=62, focus=tuple(centre),
-                           fstop=11.0, res=(RES, int(RES * 2 / 3)), turn=a)
-    if any(n.startswith('view-') or shots[n].get('orbit') for n in SHOTS):
+    if any(shots[n].get('orbit') for n in SHOTS):
         orbit_stage()
     lights = {o: o.matrix_world.copy() for o in bpy.data.objects if o.type == 'LIGHT'}
     for name in SHOTS:
         s = shots[name]
         sc.camera = camera(name, s['loc'], s['target'], s['lens'], s['focus'], s['fstop'])
-        if name == 'view-a0-e90':                   # straight down: keep the keyboard's front at the bottom
-            sc.camera.rotation_euler = (0, 0, 0)
         turn = Matrix.Rotation(s.get('turn', 0.0), 4, 'Z')
         for o, m in lights.items():
             o.matrix_world = turn @ m
@@ -716,6 +706,111 @@ def finish(W, data):
             sc.render.filepath = os.path.join(out_dir, f'render-{name}{OUT_SUFFIX}.png')
         bpy.ops.render.render(write_still=True)
         print('rendered', sc.render.filepath)
+
+
+BODY = set()                   # every object made before the cables and plugs
+
+
+def web_asset(kind, path):
+    """Assets of the 3D design-review page (gen/views_page.py, docs/views.html), same geometry, materials and studio:
+    glb    = the model, one mesh per material; the cables and plugs separately ('cables:<material>') so they can be hidden
+    env    = the studio as the model sees it (lights, floor, world): equirectangular Radiance HDR, linear
+    shadow = the model's shadow on the floor, seen straight from above, as a grey JPEG (white = no shadow) over SHADOW_SIZE m
+             square, centred on the origin
+    """
+    sc = bpy.context.scene
+    path = os.path.abspath(path)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    model = [o for o in bpy.data.objects if o.type in ('MESH', 'CURVE', 'FONT') and o.name != 'cyclorama']
+    if kind == 'glb':
+        for o in list(bpy.data.objects):
+            if o not in model:
+                bpy.data.objects.remove(o)
+        bpy.ops.object.select_all(action='DESELECT')
+        for o in model:
+            o.select_set(True)
+        bpy.context.view_layer.objects.active = model[0]
+        cables = {o.name for o in model if o.name not in BODY}
+        bpy.ops.object.convert(target='MESH')                # legends and cables: curves to meshes
+        bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')   # joining must not move the plugs' parts
+        groups = {}
+        for o in bpy.data.objects:
+            mat = o.data.materials[0].name if o.data.materials else 'none'
+            groups.setdefault(('cables' if o.name in cables else 'body', mat), []).append(o)
+        for (group, mat), objs in groups.items():
+            bpy.ops.object.select_all(action='DESELECT')
+            for o in objs:
+                o.select_set(True)
+            bpy.context.view_layer.objects.active = objs[0]
+            if len(objs) > 1:
+                bpy.ops.object.join()
+            objs[0].name = f'{group}:{mat}'
+        bpy.ops.export_scene.gltf(filepath=path, export_format='GLB', export_apply=True, export_yup=True,
+                                  export_draco_mesh_compression_enable=True, export_draco_mesh_compression_level=10,
+                                  export_draco_position_quantization=16, export_draco_normal_quantization=12)
+    elif kind == 'env':
+        for o in model:
+            bpy.data.objects.remove(o)
+        cyc = bpy.data.objects.get('cyclorama')
+        if cyc:
+            bpy.data.objects.remove(cyc)
+        bpy.ops.mesh.primitive_circle_add(vertices=96, radius=6.0, fill_type='NGON', location=(0, 0, 0))
+        bpy.context.active_object.data.materials.append(MAT['floor'])
+        for o in bpy.data.objects:
+            if o.type == 'LIGHT':
+                o.visible_camera = True
+        cd = bpy.data.cameras.new('env')
+        cd.type = 'PANO'
+        cd.panorama_type = 'EQUIRECTANGULAR'
+        cam = link(bpy.data.objects.new('env', cd))
+        cam.location = (0, 0, 0.02)
+        cam.rotation_euler = (math.radians(90), 0, 0)          # looking along +y (glTF -z) at the centre column
+        sc.camera = cam
+        sc.cycles.samples = max(SAMPLES, 256)
+        sc.render.resolution_x, sc.render.resolution_y = 2048, 1024
+        sc.render.image_settings.file_format = 'HDR'
+        sc.render.filepath = path
+        bpy.ops.render.render(write_still=True)
+    elif kind == 'shadow':
+        orbit_stage()
+        bpy.data.objects['floor'].scale = (1, 1, 1)
+        for o in model:
+            o.visible_camera = False
+        cd = bpy.data.cameras.new('shadow')
+        cd.type = 'ORTHO'
+        cd.ortho_scale = SHADOW_SIZE
+        cam = link(bpy.data.objects.new('shadow', cd))
+        cam.location = (0, 0, 1.0)
+        sc.camera = cam
+        sc.render.film_transparent = True
+        sc.view_settings.view_transform = 'Standard'
+        sc.view_settings.look = 'None'
+        sc.view_settings.exposure = 0.0
+        sc.render.resolution_x = sc.render.resolution_y = 1024
+        sc.render.image_settings.file_format = 'PNG'
+        sc.render.image_settings.color_mode = 'RGBA'
+        png = os.path.splitext(path)[0] + '.png'
+        sc.render.filepath = png
+        bpy.ops.render.render(write_still=True)
+        # the page uses it as the floor's ambient occlusion map: grey = 1 - shadow alpha
+        import numpy as np
+        img = bpy.data.images.load(png)
+        px = np.empty(len(img.pixels), dtype=np.float32)
+        img.pixels.foreach_get(px)
+        grey = 1.0 - px.reshape(-1, 4)[:, 3]
+        px = np.repeat(grey, 4)
+        px[3::4] = 1.0
+        out = bpy.data.images.new('shadow ao', img.size[0], img.size[1])
+        out.pixels.foreach_set(px)
+        out.filepath_raw = path
+        out.file_format = 'JPEG'
+        sc.render.image_settings.quality = 88
+        out.save(filepath=path, quality=88)
+        os.remove(png)
+    print('wrote', path)
+
+
+SHADOW_SIZE = 1.2
 
 
 def orbit_stage():

@@ -19,7 +19,7 @@ v2 では Pro Micro などのマイコンボードをやめ、RP2040 と QSPI Fl
 | 表示 | 0.91 インチ OLED（128×32）を左右に 1 枚ずつ、プレートと面一のハーフミラーアクリルのカバー付き。高さは増えない |
 | ホイール | 左上と右上の角にサムホイール（ロータリーエンコーダー Alps EC05E1220401 で読み取り、1 回転 12 クリック）。高さは増えない |
 | ドラム | 右半分の上段、F12 の右の空きに、手前と奥へ転がすドラム式ダイヤル（ロータリーエンコーダー Alps EC10E1220505 で読み取り、1 回転 24 クリック）。縦スクロールを送る。高さは増えない |
-| 3D ビューア | http://www.0x0c.me/spltnrskb/ 、組み立てガイドは http://www.0x0c.me/spltnrskb/assembly.html 、全方位の完成イメージは http://www.0x0c.me/spltnrskb/views.html （GitHub Pages、`main` への Push で自動更新） |
+| 3D ビューア | http://www.0x0c.me/spltnrskb/ 、組み立てガイドは http://www.0x0c.me/spltnrskb/assembly.html 、写実的な 3D 表示は http://www.0x0c.me/spltnrskb/views.html （GitHub Pages、`main` への Push で自動更新） |
 
 基板の表と裏です（KiCad の 3D 表示）。裏面は裏から見た向きなので、左右が反転して見えます。
 
@@ -32,7 +32,7 @@ v2 では Pro Micro などのマイコンボードをやめ、RP2040 と QSPI Fl
 
 ![A と B の比較](docs/img/render-compare-ab.jpg)
 
-A と B を周囲 15 か所（8 方位 × 仰角 30°、真上、見下ろし、低い視点）から撮った画像は http://www.0x0c.me/spltnrskb/views.html （手元では [docs/views.html](docs/views.html)）で見比べられます。方位と仰角を選ぶか、画像をドラッグして視点を回します。画像をクリックすると拡大表示になり、← → で次の画像へ進みます。寄りの画像（打鍵する位置から、背面、側面、角、キーキャップ、ホイール、差込口。ケーブルを抜いた全体・背面・差込口も）も A と B を並べて見られます。全方位の画像は `gen/render_views.sh`（1 枚 1 分ほど）、寄りの画像は `gen/render_details.sh`（1 枚 3 分ほど）で作り直せます。
+A と B は http://www.0x0c.me/spltnrskb/views.html で、3D のまま好きな角度から見られます。ドラッグで回転、ホイールかピンチで拡大します。形状、材質、照明は Blender のレンダリングと同じです。手を止めるとブラウザ上でパストレーシング（three-gpu-pathtracer）が進み、写真に近い画になります。パストレース、ボケ、ケーブルはそれぞれ表示を切り替えられます。手元で開くときは `python3 -m http.server -d docs` で [docs/views.html](docs/views.html) を配信してください。ページの下には寄りの画像（打鍵する位置から、背面、側面、角、キーキャップ、ホイール、差込口。ケーブルを抜いた全体・背面・差込口も）が並び、クリックすると拡大します。3D 表示のモデル・照明・床の影は `gen/export_web3d.sh`（4 分ほど）で、寄りの画像は `gen/render_details.sh`（1 枚 3 分ほど）で作り直せます。
 
 ## 回路
 
@@ -312,11 +312,11 @@ spltnrskb/
 ├── docs/ordering.md             発注の手順（注文先ごとの部品と数量）
 ├── docs/pre-order-checklist.md  発注前の確認事項（検査結果、残るリスク、注文の順番）
 ├── docs/thumbwheel-check.md     サムホイールと OLED の実機確認の手順
-├── docs/views.html              A と B を全方位から見比べるページ
+├── docs/views.html              A と B を 3D で見比べるページ
+├── docs/3d/                     docs/views.html のモデル（GLB）、照明（HDR）、床の影
 ├── docs/img/                    README の画像
 │   ├── left-*.png, right-*.png  基板の 3D 表示と重ね合わせ図
 │   ├── render-*                 Blender による完成イメージ
-│   ├── views/                   全方位の完成イメージ（docs/views.html 用）
 │   ├── details/                 A と B の寄りの画像（docs/views.html 用）
 │   ├── port-slide.png           基板を差込口のトンネルへ入れる手順の断面図
 │   ├── oled-study/              OLED の高さ・角度の比較レンダリング
@@ -345,7 +345,7 @@ spltnrskb/
 次のスクリプトは `build.sh` に含まれず、必要なときに手で実行します。
 
 - 完成イメージのレンダリング：`render_blender.py`、`render_all.sh`、`render_grid.py`
-- 全方位の完成イメージと確認ページ：`render_views.sh`、`render_details.sh`、`views_page.py`
+- 3D の確認ページ：`export_web3d.sh`、`render_details.sh`、`views_page.py`
 - A と B の比較画像、差込口、基板の差し込み手順の断面図：`render_compare.sh`、`compare_ab.py`、`port_slide.py`
 - OLED と開口の比較検討：`oled_variants.py`、`oled_study.sh`、`oled_sheet.py`、`port_variants.py`
 - 六角ピンの試し印刷：`pin_coupon.py`（`case/print/pin-coupon.stl`。使い方は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）
