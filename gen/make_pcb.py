@@ -48,33 +48,30 @@ SIDES = {
     # on both sides (to the row 0-1 keycaps and to the case outline); the right one has the cover in the notch above
     # its row-2 key and is widened 12.6 mm, so its MCU fits between the inner edge and the first column of sockets.
     # Two USB-C on the top (back) edge, plugs pointing away from the user: the split link next to the inner
-    # corner (above the OLED), the host port further out. The MCU and its support parts sit on the FRONT, in the
-    # key-free strip along the inner edge below the OLED cover, so they show through the clear acrylic plate.
-    # The same receptacle on both tongues puts both openings at the same height. Both OLEDs are turned the same
+    # corner (above the OLED), the host port further out; the MCU on the back below them. The same receptacle on
+    # both tongues puts both openings at the same height. Both OLEDs are turned the same
     # way (header at the bottom), so one firmware rotation fits both.
     'left': dict(key_shift=0.0, width=LEFT_W, inner=+1, usb_x=LEFT_W - 35.0,
-                 link_x=LEFT_W - 17.0, mcu=(LEFT_W - 11.0, 66.0),
+                 link_x=LEFT_W - 17.0, mcu=(LEFT_W - 12.5625, 45.0),
                  oled=(LEFT_W + CASE_WALL - COVER_FRAME - OLED_COVER_W / 2, OLED_Y, 90), wheel='top-left'),
     'right': dict(key_shift=RIGHT_SHIFT, width=8.5 * U + MARGIN + 12.6 + (10.75 * U - 12.6 - RIGHT_SHIFT), inner=-1,
                   usb_x=-MARGIN + 35.0,
-                  link_x=-MARGIN + 17.0, mcu=(5.0, 66.5),
+                  link_x=-MARGIN + 17.0, mcu=(5.0, 45.0),
                   oled=(-MARGIN - CASE_WALL + COVER_FRAME + OLED_COVER_W / 2, OLED_Y, 90), wheel='top-right',
                   drum=dict(x_key='Backspace', y_key='F12', dx=-10.55)),   # encoder face as far left as the F12 web allows
 }
 
-# Support parts: (ref, list of (footprint ref, pad) the part should sit close to). The ones in BACK_PARTS belong
-# to the connector or must be reached from below (reset button through the case floor, BOOTSEL pad); the rest
-# go on the front with the MCU.
-BACK_PARTS = {'U2', 'R4', 'R5', 'F1', 'D99', 'RSW1', 'JP1'}
+# Support parts: (ref, list of (footprint ref, pad) the part should sit close to)
+MCU_WINDOW = ['U1', 'U5']   # the RP2040 and its flash: shown through a window in the case floor
 SUPPORT = [
     ('U5', [('U1', '52'), ('U1', '56')]),                       # QSPI flash
     ('Y1', [('U1', '20'), ('U1', '21')]),
     ('C1', [('Y1', '1')]), ('C2', [('Y1', '3')]), ('R10', [('U1', '21'), ('Y1', '3')]),
-    ('R2', [('U1', '47')]), ('R3', [('U1', '46')]),        # USB series resistors at the MCU
+    ('R2', [('U1', '47'), ('J2', 'A6')]), ('R3', [('U1', '46'), ('J2', 'A7')]),
     ('U2', [('J2', 'A6'), ('J2', 'A7')]),
     ('R4', [('J2', 'A5')]), ('R5', [('J2', 'B5')]),
     ('F1', [('J2', 'A4')]), ('D99', [('F1', '1')]),
-    ('U4', [('U1', '44')]), ('C16', [('U4', '1')]), ('C17', [('U4', '5')]), ('C19', [('U4', '5')]),
+    ('U4', [('D99', '1')]), ('C16', [('U4', '1')]), ('C17', [('U4', '5')]), ('C19', [('U4', '5')]),
     ('C3', [('U1', '44')]), ('C4', [('U1', '45')]), ('C5', [('U1', '23')]), ('C6', [('U1', '50')]),
     ('C7', [('U1', '1')]), ('C8', [('U1', '10')]), ('C11', [('U1', '22')]), ('C12', [('U1', '33')]),
     ('C13', [('U1', '42')]), ('C14', [('U1', '49')]), ('C15', [('U1', '48')]), ('C18', [('U1', '43')]),
@@ -176,7 +173,7 @@ def box_dist(px, py, b):
 
 def mounting_holes(board, keys, w, h, shift):
     boxes = [(o[0] - ORIGIN[0], o[1] - ORIGIN[1], o[2] - ORIGIN[0], o[3] - ORIGIN[1])
-             for o in obstacles(board, None, True, False) + obstacles(board, None, False, False, keep=False)]
+             for o in obstacles(board, None, True, False) + obstacles(board, None, False, False)]
     bodies = [(k['cx'] - shift - 7, k['cy'] - 7, k['cx'] - shift + 7, k['cy'] + 7) for k in keys]
     cands = set()
     for k in keys:
@@ -269,37 +266,17 @@ def overlap(a, b):
 
 
 STUB = 1.2               # escape stub length from the MCU pad centre
-MCU_FANOUT = 3.5       # mm around the MCU courtyard kept clear of other parts (escape tracks and vias)
-MCU_CHANNEL = 10.0     # front MCU: on the side facing the keys, this much is kept free of its support parts for
-                       # the matrix rows and columns (pins 1-28: left and bottom edges) to leave by
-MCU_LANE, MCU_LANE_W = 8.0, 3.0   # left half: lane kept above the MCU's upper-left corner (height, overlap in x)
-# left half: the keys face the MCU's left pin row (pins 1-14). Freerouting tends to wall pins in there with the
-# first tracks and vias it lays at the 0.4 mm pitch, so the whole row is fanned out to track ends FAN_PITCH apart
-# (FAN_L out from the escape stubs), where the router has room for vias. The fan is a staircase in the net
-# class width: the tracks leave the stubs side by side, the outermost turns 45 deg first and each next one FAN_S
-# later, so parallel diagonals stay (FAN_S + 0.4) / sqrt 2 = 0.49 mm apart (0.2 mm tracks, 0.2 mm clearance).
-FAN_L, FAN_PITCH, FAN_S = 8.0, 1.0, 0.3
-# The matrix rows are then routed here too (Freerouting kept boxing some of them in): from its fan end each row
-# takes a via and a lane on the back beside the fan, up or down to its row line, then runs along the row line's
-# height to the row's last via. Lanes are LANE_PITCH apart; the ones going down start LANE_DOWN out, clear of the
-# hot-swap sockets of the keys next to the strip.
-LANE_UP, LANE_DOWN, LANE_PITCH = 1.0, 2.0, 0.8
+MCU_FANOUT = 2.5       # mm around the MCU courtyard kept clear of other parts
 
 
-FRONT_KEEP = []          # absolute mm boxes kept free of front parts: keycaps and the OLED cover (set in build)
-
-
-def obstacles(board, skip, back=True, socket_courtyards=True, keep=True):
-    """Bounding boxes (absolute mm) that an SMD part on the back (or the front) must not overlap."""
+def obstacles(board, skip, back=True, socket_courtyards=True):
+    """Bounding boxes (absolute mm) that a back-side SMD part must not overlap."""
     layer = pcbnew.B_CrtYd if back else pcbnew.F_CrtYd
     cu = pcbnew.B_Cu if back else pcbnew.F_Cu
     out = []
     for fp in board.GetFootprints():
         if fp is skip:
             continue
-        if back and fp.GetReference() == 'U1' and not fp.IsFlipped():
-            # the front MCU's fan-out vias come through the back: keep its footprint free there too
-            out.append(bbox_mm(fp.GetCourtyard(pcbnew.F_CrtYd).BBox(), MCU_FANOUT))
         cy = fp.GetCourtyard(layer)
         if cy.OutlineCount() and (socket_courtyards or not fp.GetReference().startswith('SW')):
             # keep a fan-out ring free around the RP2040's 0.4 mm-pitch pins for the escape tracks and vias
@@ -310,18 +287,16 @@ def obstacles(board, skip, back=True, socket_courtyards=True, keep=True):
     for t in board.GetTracks():
         if t.IsOnLayer(cu):
             out.append(bbox_mm(t.GetBoundingBox(), 0.25))
-    if keep and not back:
-        out += FRONT_KEEP
     return out
 
 
-def autoplace(board, fp, anchors, w, h, back=True):
-    """Put a part on the back (or the front) at the free spot closest to its anchor pads."""
+def autoplace(board, fp, anchors, w, h):
+    """Put a back-side part at the free spot closest to its anchor pads."""
     tx = sum(a.x for a in anchors) / len(anchors)
     ty = sum(a.y for a in anchors) / len(anchors)
-    if fp.IsFlipped() != back:
+    if not fp.IsFlipped():
         fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
-    obs = obstacles(board, fp, back)
+    obs = obstacles(board, fp)
     lim = (ORIGIN[0] - MARGIN + 0.8, ORIGIN[1] - TOP + 0.8, ORIGIN[0] + w - 0.8, ORIGIN[1] + h - 0.8)
     best = None
     step = pcbnew.FromMM(0.25)
@@ -334,7 +309,7 @@ def autoplace(board, fp, anchors, w, h, back=True):
             for rot in (0, 90):
                 fp.SetOrientationDegrees(rot)
                 fp.SetPosition(pcbnew.VECTOR2I(int(tx + i * step), int(ty + j * step)))
-                cy = fp.GetCourtyard(pcbnew.B_CrtYd if back else pcbnew.F_CrtYd)
+                cy = fp.GetCourtyard(pcbnew.B_CrtYd)
                 box = bbox_mm(cy.BBox(), 0.1)
                 if not (lim[0] < box[0] and lim[1] < box[1] and box[2] < lim[2] and box[3] < lim[3]):
                     continue
@@ -442,8 +417,8 @@ def write_case_data(side, board, fps, keys, holes, w, h, shift):
             link=dict(center=local(fps['J1'].GetPosition()), box=local_box(fps['J1']), plug=[12.5, 7.0], edge='top'),
         ),
         reset=local(fps['RSW1'].GetPosition()),
-        # front SMD parts (MCU area) under the switch plate: the printed plate's web is cut away over them
-        front_parts=[local_box(fps[r]) for r in ['U1'] + [r for r, _ in SUPPORT] if not fps[r].IsFlipped()],
+        # RP2040 and its flash: the case floor has a window under them
+        mcu=[local_box(fps[r]) for r in MCU_WINDOW],
         oled=dict(box=local_box(fps['J3']), rot=round(fps['J3'].GetOrientationDegrees()) % 360),
         wheel=dict(center=list(wheel_centre(side, w)), r=WHEEL_R),
     )
@@ -455,52 +430,6 @@ def write_case_data(side, board, fps, keys, holes, w, h, shift):
 
 
 SIDE_NOW = [None]
-
-
-def P(x, y):
-    """Absolute mm -> board point."""
-    return pcbnew.VECTOR2I(pcbnew.FromMM(x), pcbnew.FromMM(y))
-
-
-def route_rows(board, fan_end, row_vias):
-    """Route each matrix row from its fan end (absolute mm) to the last via of its row line (see LANE_UP)."""
-    last = {}
-    for items in row_vias.values():
-        if len(items) < 2:
-            continue
-        for v, _, net in items:
-            n = net.GetNetname()
-            if n not in last or v.x > last[n].x:
-                last[n] = v
-    rows = {n: (fan_end[n], (pcbnew.ToMM(v.x), pcbnew.ToMM(v.y))) for n, v in last.items() if n in fan_end}
-    x_f = min(e[0] for e in fan_end.values())
-    up = sorted((n for n, (e, t) in rows.items() if t[1] < e[1]), key=lambda n: rows[n][0][1])
-    down = sorted((n for n, (e, t) in rows.items() if t[1] > e[1]), key=lambda n: -rows[n][0][1])
-    # the down row whose line is nearest the fan goes straight there on the back, left of the fan
-    near = min(down, key=lambda n: rows[n][1][1]) if down else None
-    if near:
-        down.remove(near)
-        (ex, ey), (tx, ty) = rows[near]
-        net = board.FindNet(near)
-        via(board, P(ex, ey), net)
-        track(board, P(ex, ey), P(ex - (ty - ey), ty), pcbnew.B_Cu, net, width=0.2)
-        track(board, P(ex - (ty - ey), ty), P(tx, ty), pcbnew.B_Cu, net, width=0.2)
-    for group, x0 in ((up, x_f + LANE_UP), (down, x_f + LANE_DOWN)):
-        spans = []                       # (lane x, y range) of the lanes laid so far (inner first)
-        for i, n in enumerate(group):
-            (ex, ey), (tx, ty) = rows[n]
-            net = board.FindNet(n)
-            lx = x0 + i * LANE_PITCH
-            via(board, P(ex, ey), net)
-            track(board, P(ex, ey), P(lx, ey), pcbnew.B_Cu, net, width=0.2)
-            track(board, P(lx, ey), P(lx, ty), pcbnew.B_Cu, net, width=0.2)
-            # along the row line's height on the back, unless an inner lane passes there: then on the front
-            blocked = any(lo < ty < hi for _, (lo, hi) in spans)
-            layer = pcbnew.F_Cu if blocked else pcbnew.B_Cu
-            if blocked:
-                via(board, P(lx, ty), net)
-            track(board, P(lx, ty), P(tx, ty), layer, net, width=0.2)
-            spans.append((lx, (min(ey, ty), max(ey, ty))))
 
 
 def build(side):
@@ -622,31 +551,29 @@ def build(side):
         brg.SetPosition(mm(dx, dy))
         board.Add(brg)
         fps['DRUM1'] = brg
-    # front keep-outs: every keycap (18 mm caps, plus 0.5 mm) and the OLED's half-mirror cover, so the MCU area
-    # shows through the clear plate between the caps and is not hidden under the cover
-    FRONT_KEEP.clear()
-    for k in keys.values():
-        hx, hy = k['w'] * U / 2 - KEYCAP_INSET + 0.5, k['h'] * U / 2 - KEYCAP_INSET + 0.5
-        x, y = ORIGIN[0] + k['cx'] - shift, ORIGIN[1] + k['cy']
-        FRONT_KEEP.append((x - hx, y - hy, x + hx, y + hy))
-    ox = ORIGIN[0] + cfg['oled'][0]
-    ob = bbox_mm(fps['J3'].GetCourtyard(pcbnew.F_CrtYd).BBox())
-    FRONT_KEEP.append((ox - OLED_COVER_W / 2 - 0.5, ORIGIN[1] - TOP, ox + OLED_COVER_W / 2 + 0.5, ob[3] + 1.5 + 0.5))
-    # MCU on the front, always turned so its marking reads upright (Raspberry Pi logo up) seen from the top:
-    # the package has its pin 1 dot at the top-left corner of the marking (RP2040 datasheet, Figure 168), so
-    # pin 1 goes to the top-left with pins 1-14 down the left side
-    u1 = place('U1', *cfg['mcu'], 0)
-    c = u1.GetPosition()
+    u1 = place('U1', *cfg['mcu'], 0, back=True)
+    # orientation: shortest total ratsnest from the MCU pins to the rest of their nets (USB pair weighted),
+    # so the matrix pins face the keys instead of the board edge
+    others = {}
+    unplaced = {r for r, _ in SUPPORT}
+    for fp in board.GetFootprints():
+        if fp.GetReference() == 'U1' or fp.GetReference() in unplaced:
+            continue
+        for p in fp.Pads():
+            n = p.GetNetname()
+            if n and n not in ('GND', '/3V3', '/1V1'):
+                others.setdefault(n, []).append(p.GetPosition())
 
-    def upright(rot):
+    def cost(rot):
         u1.SetOrientationDegrees(rot)
-        p1, p14 = pad(u1, '1'), pad(u1, '14')
-        return p1.x < c.x and p1.y < c.y and p14.x < c.x and p14.y > c.y
-    rot = [r for r in (0, 90, 180, 270) if upright(r)]
-    assert len(rot) == 1, 'no upright orientation for U1'
-    u1.SetOrientationDegrees(rot[0])
-    assert not any(overlap(bbox_mm(u1.GetCourtyard(pcbnew.F_CrtYd).BBox()), o) for o in FRONT_KEEP), \
-        'MCU under a keycap or the OLED cover'
+        c = 0.0
+        for p in u1.Pads():
+            pts = others.get(p.GetNetname())
+            if pts:
+                c += min(dist(p.GetPosition(), q) for q in pts)
+        a6 = pad(fps['J2'], 'A6')       # USB pair goes through R2/R3 (placed later) to the connector
+        return c + 3.0 * (dist(pad(u1, '47'), a6) + dist(pad(u1, '46'), a6))
+    u1.SetOrientationDegrees(min((0, 90, 180, 270), key=cost))
 
     # TESTEN (pin 19) is tied to GND: run it straight under the chip into the exposed pad, so the autorouter
     # does not have to squeeze it out between the corner pins
@@ -657,7 +584,7 @@ def build(side):
         end = pcbnew.VECTOR2I(c.x - ep_in if tp.x < c.x else c.x + ep_in, tp.y)
     else:
         end = pcbnew.VECTOR2I(tp.x, c.y - ep_in if tp.y < c.y else c.y + ep_in)
-    track(board, tp, end, pcbnew.F_Cu, gnd, width=0.2)
+    track(board, tp, end, pcbnew.B_Cu, gnd, width=0.2)
     # escape stubs: every signal pin gets a short straight track out of the 0.4 mm-pitch pin row, so the
     # autorouter starts from points with room around them (it often failed to leave the corner pins)
     for p in u1.Pads():
@@ -669,53 +596,18 @@ def build(side):
             out = pcbnew.VECTOR2I(pp.x + (1 if pp.x > c.x else -1) * pcbnew.FromMM(STUB), pp.y)
         else:
             out = pcbnew.VECTOR2I(pp.x, pp.y + (1 if pp.y > c.y else -1) * pcbnew.FromMM(STUB))
-        track(board, pp, out, pcbnew.F_Cu, p.GetNet(), width=0.2)
-    if cfg['inner'] > 0:
-        row = sorted((p for p in u1.Pads() if p.GetNumber() in {str(n) for n in range(1, 15)}),
-                     key=lambda p: p.GetPosition().y)
-        mid = (len(row) - 1) / 2
-        fan_end = {}
-        for k, p in enumerate(row):
-            n = p.GetNetname()
-            if not n or n == 'GND' or n.startswith('unconnected'):
-                continue
-            o = k - mid                                  # pitches from the row's centre (- = up)
-            rise = (FAN_PITCH - 0.4) * o                 # signed, mm
-            x0 = pcbnew.ToMM(p.GetPosition().x) - STUB   # escape stub end
-            xt = x0 - FAN_S * (mid - abs(o))             # outermost turns first
-            y = pcbnew.ToMM(p.GetPosition().y)
-            pts = [(x0, y), (xt, y), (xt - abs(rise), y + rise), (x0 - FAN_L, y + rise)]
-            for a, b in zip(pts, pts[1:]):
-                if a != b:
-                    track(board, P(*a), P(*b), pcbnew.F_Cu, p.GetNet(), width=0.2)
-            fan_end[n] = pts[-1]
-        route_rows(board, fan_end, row_vias)
+        track(board, pp, out, pcbnew.B_Cu, p.GetNet(), width=0.2)
     # thermal / ground vias in the exposed pad (as in the Raspberry Pi reference design)
     for dx in (-0.8, 0.8):
         for dy in (-0.8, 0.8):
             via(board, pcbnew.VECTOR2I(c.x + pcbnew.FromMM(dx), c.y + pcbnew.FromMM(dy)), gnd)
 
-    ub = bbox_mm(u1.GetCourtyard(pcbnew.F_CrtYd).BBox())
-    if cfg['inner'] > 0:      # keys to the left (-x) of the MCU
-        # the pin fan reaches 6.5 mm above and below the row's centre, and STUB + FAN_L out: keep 5 mm beyond
-        cy, ch = (ub[1] + ub[3]) / 2, max(MCU_CHANNEL, STUB + FAN_L + 5.0)
-        channels = [(ub[0] - ch, min(ub[1] - 1.0, cy - 7.5), ub[0], max(ub[3] + 1.0, cy + 7.5)),
-                    # pins 2-5 (HAND, DATA, SDA, SCL) at the upper left run up to the OLED and the link port above:
-                    # keep a lane over that corner too
-                    (ub[0] - MCU_CHANNEL, ub[1] - MCU_LANE, ub[0] + MCU_LANE_W, ub[1]),
-                    # and one down the right side, so the 3V3 and 1V1 between the support parts above and
-                    # below the chip need not cross the fan
-                    (ub[2], ub[1] - 1.0, ub[2] + MCU_LANE_W + 2.0, ub[3] + 1.0)]
-    else:                     # keys to the right; pins 2-5 already face the OLED and the ports
-        channels = [(ub[2], ub[1] - 1.0, ub[2] + MCU_CHANNEL, ub[3] + 1.0)]
-    FRONT_KEEP.extend(channels)
     for ref, anchors in SUPPORT:
-        autoplace(board, fps[ref], [pad(fps[r], p) for r, p in anchors], w, h, back=ref in BACK_PARTS)
-    del FRONT_KEEP[-len(channels):]
+        autoplace(board, fps[ref], [pad(fps[r], p) for r, p in anchors], w, h)
     # dense MCU area: references go to the assembly (Fab) layer instead of silkscreen
     for ref in ['U1', 'J1', 'J2'] + [r for r, _ in SUPPORT]:
         f = fps[ref].Reference()
-        f.SetLayer(pcbnew.B_Fab if fps[ref].IsFlipped() else pcbnew.F_Fab)
+        f.SetLayer(pcbnew.B_Fab)
         f.SetPosition(fps[ref].GetPosition())
         f.SetTextSize(pcbnew.VECTOR2I(pcbnew.FromMM(0.6), pcbnew.FromMM(0.6)))
         f.SetTextThickness(pcbnew.FromMM(0.1))

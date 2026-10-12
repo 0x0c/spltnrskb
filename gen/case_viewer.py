@@ -134,6 +134,9 @@ def main():
                     (bx0 + 0.25, -by1 + 0.25, z_pcb + PCB_T + PLATE_GAP + PLATE_T - COVER_T - 0.5 - 2.6))
                 parts.append((side, 'oled', pack(oled), '#11151a', 1.0))
             z_floor = FLOOR if variant in PRINTED else BOTTOM_T
+            # clear lid over the RP2040 window, on the tape on the floor's inner face
+            lid = Manifold.extrude(hf.mcu_lid(), mc.LID_T).translate((0, 0, z_floor + mc.TAPE_T))
+            parts.append((side, 'lid', pack(lid), 'clear', 0.45))
             parts.append((side, 'wheel', pack(hf.wheel3d().translate((0, 0, z_floor + WHEEL_GAP))), '#c9ccd1', 1.0))
             if not boards:   # KiCad's board export carries the encoder (ENC1) with Alps' model
                 parts.append((side, 'encoder', pack(hf.encoder3d(z_floor)), '#202225', 1.0))
@@ -159,6 +162,7 @@ def main():
             ['床 / 壁', f'{FLOOR:g} mm / 幅 8 mm'], ['基板の高さ', f'床から {STANDOFF:g} mm（ボス φ4.6）'],
             ['プレート', '透明アクリル 1.5 mm、上からスリムヘッドの M2 小ねじと壁の中の M2 ナットで固定'], ['トレイの角', f'外周の下端 R{TRAY_FILLET:g}・上端 R{TRAY_TOP_FILLET:g} のフィレット'], ['コネクタ', '基板裏面。プレートは切り欠きなし'], ['ホイール', '角にサムホイール × 2（ロータリーエンコーダー Alps EC05E1220401）'],
             ['OLED', f'ハーフミラーアクリル 2 mm、四隅 R{mc.CLEAR + mc.WALL + 4.0 - mc.COVER_FRAME:g}、周りの帯 {mc.COVER_FRAME:g} mm、両面テープで固定（プレートと面一）'],
+            ['RP2040', f'底の窓から見える。窓は透明アクリル {mc.LID_T:g} mm の蓋を内側から両面テープで貼る'],
             ['ドラム', '右上にドラム式ダイヤル（Alps EC10E1220505、24 クリック）、ベゼルはプレートの切り欠きにはめる']]),
         'printtop': dict(title='B：全部 3D プリント（プレートも印刷）', rows=[
             ['外形 mm', size], ['高さ', f"{FLOOR + STANDOFF + PCB_T + PLATE_GAP + PLATE_T:g} mm（プレート上面まで）"],
@@ -166,11 +170,13 @@ def main():
             ['トレイの角', f'外周の下端 R{TRAY_FILLET:g}・上端 R{TRAY_TOP_FILLET:g} のフィレット'],
             ['ホイール', '角にサムホイール × 2（ロータリーエンコーダー Alps EC05E1220401）、壁の上は外せる角キャップ'],
             ['OLED', f'ハーフミラーアクリル 2 mm、四隅 R{mc.CLEAR + mc.WALL + 4.0 - mc.COVER_FRAME:g}、周りの帯 {mc.COVER_FRAME:g} mm、両面テープで固定（プレートと面一）'],
+            ['RP2040', f'底の窓から見える。窓は透明アクリル {mc.LID_T:g} mm の蓋を内側から両面テープで貼る'],
             ['ドラム', '右上にドラム式ダイヤル（Alps EC10E1220505、24 クリック）、ベゼルはプレートの切り欠きにはめる']]),
         'acrylic': dict(title='アクリル版（積層サンドイッチ）', rows=[
             ['外形 mm', size], ['材料', '枠と底板はマットクリア 3 mm、プレートは透明 1.5 mm、OLED カバーはハーフミラー 2 mm'], ['積層', f'底板 {BOTTOM_T:g} + 枠 {FRAME_T:g} × {N_FRAMES} + プレート {PLATE_T:g} mm'],
             ['高さ', f'{BOTTOM_T + N_FRAMES * FRAME_T + PLATE_T:g} mm'], ['基板の固定', f'M2 スペーサー {STANDOFF:g} mm × 8'], ['コネクタ', '基板裏面。プレートと最上段の枠は切り欠きなし'],
             ['外周', 'M2 × 20 mm + ナット'], ['ホイール', '角にサムホイール × 2（ロータリーエンコーダー Alps EC05E1220401）'], ['OLED', f'0.91 インチ × 2、ハーフミラーアクリル 2 mm（四隅 R{mc.CLEAR + mc.WALL + 4.0 - mc.COVER_FRAME:g}、プレートより 0.5 mm 高い）'],
+            ['RP2040', f'底の窓から見える。窓は透明アクリル {mc.LID_T:g} mm の蓋を内側から両面テープで貼る'],
             ['ドラム', '右上にドラム式ダイヤル（Alps EC10E1220505、24 クリック）、ベゼルはプレートの切り欠きにはめる']]),
     }
     z = {v: {'pcb': (FLOOR if v in PRINTED else BOTTOM_T) + STANDOFF} for v in VARIANTS}
@@ -254,7 +260,7 @@ scene.add(new THREE.HemisphereLight(0xffffff, 0x666666, 0.9));
 const dl = new THREE.DirectionalLight(0xffffff, 0.6); dl.position.set(200, -300, 400); scene.add(dl);
 let group = null; const state = {v: 'print', switch: true, plate: true, wheel: true, explode: false, gap: 10};
 // exploded view: each layer rises by its level x the gap set on the slider (mm)
-const LEVEL = {tray: 0, bottom: 0, wheel: 0, wheelcap: 2, encoder: 6, frame1: 1, frame2: 2, frame3: 3, frame4: 4, pcb: 6, pcba: 6, oled: 6.5,
+const LEVEL = {tray: 0, bottom: 0, lid: 0.5, wheel: 0, wheelcap: 2, encoder: 6, frame1: 1, frame2: 2, frame3: 3, frame4: 4, pcb: 6, pcba: 6, oled: 6.5,
                drumenc: 6, drumblock: 6.5, drum: 7, drumbezel: 8, plate: 9, switch: 11.5, cover: 12.5};
 const GAP = 25;   // mm between the halves
 // matte (frosted) and clear acrylic, and the half-mirror OLED cover
