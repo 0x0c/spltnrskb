@@ -59,7 +59,7 @@ SIDES = {
                   usb_x=-MARGIN + 35.0,
                   link_x=-MARGIN + 17.0, mcu=(5.0, 66.5),
                   oled=(-MARGIN - CASE_WALL + COVER_FRAME + OLED_COVER_W / 2, OLED_Y, 90), wheel='top-right',
-                  drum=dict(x_key='Backspace', y_key='F12', dx=-(DRUM_GAP + DRUM_W / 2) + 1.75)),   # bezel centred on Backspace
+                  drum=dict(x_key='Backspace', y_key='F12', dx=-10.55)),   # encoder face as far left as the F12 web allows
 }
 
 # Support parts: (ref, list of (footprint ref, pad) the part should sit close to). The ones in BACK_PARTS belong
@@ -368,9 +368,10 @@ ENC_KEEP = 0.5            # gap kept between the two
 
 
 # drum dial: Alps EC10E (ENC2) on the front in the free 2 u of the top row, axis along X, on the row of
-# drum['y_key']; its shaft-insert face dx right of drum['x_key']'s centre, so the drum sits 1.75 mm right
-# of that key's centre: the bezel, whose encoder hood is longer than its block hood, is then centred on the
-# key. The drum and its bearing block (Drum_Dial_Bearing, board only) continue to +X; the block's pegs stop
+# drum['y_key']; its shaft-insert face dx right of drum['x_key']'s centre: as far left as the plate web to the
+# F12 cut-out allows (the bezel's flange ends 9.4 mm left of that face). The drum and its bearing block
+# (Drum_Dial_Bearing, board only) continue to +X, so the bezel ends up about 0.7 mm right of the key's
+# centre; DRUM_W is the widest drum that keeps the bezel inside the case wall. The block's pegs stop
 # inside the board, clear of the thumbwheel underneath.
 
 

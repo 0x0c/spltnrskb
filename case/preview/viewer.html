@@ -71,7 +71,7 @@ const dl = new THREE.DirectionalLight(0xffffff, 0.6); dl.position.set(200, -300,
 let group = null; const state = {v: 'print', switch: true, plate: true, wheel: true, explode: false, gap: 10};
 // exploded view: each layer rises by its level x the gap set on the slider (mm)
 const LEVEL = {tray: 0, bottom: 0, wheel: 0, wheelcap: 2, encoder: 6, frame1: 1, frame2: 2, frame3: 3, frame4: 4, pcb: 6, pcba: 6, oled: 6.5,
-               drumenc: 6, drumblock: 6.5, drum: 7, plate: 9, drumbezel: 10, switch: 11.5, cover: 12.5};
+               drumenc: 6, drumblock: 6.5, drum: 7, drumbezel: 8, plate: 9, switch: 11.5, cover: 12.5};
 const GAP = 25;   // mm between the halves
 // matte (frosted) and clear acrylic, and the half-mirror OLED cover
 const MATERIAL = {matte: {color: '#e6edf1', roughness: 0.95, metalness: 0.0},
