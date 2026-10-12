@@ -78,11 +78,13 @@ def geometry():
     pins = [end + ZERO_PIN0 + 2.54 * k for k in range(9)]
     tongue = (end, zy - TONGUE_HW, x0, zy + TONGUE_HW)
     # M2 holes: the keyboard's one right of the drum (x 172, on the row boundary), one above and one below the
-    # RP2040-Zero at the F12 column's left edge, and one along the top edge between the module and the switch
+    # RP2040-Zero on the left corners' arc centres (4 mm from both edges and the rounded corner; the lower one 3 mm
+    # below the module, clear of its boss), and one along the top edge between the module and the switch
     kx0 = key['cx'] - key['w'] * U / 2
     row = key['cy'] + key['h'] * U / 2
     real = [h for h in src['holes'] if x0 < h[0] < x1 and abs(h[1] - row) < 0.01]
-    holes = [[kx0, y0 + 4.0], [kx0 + 25.2, y0 + 4.5], [kx0, row + 1.5]] + real
+    r = o['r']
+    holes = [[x0 + r, y0 + r], [kx0 + 25.2, y0 + 4.5], [x0 + r, y1 - r]] + real
     switch = [kx0 + 32.6, y0 + SWITCH_Y]
     return dict(src=src, outline=dict(x0=x0, y0=y0, x1=x1, y1=y1, r=o['r']), key=key, holes=holes,
                 mcu=(zx, zy), mouth=mouth, end=end, pins=pins, tongue=tongue, switch=switch)
