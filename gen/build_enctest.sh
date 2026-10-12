@@ -36,4 +36,5 @@ out="fab/$S"; rm -rf "${out:?}"; mkdir -p "$out/gerber"
 "$KC" pcb export pdf --mode-single -l F.Fab,F.SilkS,F.Cu,Edge.Cuts -o "$out/nrsk-$S-assembly-front.pdf" "$PCB" >/dev/null 2>&1
 "$KC" pcb export pdf --mode-single -l B.Fab,B.SilkS,B.Cu,Edge.Cuts --mirror -o "$out/nrsk-$S-assembly-back.pdf" "$PCB" >/dev/null 2>&1
 
+NRSK_KC="$KC" python3 gen/make_jlc.py "$S"
 [ -x .venv/bin/python ] && .venv/bin/python gen/make_enctest.py case
