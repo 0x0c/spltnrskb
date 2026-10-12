@@ -446,16 +446,11 @@ def build_half(side, world):
     plate.location.z += (Z_PLATE_TOP - PLATE_T) * MM
     objs.append(plate)
     objs.append(import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-wheel-cap.stl'), MAT['case'], f'{side} wheel cap'))
-    # clear lid over the RP2040 window in the floor, on 0.5 mm tape
-    lid = import_stl(os.path.join(ROOT, 'case', 'preview', f'{side}-mcu-lid.stl'), MAT['acrylic'], f'{side} mcu lid')
-    lid.location.z = (FLOOR + 0.5) * MM
-    objs.append(lid)
-    # the board shows through the clear plate (A) and, in both variants, through the RP2040 window in the floor:
-    # KiCad's assembled board, else a green PCB slab
-    if os.path.exists(os.path.join(PCBA, f'{side}-pcba.glb')):
-        objs.append(import_pcba(side))
-    else:
-        objs.append(import_stl(os.path.join(ROOT, 'case', 'preview', f'{side}-pcb.stl'), MAT['pcb'], f'{side} pcb'))
+    if TOP != 'print':     # through the clear plate the board shows: KiCad's assembled board, else a green PCB slab
+        if os.path.exists(os.path.join(PCBA, f'{side}-pcba.glb')):
+            objs.append(import_pcba(side))
+        else:
+            objs.append(import_stl(os.path.join(ROOT, 'case', 'preview', f'{side}-pcb.stl'), MAT['pcb'], f'{side} pcb'))
     for k in data['keys']:
         objs += keycap(k, side)
     if SCREWS in ('flat', 'lowpan'):

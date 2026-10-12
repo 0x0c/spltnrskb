@@ -56,8 +56,6 @@ MCU,　└ 代替,,,,,Winbond W25Q16JVSSIQ（2 MB、同じ 208 mil）,LCSC C8231
 OLED カバー,ハーフミラー アクリル板 2 mm,<side>-oled-cover（DXF/SVG）、プレートの窓にはめ込み、上面をプレートと面一,1,1,2,アクリル板キャスト ハーフミラー 30%（三菱 MRH-001T-30）,はざいや（菅原工芸）,見積,https://www.hazaiya.co.jp/products/detail/3373,OLED のガラス面に載せる。両方の筐体で共通；LCSC に該当品なし；2 / 3 / 5 mm。図面 WEB オーダーで DXF から切り出し。1.5 mm のアクリル製ハーフミラーはメーカーにもない
 OLED カバー,　└ 代替,,,,,アクリルハーフミラー板 フリーカット（2 mm、透過 30%）,アクリ屋ドットコム,見積,https://www.acry-ya.com/products/detail/113/,最小 10 × 10 mm から
 OLED カバー,透明両面テープ 厚さ 0.5 mm,カバーと OLED のガラス面、カバーの縁が載る壁の上面に貼る,,,,3M スコッチ はがせる両面テープ 超透明 KRT-15（幅 15 × 1.5 m × 厚さ 0.5 mm）,カインズ,,https://www.cainz.com/g/4547452982974.html,少量；LCSC に該当品なし；はがせるタイプなので OLED を交換できる
-RP2040 の窓,透明アクリル板 1.5 mm（窓の蓋）,<side>-mcu-lid（DXF/SVG）、底の窓の内側に載せる,1,1,2,アクリル板 DXF 切削（図面で WEB オーダー）,はざいや（菅原工芸）,見積,https://www.hazaiya.co.jp/estimate-drawing,プレートと同じ板から切れる。両方の筐体で共通；LCSC に該当品なし；プレートと同じ透明 1.5 mm で注文
-RP2040 の窓,透明両面テープ 厚さ 0.5 mm,蓋の縁を、窓のまわりの床（底板）の内側の面に貼る,,,,3M スコッチ はがせる両面テープ 超透明 KRT-15（幅 15 × 1.5 m × 厚さ 0.5 mm）,カインズ,,https://www.cainz.com/g/4547452982974.html,OLED カバーと同じテープ；LCSC に該当品なし；はがせるタイプなので OLED を交換できる
 3D プリント版 B,M2 ヒートセットインサート,外径 3.2 mm × 長さ 3 mm、プレート裏のボスに入れる,10,10,20,XHHD SZTB1063（真鍮、両ローレット）,LCSC C51938879,US$0.51 / 50 個（50 個単位）,https://www.lcsc.com/product-detail/C51938879.html,"2026-10-10 に確認（在庫 9,300）。寸法（M2、長さ 3 mm、外径 3.2 mm）は品名 M2*3*3.2 から読んだもの"
 3D プリント版 B,　└ 代替,,,,,Prusa Heat Set Inserts M2 short,Prusa Research,US$11.99 / 100 個,https://www.prusa3d.com/ja/product/heat-set-inserts-m2-short-100-pcs/,3D プリント用。寸法の記載なし
 3D プリント版 A,M2 ナット（ナット受け用）,壁上面のくぼみの下の六角穴に入れる,10,10,20,大阪魂 六角ナット 1 種 M2（SUS304、対辺 4 × 厚さ 1.6）,MonotaRO,¥164 / 20 個,https://www.monotaro.com/p/2876/3624/,LCSC に該当品なし

@@ -62,7 +62,6 @@ SIDES = {
 }
 
 # Support parts: (ref, list of (footprint ref, pad) the part should sit close to)
-MCU_WINDOW = ['U1', 'U5']   # the RP2040 and its flash: shown through a window in the case floor
 SUPPORT = [
     ('U5', [('U1', '52'), ('U1', '56')]),                       # QSPI flash
     ('Y1', [('U1', '20'), ('U1', '21')]),
@@ -417,8 +416,6 @@ def write_case_data(side, board, fps, keys, holes, w, h, shift):
             link=dict(center=local(fps['J1'].GetPosition()), box=local_box(fps['J1']), plug=[12.5, 7.0], edge='top'),
         ),
         reset=local(fps['RSW1'].GetPosition()),
-        # RP2040 and its flash: the case floor has a window under them
-        mcu_window=[local_box(fps[r]) for r in MCU_WINDOW],
         oled=dict(box=local_box(fps['J3']), rot=round(fps['J3'].GetOrientationDegrees()) % 360),
         wheel=dict(center=list(wheel_centre(side, w)), r=WHEEL_R),
     )
