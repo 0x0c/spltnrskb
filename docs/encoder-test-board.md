@@ -4,6 +4,8 @@
 
 ![検証基板を組み立てた状態](img/enctest.png)
 
+![右奥から見た検証基板。サムホイールが右上の角の側面から出ている](img/enctest-wheel.png)
+
 ## キーボードと同じところ、違うところ
 
 基板の座標は右半分の基板のものをそのまま使います。2 つのエンコーダー、ドラムの軸受けブロックの穴、ホイールの中心は、キーボードとまったく同じ位置に来ます。ケースは同じ生成スクリプト（`gen/make_case.py`）で作るので、壁の厚さ、基板とプレートの高さ、ホイールの開口と軸、プレートのドラムの穴もキーボードと同じです。
@@ -132,4 +134,4 @@ firmware/qmk/compile.sh default nrsk_enctest
 ./gen/build_enctest.sh
 ```
 
-次のものをまとめて作ります：回路図、基板、自動配線、ERC と DRC、製造用のファイル（`fab/enctest/`）、ケースの部品（`enctest/case/`）。基板とケースは右半分の `right/case_data.json` から位置を読むので、右半分の基板を作り直したときは先に `./build.sh right` を実行します。組み立てた状態の画像は `blender -b -P gen/render_enctest.py` で作り直せます。
+次のものをまとめて作ります：回路図、基板、自動配線、ERC と DRC、製造用のファイル（`fab/enctest/`）、ケースの部品（`enctest/case/`）。基板とケースは右半分の `right/case_data.json` から位置を読むので、右半分の基板を作り直したときは先に `./build.sh right` を実行します。組み立てた状態の画像は `blender -b -P gen/render_enctest.py` で作り直せます。左手前からの `docs/img/enctest.png` と、サムホイールが見える右奥からの `docs/img/enctest-wheel.png` の 2 枚です。

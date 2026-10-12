@@ -1,9 +1,10 @@
 """Render of the encoder test kit (3D printed tray and plate, the keyboard's wheel and drum parts, the RP2040-Zero
 under the board with its USB-C in the left wall) with Blender.
 
-    blender -b -P gen/render_enctest.py -- [--samples N] [--res 1400]
+    blender -b -P gen/render_enctest.py -- [--samples N] [--res 1400] [--view all|top|wheel]
 
-Output: docs/img/enctest.png. Geometry: enctest/case/ (tray, plate, PCB) and the keyboard's case/print/right-wheel*.stl
+Output: docs/img/enctest.png (from the front left, the drum and the USB-C) and docs/img/enctest-wheel.png (from the
+right, the thumbwheel out of the top-right corner). Geometry: enctest/case/ (tray, plate, PCB) and the keyboard's case/print/right-wheel*.stl
 and case/preview/right-drum*-placed.stl, which make_enctest.py checks to fit the test case as they fit the keyboard.
 """
 import json
@@ -23,6 +24,10 @@ Z_PCB = FLOOR + STANDOFF
 args = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
 SAMPLES = int(args[args.index('--samples') + 1]) if '--samples' in args else 96
 RES = int(args[args.index('--res') + 1]) if '--res' in args else 1400
+VIEW = args[args.index('--view') + 1] if '--view' in args else 'all'
+# name: (output, look-at offset from the outline's centre in m, camera offset from that point in m, lens)
+VIEWS = {'top': ('enctest.png', (-0.01, 0.0, 0.006), (-0.17, -0.14, 0.11), 70),
+         'wheel': ('enctest-wheel.png', (0.012, 0.004, 0.006), (0.2, 0.1, 0.06), 85)}
 
 
 def material(name, color, rough=0.5, alpha=1.0, transmission=0.0):
@@ -98,12 +103,9 @@ def main():
     bpy.context.object.data.materials.append(MAT['floor'])
 
     o = d['outline']
-    c = Vector(((o['x0'] + o['x1']) / 2 * MM - 0.01, -(o['y0'] + o['y1']) / 2 * MM, 0.006))
+    c = Vector(((o['x0'] + o['x1']) / 2 * MM, -(o['y0'] + o['y1']) / 2 * MM, 0.0))
     cam = bpy.data.objects.new('cam', bpy.data.cameras.new('cam'))
     bpy.context.collection.objects.link(cam)
-    cam.location = c + Vector((-0.17, -0.14, 0.11))
-    cam.rotation_euler = (c - cam.location).to_track_quat('-Z', 'Y').to_euler()
-    cam.data.lens = 70
     bpy.context.scene.camera = cam
     for loc, energy, size in (((0.25, -0.2, 0.35), 12.0, 0.3), ((-0.1, 0.2, 0.25), 4.0, 0.4)):
         light = bpy.data.objects.new('light', bpy.data.lights.new('light', 'AREA'))
@@ -121,9 +123,16 @@ def main():
     s.cycles.samples = SAMPLES
     s.cycles.use_denoising = True
     s.render.resolution_x, s.render.resolution_y = RES, RES * 5 // 8
-    s.render.filepath = os.path.join(ROOT, 'docs', 'img', 'enctest.png')
-    bpy.ops.render.render(write_still=True)
-    print('wrote', s.render.filepath)
+    for name, (out, at, off, lens) in VIEWS.items():
+        if VIEW not in ('all', name):
+            continue
+        at = c + Vector(at)
+        cam.location = at + Vector(off)
+        cam.rotation_euler = (at - cam.location).to_track_quat('-Z', 'Y').to_euler()
+        cam.data.lens = lens
+        s.render.filepath = os.path.join(ROOT, 'docs', 'img', out)
+        bpy.ops.render.render(write_still=True)
+        print('wrote', s.render.filepath)
 
 
 main()
