@@ -65,6 +65,18 @@ PLATE_BOSS = (5.6, 3.0)      # boss under the printed plate (diameter, height)
 BOSS_POCKET = (6.0, 3.2)     # pocket in the wall top for the boss
 NUT_TRAP = (4.15, 1.8)       # hex trap for an M2 nut under the pocket (across flats, depth)
 RESET_D = 3.0
+# RP2040 window: every part sits on the PCB back, so the case floor (tray floor / acrylic bottom plate) has an
+# opening under the RP2040 and its flash. A clear acrylic lid (same 1.5 mm sheet as the A plate) lies on
+# the inner face of the floor over the opening, overlapping it by LID_LEDGE all round, held by clear double-sided
+# tape; in the printed tray a low rim round the lid locates it. The lid stays recessed above the desk.
+MCU_WIN_MARGIN = 2.0         # opening beyond the parts' courtyards
+MCU_WIN_R = 2.0              # opening corner radius
+LID_T = 1.5
+LID_LEDGE = 3.0              # lid past the opening on every side (the tape sits here) ...
+LID_LEDGE_MIN = 2.0          # ... at least this much where the wall is close
+LID_FIT = 0.15               # lid edge to the printed rim
+LID_RIM = (1.2, LID_T + 0.3) # printed rim round the lid: width, height above the floor
+LID_KEEP = 0.5               # rim / lid kept this far from the bosses, spacers, holes and the wall
 BUTTON_HOLE = 4.5            # plate hole for a tall tact switch's actuator (3.5 mm) poking through (encoder test board)
 BUTTON_KEEP = 3.6            # printed plate's web kept off the 6 mm switch body (half size)
 # 3D print: the wall above the wheel opening is a separate cap, so the wheel can be dropped in from above
@@ -72,7 +84,6 @@ CAP_SHOULDER = 2.0           # cap's top tier overhangs the opening by this much
 CAP_LEDGE = 3.0              # thickness of that top tier
 CAP_FIT = 0.15
 RIB_T = 2.0                  # all-printed variant: web under the printed plate (PCB top + 1.5)
-FRONT_PART_CLR = 1.0         # web kept this far from the front-side MCU parts (courtyards)
 TRAY_FILLET = 2.0     # 3D-printed tray: rounded bottom outer edge
 TRAY_TOP_FILLET = 0.6 # small round on the top outer edge, under the plate
 PLATE_FILLET = 1.0    # all-printed plate: rounded top outer edge (prints fine top-down: 1 mm reach on the bed side)
@@ -349,6 +360,34 @@ class Half:
     def cover(self):
         return self.cover_shape() - self.holes(self.cover_screws, SCREW_D)
 
+    # RP2040 window and its lid (keyboard halves: case_data has 'mcu_window') -----------------------
+    def _mcu_opening(self):
+        """Rounded rectangle MCU_WIN_MARGIN round the RP2040 and flash courtyards."""
+        bs = self.d['mcu_window']
+        x0, y0 = min(b[0] for b in bs) - MCU_WIN_MARGIN, min(b[1] for b in bs) - MCU_WIN_MARGIN
+        x1, y1 = max(b[2] for b in bs) + MCU_WIN_MARGIN, max(b[3] for b in bs) + MCU_WIN_MARGIN
+        return rounded_rect(x0, y0, x1, y1, MCU_WIN_R)
+
+    def _reset_cut(self, d):
+        return circle(*self.d['reset'], d) if 'reset' in self.d else CrossSection()
+
+    def mcu_lid(self):
+        """Clear acrylic lid on the inner face of the floor: the opening + LID_LEDGE, cut back where the wall is
+        nearer (there the wall locates it instead of the rim). Where it covers the reset hole it has the same hole,
+        so the pin still goes through."""
+        lid = self._mcu_opening().offset(LID_LEDGE, JoinType.Round) ^ self.inner.offset(-LID_FIT, JoinType.Round)
+        return lid - self._reset_cut(RESET_D)
+
+    def mcu_window(self):
+        """Opening in the floor under the RP2040: at least LID_LEDGE_MIN inside the lid for the tape."""
+        return self._mcu_opening() ^ self.mcu_lid().offset(-LID_LEDGE_MIN, JoinType.Round)
+
+    def lid_rim(self):
+        """Printed rim round the lid (tray only); it merges into the wall where the lid reaches it."""
+        lid = self.mcu_lid().offset(LID_FIT, JoinType.Round)
+        rim = (lid.offset(LID_RIM[0], JoinType.Round) - lid) ^ self.inner.offset(0.01, JoinType.Round)
+        return rim - self._reset_cut(RESET_D + 2 * LID_KEEP)
+
     # perimeter screws on the wall centre line --------------------------------------
     def _screws(self):
         x0, y0, x1, y1, r = self.pcb
@@ -429,7 +468,9 @@ class Half:
     def bottom(self):
         (wx, wy), _ = self.wheel_xy()
         cs = self.outer - self.holes(self.screws, SCREW_D) - self.holes(self.d['holes'], SCREW_D) - circle(wx, wy, AXLE_HOLE_D)
-        return cs - circle(*self.d['reset'], RESET_D) if 'reset' in self.d else cs
+        if 'mcu_window' in self.d:
+            cs = cs - self.mcu_window()
+        return cs - self._reset_cut(RESET_D)
 
     # 3D print -------------------------------------------------------------------------
     def tray(self):
@@ -478,6 +519,9 @@ class Half:
         if 'reset' in self.d:
             rx, ry = self.d['reset']
             body = body - Manifold.cylinder(FLOOR + 0.02, RESET_D / 2, RESET_D / 2).translate((rx, -ry, -0.01))
+        if 'mcu_window' in self.d:
+            body = body - Manifold.extrude(self.mcu_window(), FLOOR + 0.02).translate((0, 0, -0.01))
+            body = body + Manifold.extrude(self.lid_rim(), LID_RIM[1]).translate((0, 0, FLOOR - 0.01))
         return body
 
     def _filleted(self, top):
@@ -742,8 +786,6 @@ class Half:
                 for sx in (-1, 1):
                     cx = k['cx'] + sx * STAB_X
                     keep = keep + rect(cx - w / 2 - 1.0, k['cy'] + dy - hh / 2 - 1.0, cx + w / 2 + 1.0, k['cy'] + dy + hh / 2 + 1.0)
-        for x0, y0, x1, y1 in self.d.get('front_parts', []):   # MCU area on the front: SOIC flash is 2.2 mm tall
-            keep = keep + rect(x0 - FRONT_PART_CLR, y0 - FRONT_PART_CLR, x1 + FRONT_PART_CLR, y1 + FRONT_PART_CLR)
         for x0, y0, x1, y1 in self.d.get('web_keep', []):   # encoder test board: the MCU's pins through the board
             keep = keep + rect(x0, y0, x1, y1)
         for x, y in self.d.get('buttons', []):
@@ -830,6 +872,8 @@ def write_half(hf, out, parts=True, laser=True):
     layers = {'plate': hf.plate(), 'bottom': hf.bottom()}
     if hf.window_box is not None:
         layers['oled-cover'] = hf.cover()
+    if 'mcu_window' in hf.d:
+        layers['mcu-lid'] = hf.mcu_lid()
     for i in range(N_FRAMES):
         layers[f'frame{i + 1}'] = hf.frame(i)
     for name, cs in layers.items() if laser else ():
@@ -846,6 +890,8 @@ def write_half(hf, out, parts=True, laser=True):
             write_stl(os.path.join(out, 'print', f'{side}-{name}.stl'), m.translate((0, 0, -m.bounding_box()[2])))
     if hf.window_box is not None:
         write_stl(os.path.join(out, 'preview', f'{side}-oled-cover.stl'), Manifold.extrude(hf.cover(), COVER_T))
+    if 'mcu_window' in hf.d:
+        write_stl(os.path.join(out, 'preview', f'{side}-mcu-lid.stl'), Manifold.extrude(hf.mcu_lid(), LID_T))
     # assembly preview (print variant): tray + PCB + plate in place
     z_pcb = FLOOR + STANDOFF
     write_stl(os.path.join(out, 'preview', f'{side}-pcb.stl'), hf.pcb3d().translate((0, 0, z_pcb)))
@@ -948,6 +994,8 @@ def check(hf, layers):
     if hf.window_box is not None:
         check_oled(hf)
     check_wheel(hf)
+    if 'mcu_window' in hf.d:
+        check_mcu(hf)
     if 'drum' in hf.d:
         check_drum(hf)
     check_closed(hf, layers)
@@ -994,6 +1042,24 @@ def check_wheel(hf):
     assert abs(pin_top - (FLOOR + hf.enc_bottom() + PIN_ENGAGE)) < 1e-6, 'pin does not reach into the rotor'
     assert pin_top < FLOOR + STANDOFF - 0.3, 'pin reaches the PCB'
     assert FLOOR + WHEEL_GAP + WHEEL_T > FLOOR + hf.enc_bottom(), 'rim no longer overlaps the encoder (hub not needed)'
+
+
+def check_mcu(hf):
+    """RP2040 window: the opening shows the parts, the lid (and the printed rim round it) stays clear of the bosses /
+    spacers, the reset hole, the wheel and its axle, and inside the wall."""
+    (wx, wy), wr = hf.wheel_xy()
+    win, lid = hf.mcu_window(), hf.mcu_lid()
+    rimmed = lid.offset(LID_FIT + LID_RIM[0], JoinType.Round) ^ hf.inner - hf._reset_cut(RESET_D + 2 * LID_KEEP)
+    for b in hf.d['mcu_window']:
+        assert (rect(*b) - win).area() < 0.01, 'window does not show the whole RP2040 / flash'
+    assert (lid - hf.inner.offset(-LID_FIT + 0.01)).area() < 0.01, 'RP2040 lid reaches into the wall'
+    assert (win - lid.offset(-LID_LEDGE_MIN + 0.01)).area() < 0.01, 'RP2040 window too close to the lid edge'
+    for x, y in hf.d['holes']:
+        assert (rimmed ^ circle(x, y, BOSS_D + 2 * LID_KEEP)).area() < 0.01, 'RP2040 lid hits a standoff'
+    # the reset hole stays in the floor (3 mm of floor to the window: the laser shop's minimum between cuts)
+    assert (win ^ hf._reset_cut(RESET_D + 6.0)).area() < 0.01, 'RP2040 window too close to the reset hole'
+    assert (rimmed ^ circle(wx, wy, 2 * (wr + WHEEL_CUT + LID_KEEP))).area() < 0.01, 'RP2040 lid under the wheel'
+    assert FLOOR + LID_RIM[1] < FLOOR + STANDOFF - USB_SHELL[1] - 1.0, 'rim reaches the parts under the PCB'
 
 
 def check_closed(hf, layers):

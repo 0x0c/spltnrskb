@@ -8,7 +8,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from make_case import Half, OUT, STANDOFF, PORT_LIFT  # noqa: E402
+from make_case import Half, OUT, STANDOFF, PORT_LIFT, LID_T, LID_LEDGE  # noqa: E402
 
 BOARD = ['board', 'smd', 'encoder', 'drumenc', 'conn', 'diode', 'socket', 'stab', 'oled']
 
@@ -21,21 +21,15 @@ def steps(variant, n_screws, n_holes, n_cover):
 
     add('完成形', 'これから組み立てるキーボードの片側です。手順を進めると、部品が 1 つずつ所定の位置に入っていきます。'
         '下の「次へ」か、キーボードの → キーで進みます。', [], 'overview')
-    add('基板', '製造した基板（2 層、1.6 mm）から始めます。表面にはスイッチ、OLED と、マイコンまわりの部品が付きます。'
-        'USB-C、ソケット、ダイオードなどは裏面です。',
+    add('基板', '製造した基板（2 層、1.6 mm）から始めます。部品はほぼすべて裏面に付きます。表面はスイッチと OLED だけです。',
         ['board'], 'top', ['プリント基板 × 1'], board_only=True)
-    add('表面実装部品（表面）',
-        'RP2040、フラッシュ、3.3 V LDO、水晶、パスコンと抵抗を、内側の端のキーのない場所へ表面に半田付けします。'
-        '透明アクリルのプレート越しに見える位置です。RP2040 はロゴが正立する向き（1 番ピンのドットが左上）に置きます。'
-        'RP2040 は 0.4 mm ピッチで裏のサーマルパッドも GND につなぐ必要があるので、JLCPCB などの部品実装サービスを勧めます。'
-        '手で付ける場合はホットエアかリフローを使ってください。部品番号は Fab 層の実装図（fab/&lt;side&gt;/nrsk-&lt;side&gt;-assembly-front.pdf）にあります。',
-        ['smd'], 'top',
-        ['RP2040', 'W25Q128JVSIQ', 'AP2112K-3.3', '水晶 12 MHz', '0805 の抵抗・コンデンサ'], 'top', True)
     add('表面実装部品（裏面）',
-        'USB-C × 2 と、その保護部品（USBLC6-2SC6、CC の抵抗、ポリスイッチ、B5819W）、リセットスイッチを裏面に半田付けします。'
-        '部品番号は裏面の実装図（fab/&lt;side&gt;/nrsk-&lt;side&gt;-assembly-back.pdf）にあります。',
-        ['conn'], 'bottom',
-        ['USB-C × 2', 'USBLC6-2SC6', '0805 の抵抗', 'ポリスイッチ', 'B5819W', 'PTS810'], 'bottom', True)
+        'RP2040、フラッシュ、3.3 V LDO、水晶、パスコンと抵抗、USB-C × 2、リセットスイッチを裏面に半田付けします。'
+        'RP2040 は 0.4 mm ピッチで裏のサーマルパッドも GND につなぐ必要があるので、JLCPCB などの部品実装サービスを勧めます。'
+        '手で付ける場合はホットエアかリフローを使ってください。部品番号は Fab 層の実装図（fab/&lt;side&gt;/nrsk-&lt;side&gt;-assembly-back.pdf）にあります。',
+        ['smd', 'conn'], 'bottom',
+        ['RP2040', 'W25Q128JVSIQ', 'AP2112K-3.3', '水晶 12 MHz', 'USB-C × 2', 'USBLC6-2SC6', '0805 の抵抗・コンデンサ',
+         'ポリスイッチ', 'B5819W', 'PTS810'], 'bottom', True)
     add('ホイールのエンコーダー',
         '角の裏面に、ロータリーエンコーダー EC05E1220401 を付けます。ホイールの中心の真上で、端子（A、C、B）は基板の内側を向きます。'
         '位置決めの突起 2 本を基板の小さな穴に入れ、側面の金具の 2 か所を先に半田付けしてから、端子 3 本を付けます。'
@@ -74,11 +68,21 @@ def steps(variant, n_screws, n_holes, n_cover):
             'フードの天井がブロックの上面に、エンコーダー側の脚が基板に載ります。このあとプレートを載せると、ベゼルの枠がプレートの穴に入って上面がそろい、'
             '下のつばがプレートの下面に当たってベゼルが抜けなくなります。',
             ['drumbezel'], 'top', ['ベゼル（3D プリント）'])
+
+    def lid(floor, where):
+        add('RP2040 の窓の蓋',
+            f'{floor}には、基板の裏の RP2040 の真下に窓があります。透明アクリルの蓋（&lt;side&gt;-mcu-lid）の縁に透明両面テープを貼り、'
+            f'窓をふさぐように{where}へ貼ります。'
+            + ('床の低い縁が蓋の位置を決めます。' if floor == '床' else f'蓋は窓より {LID_LEDGE:g} mm ずつ大きいので、窓の周りに均等にはみ出すように置きます。')
+            + '基板を載せる前に、窓の内側から蓋のほこりを拭いておきます。',
+            ['lid'], 'top', [f'窓の蓋（透明アクリル {LID_T:g} mm）', '透明両面テープ 0.5 mm'])
+
     if variant in ('print', 'printtop'):
         add('トレイ',
             f'3D プリントのトレイです（A と B で共通）。壁の中を縦にネジ穴（{n_screws} か所）が通り、上面には丸いくぼみ、その下に六角のナット受けがあります。'
             'A はナット受けに入れたナットへ上から、B はプレート裏のボスのインサートへ底からネジを締めます。',
             ['tray'], 'top', ['トレイ（3D プリント）'])
+        lid('床', '床の内側の縁')
         add('ホイール',
             'ホイールの軸穴をトレイの床の軸に差し込みます。上面の六角ピンは、あとで基板を下ろしたときにエンコーダーの六角穴に入ります。',
             ['wheel'], 'corner', ['ホイール（3D プリント）'])
@@ -115,6 +119,7 @@ def steps(variant, n_screws, n_holes, n_cover):
             '底板の角の穴に下から M3 × 8 mm のネジを通して軸にし、ホイールを差し込みます。'
             '上面の六角ピンは、あとで基板を載せたときにエンコーダーの六角穴に入ります。',
             ['bottom', 'axle', 'wheel'], 'corner', ['底板（マットクリア 3 mm）', 'M3 × 8 mm', 'ホイール（3D プリント）'])
+        lid('底板', '底板の上の面')
         add('スペーサー',
             f'底板の下から M2 × 5 mm のネジで、長さ {STANDOFF:g} mm のスペーサーを {n_holes} 本立てます。',
             ['standoff', 'bottom_screw'], 'top', [f'M2 スペーサー {STANDOFF:g} mm × {n_holes}', f'M2 × 5 mm × {n_holes}'])
@@ -233,7 +238,7 @@ const FOCUS = __FOCUS__;   // wheel centre per side (viewer frame)
 const PCBA = ['board', 'smd', 'encoder', 'drumenc', 'conn', 'diode', 'socket', 'stab', 'oled', 'switch'];
 const MATERIAL = {matte: {color: '#e6edf1', roughness: 0.95, metalness: 0.0}, clear: {color: '#d8e6ee', roughness: 0.1, metalness: 0.0},
                   mirror: {color: '#3a4048', roughness: 0.08, metalness: 0.9}};
-const OPACITY = {plate: 0.45, bottom: 0.6, frame1: 0.6, frame2: 0.6, frame3: 0.6, frame4: 0.6, cover: 0.85};
+const OPACITY = {plate: 0.45, lid: 0.45, bottom: 0.6, frame1: 0.6, frame2: 0.6, frame3: 0.6, frame4: 0.6, cover: 0.85};
 const b64 = (s, T) => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new T(u.buffer); };
 
 const canvas = document.getElementById('view');
