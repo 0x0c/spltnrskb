@@ -410,19 +410,21 @@ qmk setup
 
 `qmk setup` は `~/qmk_firmware` に QMK を取得し、ビルドに使う ARM のコンパイラなどもまとめて入れます。
 Windows では [QMK MSYS](https://msys.qmk.fm/) を使ってください。
-Homebrew の `arm-none-eabi-gcc` は標準 C ライブラリ（newlib）を含まないためビルドできません。`qmk setup` が入れるツールチェインか、Arm 公式の [Arm GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)（arm-none-eabi）を使ってください。
-
-### 2. キーボード定義をコピーしてビルドする
+Homebrew の `arm-none-eabi-gcc` は標準 C ライブラリ（newlib）を含まないためビルドできません。その場合は Arm 公式の [Arm GNU Toolchain](https://developer.arm.com/downloads/-/arm-gnu-toolchain-downloads)（arm-none-eabi）を `~/.local/opt` に展開します（sudo は不要です）。
 
 ```bash
-cp -R firmware/qmk/keyboards/nrsk ~/qmk_firmware/keyboards/
+mkdir -p ~/.local/opt && curl -L https://developer.arm.com/-/media/Files/downloads/gnu/15.2.rel1/binrel/arm-gnu-toolchain-15.2.rel1-darwin-arm64-arm-none-eabi.tar.xz | tar -xJ -C ~/.local/opt
 ```
+
+次の手順のスクリプトは、`~/.local/opt/arm-gnu-toolchain-*-arm-none-eabi` と `/Applications/ArmGNUToolchain` にあるコンパイラを自動で使います。別の場所に置いた場合は、環境変数 `ARM_TOOLCHAIN` にそのディレクトリを指定してください。
+
+### 2. ビルドする
 
 ```bash
-qmk compile -kb nrsk -km default
+firmware/qmk/compile.sh
 ```
 
-ビルドが通ると `~/qmk_firmware/nrsk_default.uf2` ができます。
+キーボード定義を `~/qmk_firmware/keyboards/nrsk` に同期してから `qmk compile -kb nrsk -km default` を実行します。ビルドが通ると `firmware/qmk/build/nrsk_default.uf2` ができます（`~/qmk_firmware/nrsk_default.uf2` にも残ります）。別のキーマップは `firmware/qmk/compile.sh mine` のように名前を渡します。
 
 ### 3. 書き込む（左右それぞれ 1 回ずつ）
 
@@ -451,7 +453,7 @@ RP2040 は ROM に USB ブートローダーを持っています。専用の書
 ### キーマップ
 
 デフォルトのキーマップは KLE の刻印どおりで、`fn` を押している間はレイヤー 1 になります（矢印キーが Home/End/PgUp/PgDn、Backspace が Delete）。
-キーマップを変えるには、`firmware/qmk/keyboards/nrsk/keymaps/default/keymap.c` を編集します。自分用のフォルダ（例: `keymaps/mine/`）を作り、`qmk compile -kb nrsk -km mine` でビルドしてもかまいません。
+キーマップを変えるには、`firmware/qmk/keyboards/nrsk/keymaps/default/keymap.c` を編集します。自分用のフォルダ（例: `keymaps/mine/`）を作り、`firmware/qmk/compile.sh mine` でビルドしてもかまいません。
 
 ## 発注・組み立て前の確認事項
 
@@ -459,4 +461,4 @@ RP2040 は ROM に USB ブートローダーを持っています。専用の書
 - RP2040 は 0.4 mm ピッチの QFN で、パッケージ底面のサーマルパッドも GND に半田付けする必要があります。手半田はホットエアかリフローが前提なので、JLCPCB の部品実装サービスを使います。USB-C（0.5 mm ピッチ）も同様です。注文に使うファイルと手順は [docs/ordering.md](docs/ordering.md) にあります。
 - JLCPCB の配置のプレビューでは、2 つの USB-C（J1、J2）の差込口が基板の外側を向いているかを必ず確かめてください。USB-C の回転の補正値は、実際の実装でまだ確かめていません。エンコーダー EC05E1220401 は JLCPCB の在庫が少ないので、在庫も注文の直前に確かめます。
 - ホットスワップソケットのフットプリントは、一般的な Kailh CPG151101S11 の寸法で作った自作品です。1 枚目は実物のソケットと照合してください。
-- QMK のファームウェアは、現行の qmk_firmware（2026-10 時点）で `qmk compile -kb nrsk -km default` が通ることを確認しています。出力は `nrsk_default.uf2`（約 84 KB）です。実機での動作（キー入力、左右通信、OLED、ホイール）はまだ確認していません。ドラム式ダイヤルを足した後の設定は、`qmk lint` と `qmk generate-config-h` で確かめました（右半分のエンコーダーが 2 個、分解能が 4 と 2）。手元の ARM 用コンパイラに C の標準ライブラリがなかったため、この変更の後のコンパイルはまだ通していません。
+- QMK のファームウェアは、現行の qmk_firmware（2026-10 時点）と Arm GNU Toolchain 15.2.rel1 で、`firmware/qmk/compile.sh`（`qmk compile -kb nrsk -km default`）が警告なしで通ることを確認しています（2026-10-12、ドラム式ダイヤルを足した後の設定）。出力は `nrsk_default.uf2`（約 87 KB）です。実機での動作（キー入力、左右通信、OLED、ホイール）はまだ確認していません。
