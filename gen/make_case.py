@@ -70,6 +70,7 @@ CAP_SHOULDER = 2.0           # cap's top tier overhangs the opening by this much
 CAP_LEDGE = 3.0              # thickness of that top tier
 CAP_FIT = 0.15
 RIB_T = 2.0                  # all-printed variant: web under the printed plate (PCB top + 1.5)
+FRONT_PART_CLR = 1.0         # web kept this far from the front-side MCU parts (courtyards)
 TRAY_FILLET = 2.0     # 3D-printed tray: rounded bottom outer edge
 TRAY_TOP_FILLET = 0.6 # small round on the top outer edge, under the plate
 PLATE_FILLET = 1.0    # all-printed plate: rounded top outer edge (prints fine top-down: 1 mm reach on the bed side)
@@ -709,8 +710,8 @@ class Half:
 
     def plate3d_printed(self):
         """All-printed variant: the 1.5 mm switch plate plus a RIB_T web underneath, so a printed plate is stiff.
-        The web fills the cavity except around the switch housings, the stabilizers and the OLED cover, and
-        stays inside the walls. Print it upside down (top face on the bed)."""
+        The web fills the cavity except around the switch housings, the stabilizers, the OLED cover and the
+        front-side MCU parts, and stays inside the walls. Print it upside down (top face on the bed)."""
         keep = CrossSection()
         g = SWITCH_CUT / 2 + 0.6
         for k in self.d['keys']:
@@ -720,6 +721,8 @@ class Half:
                 for sx in (-1, 1):
                     cx = k['cx'] + sx * STAB_X
                     keep = keep + rect(cx - w / 2 - 1.0, k['cy'] + dy - hh / 2 - 1.0, cx + w / 2 + 1.0, k['cy'] + dy + hh / 2 + 1.0)
+        for x0, y0, x1, y1 in self.d.get('front_parts', []):   # MCU area on the front: SOIC flash is 2.2 mm tall
+            keep = keep + rect(x0 - FRONT_PART_CLR, y0 - FRONT_PART_CLR, x1 + FRONT_PART_CLR, y1 + FRONT_PART_CLR)
         web = self.inner.offset(-0.3, JoinType.Round) - keep - self.cover_shape().offset(1.0, JoinType.Round) \
             - self.holes(self.d['holes'], BOSS_D + 2.0)
         if 'drum' in self.d:   # room for the bezel's ledge and the encoder / block under the opening

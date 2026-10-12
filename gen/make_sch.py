@@ -18,7 +18,7 @@ KI_SYM = os.path.expanduser('~/Applications/KiCad/KiCad.app/Contents/SharedSuppo
 
 FP = {
     'diode': 'Diode_SMD:D_SOD-123',
-    'usb': 'Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12',
+    'usb': 'nrsk:USB_C_Receptacle_HRO_TYPE-C-31-M-12',
     'mcu': 'Package_DFN_QFN:QFN-56-1EP_7x7mm_P0.4mm_EP3.2x3.2mm',
     'flash': 'Package_SO:SOIC-8_5.3x5.3mm_P1.27mm',
     'ldo': 'Package_TO_SOT_SMD:SOT-23-5',
