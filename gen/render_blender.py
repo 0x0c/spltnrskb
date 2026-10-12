@@ -359,6 +359,73 @@ def lowpan_screw(name, x, y, d=4.0, h=0.5):
     return parts
 
 
+PCBA = os.path.join(ROOT, 'build', '3d')    # gen/export_3d.py (run by build.sh), not committed
+
+
+def import_pcba(side):
+    """The assembled board as KiCad exports it (build/3d/<side>-pcba.glb: board, mask, silkscreen and every part but
+    the switches), so the RP2040 and its neighbours show through the clear plate. Parts entirely below the board's top
+    face (hot-swap sockets, diodes, receptacles on the back) can't be seen and are left out, and so are the encoders
+    (SW*, the scene builds the wheels and the drum itself); the rest becomes one mesh with the flat faces merged."""
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=os.path.join(PCBA, f'{side}-pcba.glb'))
+    new = [o for o in bpy.data.objects if o not in before]
+    bpy.context.view_layer.update()
+    for o in new:                     # parts hang below empties named by reference (U1, C3...): keep the name, drop the tree
+        o['part'] = o.parent.name if o.parent else ''
+        mw = o.matrix_world.copy()
+        o.parent = None
+        o.matrix_world = mw
+    keep = []
+    for o in new:
+        if o.type != 'MESH':
+            continue
+        bb = [o.matrix_world @ Vector(c) for c in o.bound_box]
+        top = max(v.z for v in bb)
+        wide = max(v.x for v in bb) - min(v.x for v in bb) > 0.05   # board body, mask and silkscreen layers
+        if o['part'].startswith('SW'):     # the encoders: the scene has its own wheels and drum
+            continue
+        if top > (PCB_T - 0.05) * MM or wide:
+            keep.append(o)
+    for o in new:
+        if o not in keep:
+            bpy.data.objects.remove(o)
+    # KiCad's materials: see-through mask and silkscreen, and parts that are metal by default (no metallic given).
+    # The board layers take the scene's materials; dark parts become plastic, light ones (pins, shields) stay metal
+    for o in keep:
+        if o.name.endswith(('_soldermask', '_PCB')):
+            o.data.materials.clear()
+            o.data.materials.append(MAT['pcb'])
+        elif o.name.endswith('_silkscreen'):
+            o.data.materials.clear()
+            o.data.materials.append(MAT['legend light'])
+    for m in {m for o in keep for m in o.data.materials if m and m.name.startswith('mat_')}:
+        b = m.node_tree.nodes.get('Principled BSDF')
+        if not b:
+            continue
+        r, g, bl, _ = b.inputs['Base Color'].default_value
+        light = 0.2126 * r + 0.7152 * g + 0.0722 * bl > 0.25
+        b.inputs['Metallic'].default_value = 1.0 if light else 0.0
+        b.inputs['Roughness'].default_value = 0.3 if light else 0.45
+        b.inputs['Alpha'].default_value = 1.0
+    bpy.ops.object.select_all(action='DESELECT')
+    for o in keep:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = keep[0]
+    bpy.ops.object.make_single_user(object=True, obdata=True)
+    bpy.ops.object.join()
+    ob = bpy.context.active_object
+    ob.name = f'{side} pcba'
+    dec = ob.modifiers.new('flat', 'DECIMATE')
+    dec.decimate_type = 'DISSOLVE'
+    dec.angle_limit = math.radians(0.5)
+    dec.delimit = {'MATERIAL', 'NORMAL'}
+    bpy.ops.object.modifier_apply(modifier=dec.name)
+    ob.location.z += (FLOOR + STANDOFF) * MM
+    print(side, 'pcba', len(ob.data.polygons), 'faces')
+    return ob
+
+
 def build_half(side, world):
     data = json.load(open(os.path.join(ROOT, side, 'case_data.json')))
     sys.path.insert(0, HERE)
@@ -379,9 +446,11 @@ def build_half(side, world):
     plate.location.z += (Z_PLATE_TOP - PLATE_T) * MM
     objs.append(plate)
     objs.append(import_stl(os.path.join(ROOT, 'case', 'print', f'{side}-wheel-cap.stl'), MAT['case'], f'{side} wheel cap'))
-    if TOP != 'print':     # through the clear plate the board shows: green PCB slab
-        pcb = import_stl(os.path.join(ROOT, 'case', 'preview', f'{side}-pcb.stl'), MAT['pcb'], f'{side} pcb')
-        objs.append(pcb)
+    if TOP != 'print':     # through the clear plate the board shows: KiCad's assembled board, else a green PCB slab
+        if os.path.exists(os.path.join(PCBA, f'{side}-pcba.glb')):
+            objs.append(import_pcba(side))
+        else:
+            objs.append(import_stl(os.path.join(ROOT, 'case', 'preview', f'{side}-pcb.stl'), MAT['pcb'], f'{side} pcb'))
     for k in data['keys']:
         objs += keycap(k, side)
     if SCREWS in ('flat', 'lowpan'):

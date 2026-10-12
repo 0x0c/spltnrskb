@@ -5,7 +5,7 @@
 <style>
 /* Layout: the 3D stage with its toolbar, then the close-up renders */
 :root{--bg:#eef1f4;--panel:#ffffff;--fg:#1b2129;--muted:#5d6773;--line:#c9d1da;--accent:#1f6b3a;--on-accent:#ffffff;
- --key:#f24d00;--stage:#d1d1d1;
+ --key:#f24d00;--stage:#d9d9d9;
  --sans:"IBM Plex Sans JP",system-ui,-apple-system,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#14181d;--panel:#1d232a;--fg:#e6eaee;--muted:#9aa5b1;--line:#34404c;--accent:#5fc285;--on-accent:#0d1a12;--key:#ff7a3d;color-scheme:dark}}
 :root[data-theme="dark"]{--bg:#14181d;--panel:#1d232a;--fg:#e6eaee;--muted:#9aa5b1;--line:#34404c;--accent:#5fc285;--on-accent:#0d1a12;--key:#ff7a3d;color-scheme:dark}
@@ -157,7 +157,7 @@ try {
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setClearColor(0x000000, 0);
 renderer.toneMapping = THREE.AgXToneMapping;
-renderer.toneMappingExposure = 0.16;                 // matched by eye to the Cycles renders
+renderer.toneMappingExposure = 0.22;                 // matched by eye to the Cycles renders
 
 const scene = new THREE.Scene();
 scene.environmentRotation.y = Math.PI / 2;           // Blender's equirect seam vs three's
@@ -193,10 +193,12 @@ let dirty = true, ready = false, sceneSet = false;
 
 function shadowKey() { return `${state.v}${state.cables ? '' : '-nocable'}`; }
 
+// what is not shown is taken out of the scene, not hidden: the path tracer would still trace hidden meshes
+const cables = {};
 function applyScene() {
   for (const [v, root] of Object.entries(models)) {
-    root.visible = v === state.v;
-    root.traverse(o => { if (o.name.startsWith('cables')) o.visible = state.cables; });
+    if (v === state.v) scene.add(root); else scene.remove(root);
+    for (const c of cables[v]) { if (state.cables) root.add(c); else root.remove(c); }
   }
   // the baked shadow only in the raster view: the path tracer would darken the floor twice
   floorMat.aoMap = state.pt ? null : floorTex[shadowKey()] || null;
@@ -319,8 +321,12 @@ function load(v) {
     })),
   ]).then(([g]) => {
     models[v] = g.scene;
-    g.scene.traverse(o => { if (o.material?.transmission) o.material.thickness = 0.0015; });
-    scene.add(g.scene);
+    cables[v] = g.scene.children.filter(o => o.name.startsWith('cables'));
+    // clear acrylic and the half mirror: solid glass for the path tracer, but they don't block its shadow rays, or
+    // the board under the plate would only get light by chance (black at a few dozen samples)
+    g.scene.traverse(o => {
+      if (o.material?.transmission) Object.assign(o.material, {thickness: 0.0015, castShadow: false});
+    });
   });
 }
 

@@ -32,7 +32,7 @@ v2 では Pro Micro などのマイコンボードをやめ、RP2040 と QSPI Fl
 
 ![A と B の比較](docs/img/render-compare-ab.jpg)
 
-A と B は http://www.0x0c.me/spltnrskb/views.html で、3D のまま好きな角度から見られます。ドラッグで回転、ホイールかピンチで拡大します。形状、材質、照明は Blender のレンダリングと同じです。手を止めるとブラウザ上でパストレーシング（three-gpu-pathtracer）が進み、写真に近い画になります。パストレース、ボケ、ケーブルはそれぞれ表示を切り替えられます。手元で開くときは `python3 -m http.server -d docs` で [docs/views.html](docs/views.html) を配信してください。ページの下には寄りの画像（打鍵する位置から、背面、側面、角、キーキャップ、ホイール、差込口。ケーブルを抜いた全体・背面・差込口も）が並び、クリックすると拡大します。3D 表示のモデル・照明・床の影は `gen/export_web3d.sh`（4 分ほど）で、寄りの画像は `gen/render_details.sh`（1 枚 3 分ほど）で作り直せます。
+A と B は http://www.0x0c.me/spltnrskb/views.html で、3D のまま好きな角度から見られます。ドラッグで回転、ホイールかピンチで拡大します。形状、材質、照明は Blender のレンダリングと同じです。A では、透明なプレート越しに RP2040 などの部品も見えます（KiCad から書き出した実装済みの基板。`gen/export_3d.py` で `build/3d/` に作る）。手を止めるとブラウザ上でパストレーシング（three-gpu-pathtracer）が進み、写真に近い画になります。パストレース、ボケ、ケーブルはそれぞれ表示を切り替えられます。手元で開くときは `python3 -m http.server -d docs` で [docs/views.html](docs/views.html) を配信してください。ページの下には寄りの画像（打鍵する位置から、背面、側面、角、キーキャップ、ホイール、差込口。ケーブルを抜いた全体・背面・差込口も）が並び、クリックすると拡大します。3D 表示のモデル・照明・床の影は `gen/export_web3d.sh`（4 分ほど）で、寄りの画像は `gen/render_details.sh`（1 枚 3 分ほど）で作り直せます。
 
 ## 回路
 
