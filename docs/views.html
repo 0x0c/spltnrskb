@@ -87,6 +87,7 @@ body:has(.lb[open]){overflow:hidden}
     <div class="tools">
       <div class="presets" id="presets" role="group" aria-label="視点"></div>
       <div class="toggles">
+        <label class="toggle"><input type="checkbox" id="spin"> 自動回転</label>
         <label class="toggle"><input type="checkbox" id="pt"> パストレース</label>
         <label class="toggle">サンプル数 <select id="spp"></select></label>
         <label class="toggle"><input type="checkbox" id="dof"> ボケ</label>
@@ -94,7 +95,7 @@ body:has(.lb[open]){overflow:hidden}
         <button class="chip" id="full">全画面</button>
       </div>
     </div>
-    <p class="hint">ドラッグで回転、右ドラッグか 2 本指で移動、ホイールかピンチで拡大します。← → ↑ ↓ で 15° ずつ回ります。パストレースは手を止めている間だけ進み、選んだサンプル数で止まります。多いほどノイズが減りますが、時間がかかります。</p>
+    <p class="hint">ドラッグで回転、右ドラッグか 2 本指で移動、ホイールかピンチで拡大します。← → ↑ ↓ で 15° ずつ回ります。自動回転は触っている間だけ止まり、手を離して少しすると再開します。パストレース中は、選んだサンプル数まで描いてから 30° ずつ回ります。パストレースは手を止めている間だけ進み、選んだサンプル数で止まります。多いほどノイズが減りますが、時間がかかります。</p>
   </section>
 
   <section>
@@ -140,8 +141,8 @@ const PRESETS = [
   ['背面', 180, 28, 0.85, 62], ['左', 270, 22, 0.85, 62], ['真上', 0, 89.9, 0.95, 62],
 ];
 const $ = id => document.getElementById(id);
-// path tracing is on by default, except on phones and tablets (it keeps the GPU busy)
-const state = {v: 'a', pt: !matchMedia('(pointer: coarse)').matches, dof: true, cables: true, spp: 64};
+// path tracing is off by default (it keeps the GPU busy); the checkbox turns it on
+const state = {v: 'a', pt: false, dof: true, cables: true, spp: 64, spin: false};
 try { Object.assign(state, JSON.parse(localStorage.getItem('nrsk-views3d') || '{}')); } catch (e) {}
 const save = () => { try { localStorage.setItem('nrsk-views3d', JSON.stringify(state)); } catch (e) {} };
 
@@ -266,24 +267,41 @@ function orbitBy(dAz, dEl) {
 }
 
 $('presets').innerHTML = PRESETS.map(([n], i) => `<button class="chip" data-i="${i}">${n}</button>`).join('');
-$('presets').querySelectorAll('button').forEach(b => b.addEventListener('click', () => preset(+b.dataset.i)));
+$('presets').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+  spinWait = performance.now() + SPIN_IDLE; preset(+b.dataset.i);
+}));
 const [, az0, el0, d0, lens0] = PRESETS[0];
 camera.setFocalLength(lens0);
 resize();
 camera.position.copy(spherical(az0, el0, d0 * fit()));
 camera.lookAt(TARGET);
 
-controls.addEventListener('start', () => { tween = null; });
+// auto-rotate: a slow turntable in the raster view; with path tracing on, a 30° step once the image has its samples.
+// Touching the view pauses it, and it picks up again a few seconds after the hand comes off.
+const SPIN_IDLE = 3000, SPIN_HOLD = 1200;
+let spinWait = 0, held = false, sampledAt = 0;
+function spinning(now) { return state.spin && !held && now >= spinWait; }
+function stepSpin(now) {
+  controls.autoRotate = spinning(now) && !state.pt && !tween;
+  if (!spinning(now) || !state.pt || tween || !ready) { sampledAt = 0; return; }
+  if (pathTracer.samples < state.spp) return;
+  sampledAt ||= now;
+  if (now - sampledAt >= SPIN_HOLD) { sampledAt = 0; orbitBy(-30, 0); }   // the same way round as autoRotate
+}
+controls.autoRotateSpeed = 1.5;                        // a turn in 40 s
+
+controls.addEventListener('start', () => { tween = null; held = true; });
+controls.addEventListener('end', () => { held = false; spinWait = performance.now() + SPIN_IDLE; });
 controls.addEventListener('change', applyCamera);
 canvas.addEventListener('keydown', e => {
   const k = {ArrowLeft: [-15, 0], ArrowRight: [15, 0], ArrowUp: [0, 15], ArrowDown: [0, -15]}[e.key];
-  if (k) { e.preventDefault(); orbitBy(...k); }
+  if (k) { e.preventDefault(); spinWait = performance.now() + SPIN_IDLE; orbitBy(...k); }
 });
 
 // --- toggles -------------------------------------------------------------------------------
 function renderToggles() {
   document.querySelectorAll('header .seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === state.v));
-  $('pt').checked = state.pt; $('dof').checked = state.dof; $('cables').checked = state.cables;
+  $('spin').checked = state.spin; $('pt').checked = state.pt; $('dof').checked = state.dof; $('cables').checked = state.cables;
   if (!SPP.includes(state.spp)) state.spp = 64;
   $('spp').value = state.spp;
   $('dof').disabled = $('spp').disabled = !state.pt;
@@ -293,6 +311,7 @@ document.querySelectorAll('header .seg button').forEach(b => b.addEventListener(
   state.v = b.dataset.v; save(); renderToggles(); renderDetails();
   await load(state.v); applyScene();
 }));
+$('spin').addEventListener('change', e => { state.spin = e.target.checked; spinWait = 0; save(); });
 $('pt').addEventListener('change', e => { state.pt = e.target.checked; save(); renderToggles(); applyScene(); });
 $('spp').innerHTML = SPP.map(n => `<option value="${n}">${n}</option>`).join('');
 $('spp').addEventListener('change', e => { state.spp = +e.target.value; save(); });   // more: tracing carries on, fewer: it stops
@@ -342,10 +361,13 @@ async function start() {
   load(state.v === 'a' ? 'b' : 'a');                  // the other variant in the background
 }
 
+let lastFrame = 0;
 function frame(now) {
   requestAnimationFrame(frame);
   stepTween(now);
-  controls.update();
+  stepSpin(now);
+  controls.update(Math.min(0.1, (now - (lastFrame || now)) / 1000));   // seconds, so the turntable keeps its pace at any refresh rate
+  lastFrame = now;
   if (!ready) return;
   if (state.pt) {
     if (!sceneSet) { pathTracer.setScene(scene, camera); sceneSet = true; }
