@@ -42,11 +42,12 @@ CASE_WALL = 8.5              # make_case CLEAR + WALL: board edge to the case's 
 ZERO_W, ZERO_L, ZERO_ROW, ZERO_PIN0 = 18.0, 23.5, 15.24, 1.59
 ZERO_T, USB_UP, USB_IN, USB_W, USB_OUT, ZERO_BACK = 1.1, 3.24, 0.92, 9.58, 1.21, 1.0
 STACK_H = 2.0                # ConThrough XB-3-2: this board's bottom to the module's back
-TONGUE_HW = ZERO_ROW / 2 + 2.25   # tongue half width: the pin rows, their pads clear of the rounded tip
+TONGUE_HW = ZERO_ROW / 2 + 2.75   # tongue half width: the pin rows, their pads well clear of the rounded tip
 TONGUE_TIP_R, TONGUE_ROOT_R = 2.5, 1.5
 PIN_KEEP = 1.5               # printed plate's web this far from the pin tips poking up through the board
 SWITCH_Y = 4.5               # tact switch below the board's top edge, in the strip above the drum's bezel
 ENC_HOLE_KEEP = 2.6          # track keep-out round the wheel encoder's 3 mm square hole (half diagonal 2.1 + 0.3 + margin)
+WHEEL_RUN_Y, WHEEL_TURN_Y = 15.712, 7.975   # WHEEL_A as routed by hand: its run along the front, where it turns up
 SCREW_SPACING = 15.0         # case screws of its own at least this far from the keyboard's
 # RP2040-Zero pin rows, from the USB end (top view, USB up): J1 = left row, J2 = right row; net or None
 ZERO_LEFT = [('5V', None), ('GND', 'GND'), ('3V3', None), ('GP29', None), ('GP28', None), ('GP27', None),
@@ -178,7 +179,7 @@ def text(board, mm, s, x, y, layer, size, justify=None, mirror=False, angle=0):
 def pcb():
     import pcbnew
     from footprints import DRUM_W
-    from make_pcb import keepout, lib_path, mm, read_netlist
+    from make_pcb import keepout, lib_path, mm, pad, padnet, read_netlist, track
 
     g = geometry()
     src, o, key = g['src'], g['outline'], g['key']
@@ -236,6 +237,7 @@ def pcb():
     # outline: the right half's top-right corner, the F12 column on the left, the tongue into the left wall
     x0, y0, x1, y1, r = o['x0'], o['y0'], o['x1'], o['y1'], o['r']
     tx0, ty0, _, ty1 = g['tongue']
+    assert ty0 - TONGUE_ROOT_R >= y0 + r and ty1 + TONGUE_ROOT_R <= y1 - r, 'tongue root runs into the board corners'
     outline(board, mm, [(x0, y0, r), (x1, y0, r), (x1, y1, r), (x0, y1, r),
                         (x0, ty1, TONGUE_ROOT_R), (tx0, ty1, TONGUE_TIP_R), (tx0, ty0, TONGUE_TIP_R),
                         (x0, ty0, TONGUE_ROOT_R)])
@@ -270,6 +272,14 @@ def pcb():
     sw = place('SW1', sx - 3.25, sy - 2.25, 0)
     sw.Reference().SetVisible(False)
     text(board, mm, 'LAYER 1', sx + 6.5, sy, pcbnew.F_SilkS, 0.8)
+    # WHEEL_A as routed by hand on the back: 45 degrees off the RP2040-Zero's GP5, along the front, 45 degrees up
+    # and straight into the wheel encoder's A. Locked, so Freerouting routes the rest round it
+    p, a = pad(fps['J2'], '6'), pad(fps['ENC1'], 'A')
+    run, turn = mm(0, WHEEL_RUN_Y).y, mm(0, WHEEL_TURN_Y).y
+    pts = [p, pcbnew.VECTOR2I(p.x + run - p.y, run), pcbnew.VECTOR2I(a.x - (run - turn), run),
+           pcbnew.VECTOR2I(a.x, turn), a]
+    for s, e in zip(pts, pts[1:]):
+        track(board, s, e, pcbnew.B_Cu, padnet(fps['J2'], '6'), 0.2)
 
     for i, (x, y) in enumerate(g['holes'], 1):
         keepout(board, x, y)

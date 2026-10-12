@@ -15,6 +15,7 @@ WORK = os.environ.get('NRSK_WORK', '/private/tmp/claude-501/scratch-nrsk')
 POUR_CLEARANCE = 0.3      # GND copper to other nets [mm]
 POUR_MIN_WIDTH = 0.25     # thinnest GND copper kept [mm]
 STITCH_PITCH = 5.0        # grid of the vias tying the two GND faces together [mm]
+STITCH_EDGE = 1.0         # a stitching via's copper this far from the board edge, clear of the outline's routing [mm]
 VIA_D, VIA_DRILL = 0.6, 0.3
 
 
@@ -77,7 +78,7 @@ def pour(side):
     Vias go on a STITCH_PITCH grid, and also on a finer grid wherever no via is within 3/4 pitch, so that
     narrow pieces of copper boxed in by tracks get one too. A via is placed only where a ring a little wider than
     it lies in the copper of both faces (it then clears every other net by POUR_CLEARANCE) and its drill keeps
-    0.5 mm from every other hole. Copper still left unconnected is removed, and with it any via standing in it."""
+    0.5 mm from every other hole, and its copper STITCH_EDGE from the board edge. Copper still left unconnected is removed, and with it any via standing in it."""
     pcb = os.path.join(ROOT, side, f'nrsk-{side}.kicad_pcb')
     board = pcbnew.LoadBoard(pcb)
     gnd = board.FindNet('GND')
@@ -120,6 +121,13 @@ def pour(side):
              for fp in board.GetFootprints() for p in fp.Pads() if p.GetDrillSize().x > 0]
     holes += [(v.GetPosition(), v.GetDrillValue() / 2) for v in board.GetTracks() if v.Type() == pcbnew.PCB_VIA_T]
     gap = pcbnew.FromMM(0.5 + VIA_DRILL / 2)
+    edges = pcbnew.SHAPE_POLY_SET()
+    board.GetBoardPolygonOutlines(edges, False)
+    edge_keep = pcbnew.FromMM(VIA_D / 2 + STITCH_EDGE) ** 2
+
+    def near_edge(x, y):
+        return any(edges.Outline(i).SquaredDistance(pcbnew.VECTOR2I(x, y), True) < edge_keep
+                   for i in range(edges.OutlineCount()))
     stitch = []
     pitch = pcbnew.FromMM(STITCH_PITCH)
     for step, spacing in ((pitch, 0), (pitch // 4, pitch * 3 // 4)):   # 3/4 pitch: only where the grid left a gap
@@ -127,7 +135,8 @@ def pour(side):
             for y in range(bb.GetTop() + step // 2, bb.GetBottom(), step):
                 if spacing and any(math.hypot(x - v.x, y - v.y) < spacing for v in stitch):
                     continue
-                if any(math.hypot(x - h.x, y - h.y) - hr < gap for h, hr in holes) or not in_copper(x, y):
+                if any(math.hypot(x - h.x, y - h.y) - hr < gap for h, hr in holes) or near_edge(x, y) or \
+                        not in_copper(x, y):
                     continue
                 stitch.append(pcbnew.VECTOR2I(x, y))
                 holes.append((stitch[-1], pcbnew.FromMM(VIA_DRILL / 2)))
