@@ -3,56 +3,46 @@
 <title>nrsk Design Views</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;600&family=IBM+Plex+Mono:wght@400&display=swap">
 <style>
-/* Layout: one large stage (or A | B side by side) with the camera controls beside it, contact sheet and close-ups below */
+/* Layout: the 3D stage with its toolbar, then the close-up renders */
 :root{--bg:#eef1f4;--panel:#ffffff;--fg:#1b2129;--muted:#5d6773;--line:#c9d1da;--accent:#1f6b3a;--on-accent:#ffffff;
- --key:#f24d00;--stage:#f4f4f2;
+ --key:#f24d00;--stage:#d9d9d9;
  --sans:"IBM Plex Sans JP",system-ui,-apple-system,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#14181d;--panel:#1d232a;--fg:#e6eaee;--muted:#9aa5b1;--line:#34404c;--accent:#5fc285;--on-accent:#0d1a12;--key:#ff7a3d;--stage:#2a2f35;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#14181d;--panel:#1d232a;--fg:#e6eaee;--muted:#9aa5b1;--line:#34404c;--accent:#5fc285;--on-accent:#0d1a12;--key:#ff7a3d;--stage:#2a2f35;color-scheme:dark}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#14181d;--panel:#1d232a;--fg:#e6eaee;--muted:#9aa5b1;--line:#34404c;--accent:#5fc285;--on-accent:#0d1a12;--key:#ff7a3d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14181d;--panel:#1d232a;--fg:#e6eaee;--muted:#9aa5b1;--line:#34404c;--accent:#5fc285;--on-accent:#0d1a12;--key:#ff7a3d;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.6 var(--sans)}
 main{max-width:1320px;margin:0 auto;padding:28px 20px 64px;display:grid;gap:36px}
 h1{font-size:22px;font-weight:600;margin:0;text-wrap:balance}
 h2{font-size:15px;font-weight:600;margin:0 0 12px;text-wrap:balance}
 header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:16px}
-header p{margin:4px 0 0;color:var(--muted);max-width:62ch}
+header p{margin:4px 0 0;color:var(--muted);max-width:66ch}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
 .seg button{font:inherit;border:0;background:none;color:var(--fg);padding:7px 14px;cursor:pointer;white-space:nowrap}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
-.seg button:disabled{color:var(--line);cursor:default}
-button:focus-visible,.thumb:focus-visible,.dot:focus-visible,.stage:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.viewer{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:20px;align-items:start}
-.stages{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
-.stages.two{grid-template-columns:repeat(2,minmax(0,1fr))}
-figure{margin:0;min-width:0}
-.stage{position:relative;aspect-ratio:3/2;max-width:100%;background:var(--stage);border-radius:6px;overflow:hidden;cursor:zoom-in;touch-action:pan-y;user-select:none}
-.stage img{display:block;width:100%;height:100%;object-fit:cover;-webkit-user-drag:none}
-.stage .tag{position:absolute;left:10px;top:10px;font:12px/1 var(--mono);background:var(--panel);color:var(--fg);padding:5px 7px;border-radius:4px;opacity:.92}
-figcaption{font-size:12px;color:var(--muted);margin-top:6px}
-.controls{display:grid;gap:18px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px}
-.label{font-size:11px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
-.compass{width:100%;max-width:188px;display:block;margin:0 auto}
-.compass .ring{fill:none;stroke:var(--line)}
-.compass .kb{fill:var(--stage);stroke:var(--muted)}
-.compass .front{fill:var(--muted);font:9px var(--mono)}
-.dot{cursor:pointer}
-.dot circle{fill:var(--panel);stroke:var(--muted);stroke-width:1.5}
-.dot.on circle{fill:var(--key);stroke:var(--key)}
-.dot.off{cursor:default}.dot.off circle{stroke:var(--line);stroke-dasharray:2 2}
-.elev{display:grid;gap:4px}
-.elev button{font:inherit;text-align:left;border:1px solid var(--line);border-radius:6px;background:none;color:var(--fg);padding:6px 10px;cursor:pointer;display:flex;justify-content:space-between;gap:8px}
-.elev button span:last-child{font-family:var(--mono);color:var(--muted)}
-.elev button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
-.readout{font:13px/1.5 var(--mono);font-variant-numeric:tabular-nums}
+button:focus-visible,.stage canvas:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.viewer{display:grid;gap:10px}
+/* the stage stays a light studio in dark mode too: the floor and the lighting are part of the picture */
+.stage{position:relative;aspect-ratio:16/9;min-height:320px;max-height:calc(100dvh - 120px);width:100%;background:var(--stage);border-radius:8px;overflow:hidden}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+.stage canvas:active{cursor:grabbing}
+.stage:fullscreen{border-radius:0;max-height:none;aspect-ratio:auto}
+.status{position:absolute;left:10px;bottom:10px;font:12px/1 var(--mono);font-variant-numeric:tabular-nums;background:rgba(255,255,255,.86);color:#1b2129;padding:6px 8px;border-radius:4px;pointer-events:none}
+.loading{position:absolute;inset:0;display:grid;place-items:center;color:#5d6773;font-size:13px;text-align:center;padding:16px}
+.loading[hidden]{display:none}
+.tools{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:13px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--fg);padding:5px 12px;cursor:pointer}
+.chip:hover{border-color:var(--muted)}
+.toggles{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;user-select:none}
+.toggle input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+.toggle select{font:inherit;font-size:13px;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
 .hint{font-size:12px;color:var(--muted);margin:0}
-.sheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
-.thumb{border:0;padding:0;background:none;color:var(--fg);font:inherit;text-align:left;cursor:pointer;min-width:0}
-.thumb img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:5px;background:var(--stage);border:2px solid transparent}
-.thumb[aria-current="true"] img{border-color:var(--key)}
-.thumb span{display:block;font-size:12px;color:var(--muted);margin-top:3px}
 .details{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
 .shot{border:0;padding:0;background:none;color:inherit;font:inherit;text-align:left;cursor:zoom-in;min-width:0}
+.shot figure{margin:0}
+.shot figcaption{font-size:12px;color:var(--muted);margin-top:6px}
 .details img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:5px;background:var(--stage)}
 .shot:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 /* lightbox: the image as large as the window allows; click it for 100 %, ← → or swipe for the next one */
@@ -74,48 +64,41 @@ body:has(.lb[open]){overflow:hidden}
 .lb-nav:disabled{display:none}
 .lb button:focus-visible{outline:2px solid #5fc285;outline-offset:2px}
 .empty{color:var(--muted)}
-@media (max-width:860px){.viewer{grid-template-columns:minmax(0,1fr)}.controls{grid-template-columns:1fr 1fr}.controls .wide{grid-column:1/-1}}
-@media (max-width:560px){.lb .lb-nav{width:36px;height:52px}.stages.two{grid-template-columns:minmax(0,1fr)}.controls{grid-template-columns:minmax(0,1fr)}.compass{max-width:150px}.seg button{padding:7px 10px}}
-@media (prefers-reduced-motion:no-preference){.stage img{transition:opacity .12s}}
+@media (max-width:640px){main{padding:20px 16px 48px}.stage{aspect-ratio:4/5}.lb .lb-nav{width:36px;height:52px}.seg button{padding:7px 10px}}
 </style>
 <main>
   <header>
     <div>
       <h1>nrsk デザイン確認</h1>
-      <p>Blender（Cycles）で筐体 A・B を周囲 15 か所から撮った完成イメージです。方位と仰角を選ぶか、画像を左右にドラッグして視点を回します。</p>
+      <p>完成した筐体 A・B を 3D で見られます。形状と材質、照明は Blender のレンダリングと同じものです。手を止めるとブラウザ上でパストレーシングが進み、写真に近い画になります。</p>
     </div>
     <div class="seg" role="group" aria-label="筐体">
-      <button id="v-a" data-v="a">A アクリル</button>
-      <button id="v-b" data-v="b">B プリント</button>
-      <button id="v-ab" data-v="ab">並べて比較</button>
+      <button data-v="a">A アクリル</button>
+      <button data-v="b">B プリント</button>
     </div>
   </header>
 
-  <section class="viewer" aria-label="視点">
-    <div class="stages" id="stages"></div>
-    <div class="controls">
-      <div>
-        <div class="label">方位</div>
-        <svg class="compass" id="compass" viewBox="-100 -100 200 200" role="group" aria-label="方位"></svg>
-      </div>
-      <div>
-        <div class="label">仰角</div>
-        <div class="elev" id="elev"></div>
-      </div>
-      <div class="wide">
-        <div class="readout" id="readout"></div>
-        <p class="hint">← → で方位、↑ ↓ で仰角を切り替えます。画像をクリックすると拡大します。</p>
+  <section class="viewer" aria-label="3D ビュー">
+    <div class="stage" id="stage">
+      <canvas id="view" tabindex="0" aria-label="キーボードの 3D ビュー。ドラッグで回転、ホイールで拡大"></canvas>
+      <div class="loading" id="loading">読み込んでいます…</div>
+      <div class="status" id="status" hidden></div>
+    </div>
+    <div class="tools">
+      <div class="presets" id="presets" role="group" aria-label="視点"></div>
+      <div class="toggles">
+        <label class="toggle"><input type="checkbox" id="pt"> パストレース</label>
+        <label class="toggle">サンプル数 <select id="spp"></select></label>
+        <label class="toggle"><input type="checkbox" id="dof"> ボケ</label>
+        <label class="toggle"><input type="checkbox" id="cables"> ケーブル</label>
+        <button class="chip" id="full">全画面</button>
       </div>
     </div>
+    <p class="hint">ドラッグで回転、右ドラッグか 2 本指で移動、ホイールかピンチで拡大します。← → ↑ ↓ で 15° ずつ回ります。パストレースは手を止めている間だけ進み、選んだサンプル数で止まります。多いほどノイズが減りますが、時間がかかります。</p>
   </section>
 
   <section>
-    <h2 id="sheet-title">全視点</h2>
-    <div class="sheet" id="sheet"></div>
-  </section>
-
-  <section>
-    <h2>寄りの画像</h2>
+    <h2>寄りの画像（Blender）</h2>
     <div class="details" id="details"></div>
   </section>
 </main>
@@ -129,131 +112,263 @@ body:has(.lb[open]){overflow:hidden}
   <button class="lb-nav prev" id="lb-prev" aria-label="前の画像">‹</button>
   <button class="lb-nav next" id="lb-next" aria-label="次の画像">›</button>
 </dialog>
-<script>
-const DATA = {"views": {"a": {"0-10": "img/views/view-a0-e10-a.jpg", "0-30": "img/views/view-a0-e30-a.jpg", "0-60": "img/views/view-a0-e60-a.jpg", "0-90": "img/views/view-a0-e90-a.jpg", "135-30": "img/views/view-a135-e30-a.jpg", "180-10": "img/views/view-a180-e10-a.jpg", "180-30": "img/views/view-a180-e30-a.jpg", "180-60": "img/views/view-a180-e60-a.jpg", "225-30": "img/views/view-a225-e30-a.jpg", "270-10": "img/views/view-a270-e10-a.jpg", "270-30": "img/views/view-a270-e30-a.jpg", "315-30": "img/views/view-a315-e30-a.jpg", "45-30": "img/views/view-a45-e30-a.jpg", "90-10": "img/views/view-a90-e10-a.jpg", "90-30": "img/views/view-a90-e30-a.jpg"}, "b": {"0-10": "img/views/view-a0-e10-b.jpg", "0-30": "img/views/view-a0-e30-b.jpg", "0-60": "img/views/view-a0-e60-b.jpg", "0-90": "img/views/view-a0-e90-b.jpg", "135-30": "img/views/view-a135-e30-b.jpg", "180-10": "img/views/view-a180-e10-b.jpg", "180-30": "img/views/view-a180-e30-b.jpg", "180-60": "img/views/view-a180-e60-b.jpg", "225-30": "img/views/view-a225-e30-b.jpg", "270-10": "img/views/view-a270-e10-b.jpg", "270-30": "img/views/view-a270-e30-b.jpg", "315-30": "img/views/view-a315-e30-b.jpg", "45-30": "img/views/view-a45-e30-b.jpg", "90-10": "img/views/view-a90-e10-b.jpg", "90-30": "img/views/view-a90-e30-b.jpg"}}, "details": {"a": [["全体", "img/render-hero-top-acrylic-lowpan.png"], ["全体・ケーブルなし", "img/details/hero-nocable-a.jpg"], ["打鍵する位置から", "img/details/user-a.jpg"], ["背面", "img/details/back-a.jpg"], ["背面・ケーブルなし", "img/details/back-nocable-a.jpg"], ["側面（厚み）", "img/details/profile-a.jpg"], ["手前の角", "img/details/corner-a.jpg"], ["キーキャップ", "img/details/keys-a.jpg"], ["OLED", "img/render-oled-top-acrylic-lowpan.png"], ["左のホイール", "img/render-wheel-left-top-acrylic-lowpan.png"], ["右のホイール", "img/details/wheel-right-a.jpg"], ["ドラム式ダイヤル", "img/details/drum-a.jpg"], ["内側の角とケーブル", "img/details/detail-a.jpg"], ["USB-C × 2", "img/details/ports-a.jpg"], ["USB-C × 2・ケーブルなし", "img/details/ports-nocable-a.jpg"]], "b": [["全体", "img/render-hero-top-print.png"], ["全体・ケーブルなし", "img/details/hero-nocable-b.jpg"], ["打鍵する位置から", "img/details/user-b.jpg"], ["背面", "img/details/back-b.jpg"], ["背面・ケーブルなし", "img/details/back-nocable-b.jpg"], ["側面（厚み）", "img/details/profile-b.jpg"], ["手前の角", "img/details/corner-b.jpg"], ["キーキャップ", "img/details/keys-b.jpg"], ["OLED", "img/render-oled-top-print.png"], ["左のホイール", "img/render-wheel-left-top-print.png"], ["右のホイール", "img/details/wheel-right-b.jpg"], ["ドラム式ダイヤル", "img/details/drum-b.jpg"], ["内側の角とケーブル", "img/details/detail-b.jpg"], ["USB-C × 2", "img/details/ports-b.jpg"], ["USB-C × 2・ケーブルなし", "img/details/ports-nocable-b.jpg"]]}};
-const AZ_NAME = {0:'正面', 45:'右前', 90:'右', 135:'右後ろ', 180:'背面', 225:'左後ろ', 270:'左', 315:'左前'};
-const EL_NAME = {10:'低い視点', 30:'標準', 60:'見下ろし', 90:'真上'};
-const V_NAME = {a:'A アクリル', b:'B 3D プリント'};
-const keys = new Set(Object.values(DATA.views).flatMap(o => Object.keys(o)));
-const views = [...keys].map(k => k.split('-').map(Number)).sort((p, q) => q[1] - p[1] || p[0] - q[0]);
-const elevs = [...new Set(views.map(v => v[1]))].sort((a, b) => b - a);
-const azsAt = el => views.filter(v => v[1] === el).map(v => v[0]).sort((a, b) => a - b);
-const state = {v: 'a', az: 45, el: 30};
-try { Object.assign(state, JSON.parse(localStorage.getItem('nrsk-views') || '{}')); } catch (e) {}
-if (!keys.has(`${state.az}-${state.el}`)) { state.az = views[0]?.[0] ?? 0; state.el = views[0]?.[1] ?? 30; }
-if (!(state.v in DATA.views) && state.v !== 'ab') state.v = Object.keys(DATA.views)[0] || 'a';
+<script type="importmap">
+{"imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
+  "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
+  "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.9.15/build/index.module.js",
+  "three-gpu-pathtracer": "https://cdn.jsdelivr.net/npm/three-gpu-pathtracer@0.0.24/build/index.module.js"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
+import {HDRLoader} from 'three/addons/loaders/HDRLoader.js';
+import {WebGLPathTracer, PhysicalCamera} from 'three-gpu-pathtracer';
 
+const DATA = {"details": {"a": [["全体", "img/render-hero-top-acrylic-lowpan.png"], ["全体・ケーブルなし", "img/details/hero-nocable-a.jpg"], ["打鍵する位置から", "img/details/user-a.jpg"], ["背面", "img/details/back-a.jpg"], ["背面・ケーブルなし", "img/details/back-nocable-a.jpg"], ["側面（厚み）", "img/details/profile-a.jpg"], ["手前の角", "img/details/corner-a.jpg"], ["キーキャップ", "img/details/keys-a.jpg"], ["OLED", "img/render-oled-top-acrylic-lowpan.png"], ["左のホイール", "img/render-wheel-left-top-acrylic-lowpan.png"], ["右のホイール", "img/details/wheel-right-a.jpg"], ["ドラム式ダイヤル", "img/details/drum-a.jpg"], ["内側の角とケーブル", "img/details/detail-a.jpg"], ["USB-C × 2", "img/details/ports-a.jpg"], ["USB-C × 2・ケーブルなし", "img/details/ports-nocable-a.jpg"]], "b": [["全体", "img/render-hero-top-print.png"], ["全体・ケーブルなし", "img/details/hero-nocable-b.jpg"], ["打鍵する位置から", "img/details/user-b.jpg"], ["背面", "img/details/back-b.jpg"], ["背面・ケーブルなし", "img/details/back-nocable-b.jpg"], ["側面（厚み）", "img/details/profile-b.jpg"], ["手前の角", "img/details/corner-b.jpg"], ["キーキャップ", "img/details/keys-b.jpg"], ["OLED", "img/render-oled-top-print.png"], ["左のホイール", "img/render-wheel-left-top-print.png"], ["右のホイール", "img/details/wheel-right-b.jpg"], ["ドラム式ダイヤル", "img/details/drum-b.jpg"], ["内側の角とケーブル", "img/details/detail-b.jpg"], ["USB-C × 2", "img/details/ports-b.jpg"], ["USB-C × 2・ケーブルなし", "img/details/ports-nocable-b.jpg"]]}};
+const V_NAME = {a: 'A アクリル', b: 'B 3D プリント'};
+const SPP = [16, 32, 64, 128, 256, 512, 1024];   // choices for the path tracer's sample count
+const SHADOW_SIZE = 1.2, FLOOR_SIZE = 12;        // m; the shadow map covers SHADOW_SIZE square around the origin
+const TARGET = new THREE.Vector3(0, 0.008, 0);
+// viewpoints: azimuth (0 = from the front, 90 = from the right), elevation, distance (m), lens (mm, 36 mm film)
+const PRESETS = [
+  ['斜め前', -8, 34, 0.98, 62], ['打鍵する位置', -10, 37, 0.52, 40], ['正面', 0, 8, 0.85, 62], ['右', 90, 22, 0.85, 62],
+  ['背面', 180, 28, 0.85, 62], ['左', 270, 22, 0.85, 62], ['真上', 0, 89.9, 0.95, 62],
+];
 const $ = id => document.getElementById(id);
-const name = (az, el) => el === 90 ? '真上' : `${AZ_NAME[az] ?? az + '°'}・${EL_NAME[el] ?? el + '°'}`;
-const variants = () => state.v === 'ab' ? ['a', 'b'] : [state.v];
+// path tracing is on by default, except on phones and tablets (it keeps the GPU busy)
+const state = {v: 'a', pt: !matchMedia('(pointer: coarse)').matches, dof: true, cables: true, spp: 64};
+try { Object.assign(state, JSON.parse(localStorage.getItem('nrsk-views3d') || '{}')); } catch (e) {}
+const save = () => { try { localStorage.setItem('nrsk-views3d', JSON.stringify(state)); } catch (e) {} };
 
-function buildCompass() {
-  const svg = $('compass'), ns = 'http://www.w3.org/2000/svg';
-  svg.innerHTML = '<circle class="ring" r="72"/>' +
-    '<rect class="kb" x="-40" y="-14" width="34" height="26" rx="3" transform="rotate(-6 -23 -1)"/>' +
-    '<rect class="kb" x="6" y="-14" width="38" height="26" rx="3" transform="rotate(6 25 -1)"/>' +
-    '<text class="front" x="0" y="40" text-anchor="middle">FRONT</text>';
-  for (let az = 0; az < 360; az += 45) {
-    const a = az * Math.PI / 180, g = document.createElementNS(ns, 'g');
-    g.setAttribute('class', 'dot'); g.dataset.az = az; g.setAttribute('tabindex', '0'); g.setAttribute('role', 'button');
-    g.setAttribute('aria-label', AZ_NAME[az]);
-    g.innerHTML = `<circle cx="${(72 * Math.sin(a)).toFixed(1)}" cy="${(72 * Math.cos(a)).toFixed(1)}" r="9"/>`;
-    g.addEventListener('click', () => pick(az, state.el));
-    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(az, state.el); } });
-    svg.appendChild(g);
+// --- renderer, camera, controls ----------------------------------------------------------
+const canvas = $('view');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({canvas, antialias: true, alpha: true});
+} catch (e) {
+  $('loading').textContent = 'このブラウザでは WebGL 2 が使えないため、3D 表示ができません。下の寄りの画像をご覧ください。';
+  throw e;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setClearColor(0x000000, 0);
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 0.22;                 // matched by eye to the Cycles renders
+
+const scene = new THREE.Scene();
+scene.environmentRotation.y = Math.PI / 2;           // Blender's equirect seam vs three's
+const camera = new PhysicalCamera(30, 16 / 9, 0.01, 50);
+camera.filmGauge = 36;
+camera.apertureBlades = 6;
+const controls = new OrbitControls(camera, canvas);
+controls.target.copy(TARGET);
+controls.enableDamping = true;
+controls.dampingFactor = 0.12;
+controls.minDistance = 0.12;
+controls.maxDistance = 2.5;
+controls.maxPolarAngle = Math.PI / 2 - 0.01;         // stay above the floor
+controls.screenSpacePanning = true;
+
+const pathTracer = new WebGLPathTracer(renderer);
+pathTracer.bounces = 8;
+pathTracer.transmissiveBounces = 8;
+pathTracer.filterGlossyFactor = 0.5;
+pathTracer.minSamples = 3;
+pathTracer.renderDelay = 120;
+pathTracer.fadeDuration = 300;
+pathTracer.tiles.set(2, 2);
+
+// floor: lit like the studio floor; the raster view darkens it with the baked shadow, the path tracer casts its own
+const floorTex = {};
+const floorMat = new THREE.MeshStandardMaterial({color: new THREE.Color('#f7f7f7'), roughness: 0.9, aoMapIntensity: 1});
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_SIZE, FLOOR_SIZE).rotateX(-Math.PI / 2), floorMat);
+scene.add(floor);
+
+const models = {};
+let dirty = true, ready = false, sceneSet = false;
+
+function shadowKey() { return `${state.v}${state.cables ? '' : '-nocable'}`; }
+
+// what is not shown is taken out of the scene, not hidden: the path tracer would still trace hidden meshes
+const cables = {};
+function applyScene() {
+  for (const [v, root] of Object.entries(models)) {
+    if (v === state.v) scene.add(root); else scene.remove(root);
+    for (const c of cables[v]) { if (state.cables) root.add(c); else root.remove(c); }
+  }
+  // the baked shadow only in the raster view: the path tracer would darken the floor twice
+  floorMat.aoMap = state.pt ? null : floorTex[shadowKey()] || null;
+  floorMat.needsUpdate = true;
+  sceneSet = false;
+  dirty = true;
+}
+
+function applyCamera() {
+  camera.focusDistance = camera.position.distanceTo(controls.target);
+  camera.fStop = state.dof ? 8 : 1e6;
+  camera.updateProjectionMatrix();
+  if (sceneSet) pathTracer.updateCamera();
+  dirty = true;
+}
+
+function resize() {
+  const r = canvas.parentElement.getBoundingClientRect();
+  renderer.setSize(r.width, r.height, false);
+  camera.aspect = r.width / r.height;
+  applyCamera();
+}
+new ResizeObserver(resize).observe(canvas.parentElement);
+
+// --- viewpoints ----------------------------------------------------------------------------
+let tween = null;
+function spherical(az, el, dist) {
+  const a = THREE.MathUtils.degToRad(az), e = THREE.MathUtils.degToRad(el);
+  return new THREE.Vector3(Math.sin(a) * Math.cos(e), Math.sin(e), Math.cos(a) * Math.cos(e)).multiplyScalar(dist).add(TARGET);
+}
+function goTo(pos, target, lens) {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const from = {pos: camera.position.clone(), target: controls.target.clone(), lens: camera.getFocalLength()};
+  tween = {from, to: {pos, target, lens}, t0: performance.now(), dur: reduce ? 0 : 450};
+}
+function stepTween(now) {
+  if (!tween) return;
+  const {from, to, t0, dur} = tween;
+  const k = dur ? Math.min(1, (now - t0) / dur) : 1, e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+  // round the target, not straight through the model
+  const s0 = new THREE.Spherical().setFromVector3(from.pos.clone().sub(from.target));
+  const s1 = new THREE.Spherical().setFromVector3(to.pos.clone().sub(to.target));
+  let dt = s1.theta - s0.theta;
+  if (dt > Math.PI) dt -= 2 * Math.PI;
+  if (dt < -Math.PI) dt += 2 * Math.PI;
+  const s = new THREE.Spherical(THREE.MathUtils.lerp(s0.radius, s1.radius, e), THREE.MathUtils.lerp(s0.phi, s1.phi, e), s0.theta + dt * e);
+  controls.target.lerpVectors(from.target, to.target, e);
+  camera.position.setFromSpherical(s).add(controls.target);
+  camera.setFocalLength(THREE.MathUtils.lerp(from.lens, to.lens, e));
+  camera.lookAt(controls.target);
+  applyCamera();
+  if (k >= 1) tween = null;
+}
+// the presets are framed for 16:9; step back on narrower stages so both halves stay in view
+const fit = () => Math.max(1, 16 / 9 / camera.aspect);
+function preset(i) {
+  const [, az, el, dist, lens] = PRESETS[i];
+  goTo(spherical(az, el, dist * fit()), TARGET.clone(), lens);
+}
+function orbitBy(dAz, dEl) {
+  const off = camera.position.clone().sub(controls.target), s = new THREE.Spherical().setFromVector3(off);
+  s.theta += THREE.MathUtils.degToRad(dAz);
+  s.phi = THREE.MathUtils.clamp(s.phi - THREE.MathUtils.degToRad(dEl), 0.001, controls.maxPolarAngle);
+  goTo(new THREE.Vector3().setFromSpherical(s).add(controls.target), controls.target.clone(), camera.getFocalLength());
+}
+
+$('presets').innerHTML = PRESETS.map(([n], i) => `<button class="chip" data-i="${i}">${n}</button>`).join('');
+$('presets').querySelectorAll('button').forEach(b => b.addEventListener('click', () => preset(+b.dataset.i)));
+const [, az0, el0, d0, lens0] = PRESETS[0];
+camera.setFocalLength(lens0);
+resize();
+camera.position.copy(spherical(az0, el0, d0 * fit()));
+camera.lookAt(TARGET);
+
+controls.addEventListener('start', () => { tween = null; });
+controls.addEventListener('change', applyCamera);
+canvas.addEventListener('keydown', e => {
+  const k = {ArrowLeft: [-15, 0], ArrowRight: [15, 0], ArrowUp: [0, 15], ArrowDown: [0, -15]}[e.key];
+  if (k) { e.preventDefault(); orbitBy(...k); }
+});
+
+// --- toggles -------------------------------------------------------------------------------
+function renderToggles() {
+  document.querySelectorAll('header .seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === state.v));
+  $('pt').checked = state.pt; $('dof').checked = state.dof; $('cables').checked = state.cables;
+  if (!SPP.includes(state.spp)) state.spp = 64;
+  $('spp').value = state.spp;
+  $('dof').disabled = $('spp').disabled = !state.pt;
+  $('status').hidden = !state.pt || !ready;
+}
+document.querySelectorAll('header .seg button').forEach(b => b.addEventListener('click', async () => {
+  state.v = b.dataset.v; save(); renderToggles(); renderDetails();
+  await load(state.v); applyScene();
+}));
+$('pt').addEventListener('change', e => { state.pt = e.target.checked; save(); renderToggles(); applyScene(); });
+$('spp').innerHTML = SPP.map(n => `<option value="${n}">${n}</option>`).join('');
+$('spp').addEventListener('change', e => { state.spp = +e.target.value; save(); });   // more: tracing carries on, fewer: it stops
+$('dof').addEventListener('change', e => { state.dof = e.target.checked; save(); applyCamera(); });
+$('cables').addEventListener('change', e => { state.cables = e.target.checked; save(); applyScene(); });
+$('full').addEventListener('click', () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else $('stage').requestFullscreen?.();
+});
+
+// --- loading -------------------------------------------------------------------------------
+const draco = new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/libs/draco/gltf/');
+const gltf = new GLTFLoader().setDRACOLoader(draco);
+const texLoader = new THREE.TextureLoader();
+const pending = {};
+function load(v) {
+  return pending[v] ??= Promise.all([
+    gltf.loadAsync(`3d/${v}.glb`, e => {
+      if (!ready && e.total) $('loading').textContent = `読み込んでいます… ${Math.round(100 * e.loaded / e.total)}%`;
+    }),
+    ...['', '-nocable'].map(s => texLoader.loadAsync(`3d/shadow-${v}${s}.jpg`).then(t => {
+      t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+      t.repeat.set(FLOOR_SIZE / SHADOW_SIZE, FLOOR_SIZE / SHADOW_SIZE);
+      t.offset.set(0.5 - FLOOR_SIZE / SHADOW_SIZE / 2, 0.5 - FLOOR_SIZE / SHADOW_SIZE / 2);
+      floorTex[v + s] = t;
+    })),
+  ]).then(([g]) => {
+    models[v] = g.scene;
+    cables[v] = g.scene.children.filter(o => o.name.startsWith('cables'));
+    // clear acrylic and the half mirror: solid glass for the path tracer, but they don't block its shadow rays, or
+    // the board under the plate would only get light by chance (black at a few dozen samples)
+    g.scene.traverse(o => {
+      if (o.material?.transmission) Object.assign(o.material, {thickness: 0.0015, castShadow: false});
+    });
+  });
+}
+
+async function start() {
+  const env = await new HDRLoader().loadAsync('3d/studio.hdr');
+  env.mapping = THREE.EquirectangularReflectionMapping;
+  scene.environment = env;
+  await load(state.v);
+  applyScene();
+  ready = true;
+  $('loading').hidden = true;
+  renderToggles();
+  load(state.v === 'a' ? 'b' : 'a');                  // the other variant in the background
+}
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  stepTween(now);
+  controls.update();
+  if (!ready) return;
+  if (state.pt) {
+    if (!sceneSet) { pathTracer.setScene(scene, camera); sceneSet = true; }
+    if (dirty) { pathTracer.reset(); dirty = false; }
+    if (pathTracer.samples < state.spp) pathTracer.renderSample();
+    $('status').textContent = `${Math.floor(Math.min(pathTracer.samples, state.spp))} / ${state.spp} spp`;
+  } else if (dirty) {
+    renderer.render(scene, camera);
+    dirty = false;
   }
 }
 
-function buildElev() {
-  $('elev').innerHTML = elevs.map(el =>
-    `<button id="el-${el}" data-el="${el}"><span>${EL_NAME[el] ?? ''}</span><span>${el}°</span></button>`).join('');
-  $('elev').querySelectorAll('button').forEach(b => b.addEventListener('click', () => pick(state.az, +b.dataset.el)));
-}
+start().catch(e => {
+  console.error(e);
+  $('loading').hidden = false;
+  $('loading').textContent = 'モデルを読み込めませんでした。docs/views.html はローカルの Web サーバー経由で開いてください（python3 -m http.server -d docs）。';
+});
+requestAnimationFrame(frame);
+if (location.hash === '#debug') window.nrsk = {THREE, scene, camera, controls, renderer, pathTracer, models, state, applyScene, applyCamera};
 
-function nearestAz(az, el) {
-  const list = azsAt(el);
-  const d = x => Math.min(Math.abs(x - az), 360 - Math.abs(x - az));
-  return list.reduce((best, x) => d(x) < d(best) ? x : best, list[0]);
-}
-
-function pick(az, el) {
-  if (!keys.has(`${az}-${el}`)) az = nearestAz(az, el);
-  state.az = az; state.el = el;
-  render();
-}
-
-function step(dir) {
-  const list = azsAt(state.el);
-  if (list.length < 2) return;
-  const i = list.indexOf(state.az);
-  pick(list[(i + dir + list.length) % list.length], state.el);
-}
-
-function stepElev(dir) {
-  const i = elevs.indexOf(state.el), j = i - dir;
-  if (j >= 0 && j < elevs.length) pick(state.az, elevs[j]);
-}
-
-function src(v, az, el) { return DATA.views[v]?.[`${az}-${el}`]; }
-
-function renderStages() {
-  const box = $('stages'), vs = variants();
-  box.className = 'stages' + (vs.length > 1 ? ' two' : '');
-  if (box.children.length !== vs.length) {
-    box.innerHTML = vs.map(v => `<figure><div class="stage" data-v="${v}"><img alt=""><span class="tag"></span></div><figcaption></figcaption></figure>`).join('');
-    box.querySelectorAll('.stage').forEach(dragToTurn);
-  }
-  box.querySelectorAll('figure').forEach((fig, i) => {
-    const v = vs[i], s = fig.querySelector('.stage'), img = s.querySelector('img'), url = src(v, state.az, state.el);
-    s.dataset.v = v;
-    if (url && img.getAttribute('src') !== url) img.src = url;
-    img.hidden = !url;
-    img.alt = `${V_NAME[v]}、${name(state.az, state.el)}`;
-    s.querySelector('.tag').textContent = vs.length > 1 ? V_NAME[v] : `${state.az}° / ${state.el}°`;
-    fig.querySelector('figcaption').textContent = url ? '' : 'この視点の画像はまだありません（gen/render_views.sh で描画）';
-  });
-}
-
-function renderControls() {
-  const avail = azsAt(state.el);
-  $('compass').querySelectorAll('.dot').forEach(g => {
-    const az = +g.dataset.az, ok = avail.includes(az) && state.el !== 90;
-    g.classList.toggle('on', az === state.az && state.el !== 90);
-    g.classList.toggle('off', !ok);
-    g.setAttribute('aria-pressed', az === state.az);
-    g.setAttribute('aria-disabled', !ok);
-  });
-  $('elev').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.el === state.el));
-  document.querySelectorAll('header .seg button').forEach(b => {
-    b.setAttribute('aria-pressed', b.dataset.v === state.v);
-    b.disabled = b.dataset.v !== 'ab' && !(b.dataset.v in DATA.views);
-  });
-  $('readout').textContent = `${name(state.az, state.el)}　方位 ${state.az}° 仰角 ${state.el}°`;
-}
-
-function renderSheet() {
-  const v = state.v === 'ab' ? 'a' : state.v;
-  $('sheet-title').textContent = `全視点（${V_NAME[v]}）`;
-  const list = views.filter(([az, el]) => src(v, az, el));
-  $('sheet').innerHTML = list.length ? list.map(([az, el]) =>
-    `<button class="thumb" data-az="${az}" data-el="${el}" aria-current="${az === state.az && el === state.el}">
-       <img loading="lazy" src="${src(v, az, el)}" alt="${name(az, el)}"><span>${name(az, el)}　${az}° / ${el}°</span></button>`).join('')
-    : '<p class="empty">まだ描画されていません。gen/render_views.sh を実行してください。</p>';
-  $('sheet').querySelectorAll('.thumb').forEach((b, i) => b.addEventListener('click', () => openViews(v, i)));
-}
-
-// every orbit view of one variant in the lightbox, starting at index i; the stage follows along
-function openViews(v, i) {
-  const list = views.filter(([az, el]) => src(v, az, el));
-  lightbox(list.map(([az, el]) => ({src: src(v, az, el), cap: `${V_NAME[v]}・${name(az, el)}　${az}° / ${el}°`})), i,
-    j => pick(...list[j]));
-}
-
+// --- close-ups -----------------------------------------------------------------------------
 function renderDetails() {
-  // A | B: the same shot of both variants next to each other
-  const per = variants().map(v => (DATA.details[v] || []).map(([t, url]) => ({src: url, cap: `${V_NAME[v]}・${t}`, t})));
-  const labels = [...new Set(per.flat().map(d => d.t))];
-  const items = labels.flatMap(t => per.map(list => list.find(d => d.t === t)).filter(Boolean));
+  const items = (DATA.details[state.v] || []).map(([t, url]) => ({src: url, cap: `${V_NAME[state.v]}・${t}`}));
   $('details').innerHTML = items.map((d, i) =>
     `<button class="shot" data-i="${i}"><figure><img loading="lazy" src="${d.src}" alt="${d.cap}"><figcaption>${d.cap}</figcaption></figure></button>`).join('')
     || '<p class="empty">寄りの画像はありません。</p>';
@@ -310,53 +425,10 @@ function setupLightbox() {
   });
   dlg.addEventListener('close', () => { lb.onShow = null; body.classList.remove('zoomed'); });
 }
-
-let lastV = null;
-function render() {
-  renderStages(); renderControls();
-  if (lastV !== state.v) { renderSheet(); renderDetails(); preload(); lastV = state.v; }
-  else $('sheet').querySelectorAll('.thumb').forEach(b =>
-    b.setAttribute('aria-current', +b.dataset.az === state.az && +b.dataset.el === state.el));
-  try { localStorage.setItem('nrsk-views', JSON.stringify(state)); } catch (e) {}
-}
-
-function preload() {
-  variants().forEach(v => Object.values(DATA.views[v] || {}).forEach(u => { new Image().src = u; }));
-}
-
-function dragToTurn(el) {
-  let x0 = null, moved = false;
-  el.addEventListener('pointerdown', e => { x0 = e.clientX; moved = false; el.setPointerCapture(e.pointerId); });
-  el.addEventListener('pointermove', e => {
-    if (x0 === null) return;
-    const dx = e.clientX - x0;
-    if (Math.abs(dx) > 6) { moved = true; el.style.cursor = 'grabbing'; }
-    if (Math.abs(dx) > 60) { step(dx < 0 ? 1 : -1); x0 = e.clientX; }
-  });
-  const enlarge = () => {
-    const v = el.dataset.v, list = views.filter(([az, e]) => src(v, az, e));
-    const i = list.findIndex(([az, e]) => az === state.az && e === state.el);
-    if (i >= 0) openViews(v, i);
-  };
-  el.addEventListener('pointerup', () => {   // a click without dragging: enlarge
-    if (x0 !== null && !moved) enlarge();
-    x0 = null; el.style.cursor = '';
-  });
-  el.addEventListener('pointercancel', () => { x0 = null; el.style.cursor = ''; });
-  el.tabIndex = 0; el.setAttribute('role', 'button'); el.setAttribute('aria-label', '拡大');
-  el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); enlarge(); } });
-}
-
-document.querySelectorAll('header .seg button').forEach(b => b.addEventListener('click', () => { state.v = b.dataset.v; render(); }));
 document.addEventListener('keydown', e => {
-  if ($('lb').open) {   // Esc is the dialog's own
-    const k = {ArrowLeft: -1, ArrowRight: 1}[e.key];
-    if (k) { e.preventDefault(); lbStep(k); }
-    return;
-  }
-  if (e.target.closest('input,textarea')) return;
-  const k = {ArrowLeft: () => step(-1), ArrowRight: () => step(1), ArrowUp: () => stepElev(1), ArrowDown: () => stepElev(-1)}[e.key];
-  if (k) { e.preventDefault(); k(); }
+  if (!$('lb').open) return;   // Esc is the dialog's own
+  const k = {ArrowLeft: -1, ArrowRight: 1}[e.key];
+  if (k) { e.preventDefault(); lbStep(k); }
 });
-buildCompass(); buildElev(); setupLightbox(); render();
+setupLightbox(); renderToggles(); renderDetails();
 </script>

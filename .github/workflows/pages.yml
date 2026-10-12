@@ -9,7 +9,7 @@ on:
       - case/preview/model-data.js
       - docs/img/render-hero.png
       - docs/views.html
-      - docs/img/views/**
+      - docs/3d/**
       - docs/img/details/**
       - .github/workflows/pages.yml
   workflow_dispatch:
@@ -47,10 +47,11 @@ jobs:
           wrap case/preview/viewer.html | sed 's#href="../../docs/views.html"#href="views.html"#' > _site/index.html
           wrap case/preview/assembly.html > _site/assembly.html
           wrap docs/views.html > _site/views.html
-          # the renders views.html shows (orbit views and close-ups), at the same relative paths
+          # the close-up renders views.html shows, at the same relative paths, and its 3D model and lighting
           grep -oE 'img/[^"]+\.(png|jpg)' docs/views.html | sort -u | while read -r f; do
             mkdir -p "_site/$(dirname "$f")" && cp "docs/$f" "_site/$f"
           done
+          cp -r docs/3d _site/3d
           cp case/preview/model-data.js _site/
           cp docs/img/render-hero.png _site/og.png
           touch _site/.nojekyll
