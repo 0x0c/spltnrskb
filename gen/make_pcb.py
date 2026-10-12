@@ -418,7 +418,7 @@ def write_case_data(side, board, fps, keys, holes, w, h, shift):
         ),
         reset=local(fps['RSW1'].GetPosition()),
         # RP2040 and its flash: the case floor has a window under them
-        mcu=[local_box(fps[r]) for r in MCU_WINDOW],
+        mcu_window=[local_box(fps[r]) for r in MCU_WINDOW],
         oled=dict(box=local_box(fps['J3']), rot=round(fps['J3'].GetOrientationDegrees()) % 360),
         wheel=dict(center=list(wheel_centre(side, w)), r=WHEEL_R),
     )

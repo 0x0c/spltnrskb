@@ -77,6 +77,8 @@ LID_LEDGE_MIN = 2.0          # ... at least this much where the wall is close
 LID_FIT = 0.15               # lid edge to the printed rim
 LID_RIM = (1.2, LID_T + 0.3) # printed rim round the lid: width, height above the floor
 LID_KEEP = 0.5               # rim / lid kept this far from the bosses, spacers, holes and the wall
+BUTTON_HOLE = 4.5            # plate hole for a tall tact switch's actuator (3.5 mm) poking through (encoder test board)
+BUTTON_KEEP = 3.6            # printed plate's web kept off the 6 mm switch body (half size)
 # 3D print: the wall above the wheel opening is a separate cap, so the wheel can be dropped in from above
 CAP_SHOULDER = 2.0           # cap's top tier overhangs the opening by this much and rests on the wall
 CAP_LEDGE = 3.0              # thickness of that top tier
@@ -204,7 +206,7 @@ class Half:
         self.inner_right = self.d['inner_side'] == 'right'
         self.slots = self._slots()
         self.screws = self._screws()
-        self.window_box = self._oled()
+        self.window_box = self._oled() if 'oled' in self.d else None   # the encoder test board has no OLED
         self.cover_screws = self._cover_screws()
         # perimeter screws under the cover or in the plate band right next to it go (the cover has no screws of
         # its own): a screw head beside the rounded cover corner would spoil the even band
@@ -229,7 +231,7 @@ class Half:
                 cap = rect(a0, oy0 - 1, a1, self.pcb[1] - CLEAR + 0.01) ^ (self.outer - self.inner)
                 full = (a0, oy0 - 1, a1, self.pcb[1])
                 out.append(dict(name=name, edge='top', x=(t[0] + t[2]) / 2, half=(a1 - a0) / 2, full=full,
-                                chan=chan, cap=cap, along=(t[0] + t[2]) / 2))
+                                chan=chan, cap=cap, along=(t[0] + t[2]) / 2, conn=c))
             else:
                 a0, a1 = t[1] - CHANNEL_CLR - e, t[3] + CHANNEL_CLR + e
                 if self.inner_right:
@@ -239,7 +241,7 @@ class Half:
                     cap = rect(ox0 - 1, a0, self.pcb[0] - CLEAR + 0.01, a1) ^ (self.outer - self.inner)
                     full = (ox0 - 1, a0, self.pcb[0], a1)
                 out.append(dict(name=name, edge='inner', y=(t[1] + t[3]) / 2, half=(a1 - a0) / 2, full=full,
-                                chan=chan, cap=cap, along=(t[1] + t[3]) / 2))
+                                chan=chan, cap=cap, along=(t[1] + t[3]) / 2, conn=c))
         # neighbouring ports on the top edge share one screw-free zone
         tops = sorted((sl for sl in out if sl['edge'] == 'top'), key=lambda sl: sl['full'][0])
         for a, b in zip(tops, tops[1:]):
@@ -252,21 +254,29 @@ class Half:
 
     def port_z(self, port, z_pcb):
         """(bottom of the connector, centre of its opening, opening height) for a PCB bottom at z_pcb. Both ports
-        are the same USB-C receptacle, so both openings sit at the same height."""
+        are the same USB-C receptacle, so both openings sit at the same height. A connector in case_data may give
+        its own 'z' (bottom and opening centre below the PCB bottom, opening height; the encoder test board's
+        RP2040-Zero hangs lower)."""
+        if 'z' in port['conn']:
+            zb, zc, h = port['conn']['z']
+            return z_pcb - zb, z_pcb - zc, h + 2 * PORT_CLR
         return z_pcb - USB_SHELL[1], z_pcb - USB_SHELL[1] / 2, USB_SHELL[1] + 2 * PORT_CLR
 
     def port_hole(self, port, z_pcb):
         """The visible opening: connector outline + PORT_CLR (a rounded slot), through the skin in front of the
-        mouth. Ports are on the top edge."""
-        assert port['edge'] == 'top', port['name']
+        mouth, on the top edge or on the inner edge (encoder test board)."""
         _, zc, hh = self.port_z(port, z_pcb)
         ox0, oy0, ox1, oy1, _ = self.outer_box
         depth = self.d.get('port_skin', 0.8) + 1.0
-        w, h = USB_SHELL[0] + 2 * PORT_CLR, hh
+        w, h = port['conn'].get('width', USB_SHELL[0]) + 2 * PORT_CLR, hh
         r = h / 2
         cs = CrossSection.square((w - 2 * r, 0.001), center=True).offset(r, JoinType.Round)
         m = Manifold.extrude(cs, depth + 1).rotate((-90, 0, 0))        # along +y (3D) = outward on the top edge
-        return m.translate((port['along'], -oy0 - depth, zc))
+        if port['edge'] == 'top':
+            return m.translate((port['along'], -oy0 - depth, zc))
+        if self.inner_right:                                           # outward = +x
+            return m.rotate((0, 0, -90)).translate((ox1 - depth, -port['along'], zc))
+        return m.rotate((0, 0, 90)).translate((ox0 + depth, -port['along'], zc))
 
     def slot_cs(self, pcb_side_too=True):
         cs = CrossSection()
@@ -331,6 +341,8 @@ class Half:
     def cover_shape(self):
         """The cover: rectangle from cover_box() with the same radius on all four corners: the one at the case
         corner is concentric with the case outline, so the plate band keeps its width round it."""
+        if self.window_box is None:
+            return CrossSection()
         (x0, y0, x1, y1), outer = self.cover_box()
         rc = self.outer_box[4] - COVER_FRAME
         cs = rect(x0, y0, x1, y1)
@@ -348,20 +360,23 @@ class Half:
     def cover(self):
         return self.cover_shape() - self.holes(self.cover_screws, SCREW_D)
 
-    # RP2040 window and its lid ------------------------------------------------------
+    # RP2040 window and its lid (keyboard halves: case_data has 'mcu_window') -----------------------
     def _mcu_opening(self):
         """Rounded rectangle MCU_WIN_MARGIN round the RP2040 and flash courtyards."""
-        bs = self.d['mcu']
+        bs = self.d['mcu_window']
         x0, y0 = min(b[0] for b in bs) - MCU_WIN_MARGIN, min(b[1] for b in bs) - MCU_WIN_MARGIN
         x1, y1 = max(b[2] for b in bs) + MCU_WIN_MARGIN, max(b[3] for b in bs) + MCU_WIN_MARGIN
         return rounded_rect(x0, y0, x1, y1, MCU_WIN_R)
+
+    def _reset_cut(self, d):
+        return circle(*self.d['reset'], d) if 'reset' in self.d else CrossSection()
 
     def mcu_lid(self):
         """Clear acrylic lid on the inner face of the floor: the opening + LID_LEDGE, cut back where the wall is
         nearer (there the wall locates it instead of the rim). Where it covers the reset hole it has the same hole,
         so the pin still goes through."""
         lid = self._mcu_opening().offset(LID_LEDGE, JoinType.Round) ^ self.inner.offset(-LID_FIT, JoinType.Round)
-        return lid - circle(*self.d['reset'], RESET_D)
+        return lid - self._reset_cut(RESET_D)
 
     def mcu_window(self):
         """Opening in the floor under the RP2040: at least LID_LEDGE_MIN inside the lid for the tape."""
@@ -371,7 +386,7 @@ class Half:
         """Printed rim round the lid (tray only); it merges into the wall where the lid reaches it."""
         lid = self.mcu_lid().offset(LID_FIT, JoinType.Round)
         rim = (lid.offset(LID_RIM[0], JoinType.Round) - lid) ^ self.inner.offset(0.01, JoinType.Round)
-        return rim - circle(*self.d['reset'], RESET_D + 2 * LID_KEEP)
+        return rim - self._reset_cut(RESET_D + 2 * LID_KEEP)
 
     # perimeter screws on the wall centre line --------------------------------------
     def _screws(self):
@@ -428,7 +443,12 @@ class Half:
                     cut = cut + rect(cx - w / 2, k['cy'] + dy - hh / 2, cx + w / 2, k['cy'] + dy + hh / 2)
         if 'drum' in self.d:
             cut = cut + self.bezel_outline(BEZEL_FIT)
+        cut = cut + self.extra_cuts()
         return self.outer - cut - self.cover_shape().offset(COVER_FIT, JoinType.Round) - self.holes(self.screws, SCREW_D)
+
+    def extra_cuts(self):
+        """Encoder test board: holes for the tact switches' actuators."""
+        return self.holes(self.d.get('buttons', []), BUTTON_HOLE)
 
     def frame(self, layer):
         cs = self.outer - self.inner - self.holes(self.screws, SCREW_D)
@@ -447,8 +467,10 @@ class Half:
 
     def bottom(self):
         (wx, wy), _ = self.wheel_xy()
-        return (self.outer - self.holes(self.screws, SCREW_D) - self.holes(self.d['holes'], SCREW_D)
-                - circle(*self.d['reset'], RESET_D) - circle(wx, wy, AXLE_HOLE_D) - self.mcu_window())
+        cs = self.outer - self.holes(self.screws, SCREW_D) - self.holes(self.d['holes'], SCREW_D) - circle(wx, wy, AXLE_HOLE_D)
+        if 'mcu_window' in self.d:
+            cs = cs - self.mcu_window()
+        return cs - self._reset_cut(RESET_D)
 
     # 3D print -------------------------------------------------------------------------
     def tray(self):
@@ -481,20 +503,25 @@ class Half:
         self._cap = body ^ tiers(-CAP_FIT)
         body = body - tiers(0.0)
         # pocket for the thicker cover
-        body = body - Manifold.extrude(self.cover_shape().offset(COVER_FIT, JoinType.Round), WALL_POCKET + 0.01).translate(
-            (0, 0, wall_top - WALL_POCKET))
+        if self.window_box is not None:
+            body = body - Manifold.extrude(self.cover_shape().offset(COVER_FIT, JoinType.Round), WALL_POCKET + 0.01).translate(
+                (0, 0, wall_top - WALL_POCKET))
         # port tunnels: closed above, with headroom so the board can slide in tongue-first
         z_pcb = FLOOR + STANDOFF
         for p in self.slots:
             zp = self.port_z(p, z_pcb)[0] - 0.2
             zt = z_pcb + PCB_T + CHANNEL_CLR + PORT_LIFT
+            if p['conn'].get('open_top'):       # encoder test board: the board drops in, the plate closes the top
+                zt = wall_top + 0.1
             body = body - Manifold.extrude(p['chan'], zt - zp).translate((0, 0, zp)) - self.port_hole(p, z_pcb)
         body = body + Manifold.cylinder(WHEEL_GAP + BORE_DEPTH - 0.3, POST_D / 2, POST_D / 2, 48).translate(
             (wx, -wy, FLOOR))
-        rx, ry = self.d['reset']
-        body = body - Manifold.cylinder(FLOOR + 0.02, RESET_D / 2, RESET_D / 2).translate((rx, -ry, -0.01))
-        body = body - Manifold.extrude(self.mcu_window(), FLOOR + 0.02).translate((0, 0, -0.01))
-        body = body + Manifold.extrude(self.lid_rim(), LID_RIM[1]).translate((0, 0, FLOOR - 0.01))
+        if 'reset' in self.d:
+            rx, ry = self.d['reset']
+            body = body - Manifold.cylinder(FLOOR + 0.02, RESET_D / 2, RESET_D / 2).translate((rx, -ry, -0.01))
+        if 'mcu_window' in self.d:
+            body = body - Manifold.extrude(self.mcu_window(), FLOOR + 0.02).translate((0, 0, -0.01))
+            body = body + Manifold.extrude(self.lid_rim(), LID_RIM[1]).translate((0, 0, FLOOR - 0.01))
         return body
 
     def _filleted(self, top):
@@ -748,8 +775,8 @@ class Half:
 
     def plate3d_printed(self):
         """All-printed variant: the 1.5 mm switch plate plus a RIB_T web underneath, so a printed plate is stiff.
-        The web fills the cavity except around the switch housings, the stabilizers and the OLED cover, and
-        stays inside the walls. Print it upside down (top face on the bed)."""
+        The web fills the cavity except around the switch housings, the stabilizers, the OLED cover and the
+        front-side MCU parts, and stays inside the walls. Print it upside down (top face on the bed)."""
         keep = CrossSection()
         g = SWITCH_CUT / 2 + 0.6
         for k in self.d['keys']:
@@ -759,6 +786,10 @@ class Half:
                 for sx in (-1, 1):
                     cx = k['cx'] + sx * STAB_X
                     keep = keep + rect(cx - w / 2 - 1.0, k['cy'] + dy - hh / 2 - 1.0, cx + w / 2 + 1.0, k['cy'] + dy + hh / 2 + 1.0)
+        for x0, y0, x1, y1 in self.d.get('web_keep', []):   # encoder test board: the MCU's pins through the board
+            keep = keep + rect(x0, y0, x1, y1)
+        for x, y in self.d.get('buttons', []):
+            keep = keep + rect(x - BUTTON_KEEP, y - BUTTON_KEEP, x + BUTTON_KEEP, y + BUTTON_KEEP)
         web = self.inner.offset(-0.3, JoinType.Round) - keep - self.cover_shape().offset(1.0, JoinType.Round) \
             - self.holes(self.d['holes'], BOSS_D + 2.0)
         if 'drum' in self.d:   # room for the bezel's ledge and the encoder / block under the opening
@@ -831,43 +862,59 @@ def write_stl(path, man):
             f.write(struct.pack('<12fH', *n, *p0, *p1, *p2, 0))
 
 
+def write_half(hf, out, parts=True, laser=True):
+    """Every output of one half under out/{laser,print,preview}; returns the layers (for check) and its report entry.
+    parts=False leaves out the wheel, its cap and the drum parts (the encoder test board uses the keyboard's);
+    laser=False makes a 3D printed case only (no laser-cut layers; the preview shows the printed plate)."""
+    side = hf.side
+    for sub in ('laser', 'print', 'preview') if laser else ('print', 'preview'):
+        os.makedirs(os.path.join(out, sub), exist_ok=True)
+    layers = {'plate': hf.plate(), 'bottom': hf.bottom()}
+    if hf.window_box is not None:
+        layers['oled-cover'] = hf.cover()
+    if 'mcu_window' in hf.d:
+        layers['mcu-lid'] = hf.mcu_lid()
+    for i in range(N_FRAMES):
+        layers[f'frame{i + 1}'] = hf.frame(i)
+    for name, cs in layers.items() if laser else ():
+        write_dxf(os.path.join(out, 'laser', f'{side}-{name}.dxf'), cs)
+        write_svg(os.path.join(out, 'laser', f'{side}-{name}.svg'), cs, f'{side} {name}')
+    tray, plate = hf.tray(), hf.plate3d()
+    write_stl(os.path.join(out, 'print', f'{side}-tray.stl'), tray)
+    write_stl(os.path.join(out, 'print', f'{side}-plate.stl'), hf.plate3d_printed())   # all-printed variant
+    if parts:
+        write_stl(os.path.join(out, 'print', f'{side}-wheel.stl'), hf.wheel3d())
+        write_stl(os.path.join(out, 'print', f'{side}-wheel-cap.stl'), hf.wheel_cap())   # 3D-print variant
+    if parts and 'drum' in hf.d:   # drum dial: drum (resin print), bearing block and bezel, each with its bottom at z = 0
+        for name, m in (('drum', hf.drum3d()), ('drum-block', hf.drum_block3d()), ('drum-bezel', hf.drum_bezel3d())):
+            write_stl(os.path.join(out, 'print', f'{side}-{name}.stl'), m.translate((0, 0, -m.bounding_box()[2])))
+    if hf.window_box is not None:
+        write_stl(os.path.join(out, 'preview', f'{side}-oled-cover.stl'), Manifold.extrude(hf.cover(), COVER_T))
+    if 'mcu_window' in hf.d:
+        write_stl(os.path.join(out, 'preview', f'{side}-mcu-lid.stl'), Manifold.extrude(hf.mcu_lid(), LID_T))
+    # assembly preview (print variant): tray + PCB + plate in place
+    z_pcb = FLOOR + STANDOFF
+    write_stl(os.path.join(out, 'preview', f'{side}-pcb.stl'), hf.pcb3d().translate((0, 0, z_pcb)))
+    write_stl(os.path.join(out, 'preview', f'{side}-plate-placed.stl'),
+              (plate if laser else hf.plate3d_printed()).translate((0, 0, z_pcb + PCB_T + PLATE_GAP)))
+    if parts and 'drum' in hf.d:   # drum dial parts in place (print variant), for the renders
+        for name, m in (('drum', hf.drum3d()), ('drum-block', hf.drum_block3d()), ('drum-bezel', hf.drum_bezel3d())):
+            write_stl(os.path.join(out, 'preview', f'{side}-{name}-placed.stl'), m.translate((0, 0, z_pcb + PCB_T)))
+    ox0, oy0, ox1, oy1, _ = hf.outer_box
+    report = dict(case_mm=[round(ox1 - ox0, 1), round(oy1 - oy0, 1)],
+                  height_print=round(FLOOR + STANDOFF + PCB_T + PLATE_GAP + PLATE_T, 2),
+                  height_acrylic=BOTTOM_T + N_FRAMES * FRAME_T + PLATE_T,
+                  screws=len(hf.screws), screws_xy=[[round(float(x), 3), round(float(y), 3)] for x, y in hf.screws], pcb_holes=len(hf.d['holes']),
+                  tray_volume_cm3=round(tray.volume() / 1000, 1),
+                  plate_genus=plate.genus(), tray_status=str(tray.status()))
+    return layers, report
+
+
 def main(sides):
     report = {}
     for side in sides:
         hf = Half(side)
-        for sub in ('laser', 'print', 'preview'):
-            os.makedirs(os.path.join(OUT, sub), exist_ok=True)
-        layers = {'plate': hf.plate(), 'bottom': hf.bottom(), 'oled-cover': hf.cover(), 'mcu-lid': hf.mcu_lid()}
-        for i in range(N_FRAMES):
-            layers[f'frame{i + 1}'] = hf.frame(i)
-        for name, cs in layers.items():
-            write_dxf(os.path.join(OUT, 'laser', f'{side}-{name}.dxf'), cs)
-            write_svg(os.path.join(OUT, 'laser', f'{side}-{name}.svg'), cs, f'{side} {name}')
-        tray, plate = hf.tray(), hf.plate3d()
-        write_stl(os.path.join(OUT, 'print', f'{side}-tray.stl'), tray)
-        write_stl(os.path.join(OUT, 'print', f'{side}-plate.stl'), hf.plate3d_printed())   # all-printed variant
-        write_stl(os.path.join(OUT, 'print', f'{side}-wheel.stl'), hf.wheel3d())
-        write_stl(os.path.join(OUT, 'print', f'{side}-wheel-cap.stl'), hf.wheel_cap())   # 3D-print variant
-        if 'drum' in hf.d:   # drum dial: drum (resin print), bearing block and bezel, each with its bottom at z = 0
-            for name, m in (('drum', hf.drum3d()), ('drum-block', hf.drum_block3d()), ('drum-bezel', hf.drum_bezel3d())):
-                write_stl(os.path.join(OUT, 'print', f'{side}-{name}.stl'), m.translate((0, 0, -m.bounding_box()[2])))
-        write_stl(os.path.join(OUT, 'preview', f'{side}-oled-cover.stl'), Manifold.extrude(hf.cover(), COVER_T))
-        write_stl(os.path.join(OUT, 'preview', f'{side}-mcu-lid.stl'), Manifold.extrude(hf.mcu_lid(), LID_T))
-        # assembly preview (print variant): tray + PCB + plate in place
-        z_pcb = FLOOR + STANDOFF
-        write_stl(os.path.join(OUT, 'preview', f'{side}-pcb.stl'), hf.pcb3d().translate((0, 0, z_pcb)))
-        write_stl(os.path.join(OUT, 'preview', f'{side}-plate-placed.stl'),
-                  plate.translate((0, 0, z_pcb + PCB_T + PLATE_GAP)))
-        if 'drum' in hf.d:   # drum dial parts in place (print variant), for the renders
-            for name, m in (('drum', hf.drum3d()), ('drum-block', hf.drum_block3d()), ('drum-bezel', hf.drum_bezel3d())):
-                write_stl(os.path.join(OUT, 'preview', f'{side}-{name}-placed.stl'), m.translate((0, 0, z_pcb + PCB_T)))
-        ox0, oy0, ox1, oy1, _ = hf.outer_box
-        report[side] = dict(case_mm=[round(ox1 - ox0, 1), round(oy1 - oy0, 1)],
-                            height_print=round(FLOOR + STANDOFF + PCB_T + PLATE_GAP + PLATE_T, 2),
-                            height_acrylic=BOTTOM_T + N_FRAMES * FRAME_T + PLATE_T,
-                            screws=len(hf.screws), screws_xy=[[round(float(x), 3), round(float(y), 3)] for x, y in hf.screws], pcb_holes=len(hf.d['holes']),
-                            tray_volume_cm3=round(tray.volume() / 1000, 1),
-                            plate_genus=plate.genus(), tray_status=str(tray.status()))
+        layers, report[side] = write_half(hf, OUT)
         check(hf, layers)
     json.dump(report, open(os.path.join(OUT, 'case_report.json'), 'w'), indent=1)
     print(json.dumps(report, indent=1))
@@ -939,13 +986,23 @@ def check(hf, layers):
     # tunnel roof stays printable (thinnest where the OLED cover's pocket lowers the wall top)
     roof = PLATE_GAP - CHANNEL_CLR - PORT_LIFT
     for s in hf.slots:
+        if s['conn'].get('open_top'):
+            continue
         if (s['chan'] ^ hf.cover_shape().offset(COVER_FIT, JoinType.Round)).area() > 0.01:
             roof = min(roof, PLATE_GAP - CHANNEL_CLR - PORT_LIFT - WALL_POCKET)
     assert roof >= 0.6, f'port tunnel roof {roof:.2f} mm too thin'
+    if hf.window_box is not None:
+        check_oled(hf)
+    check_wheel(hf)
+    if 'mcu_window' in hf.d:
+        check_mcu(hf)
+    if 'drum' in hf.d:
+        check_drum(hf)
+    check_closed(hf, layers)
 
-    def area(poly):
-        return abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]))) / 2
-    # OLED: window clear of switch cut-outs, cover clear of switch tops and fully supported by the plate
+
+def check_oled(hf):
+    """OLED: window clear of switch cut-outs, cover clear of switch tops and fully supported by the plate."""
     win = hf.window_cs()
     keys = CrossSection()
     for k in hf.d['keys']:
@@ -967,7 +1024,9 @@ def check(hf, layers):
     assert (hf.cover_shape().offset(COVER_BELOW - 0.01, JoinType.Round) ^ caps).area() < 0.01, 'cover closer than COVER_BELOW to a keycap'
     assert (hf.cover_shape().offset(COVER_FRAME - 0.01, JoinType.Round) - hf.outer).area() < 0.01, 'cover closer than COVER_FRAME to the outline'
 
-    # wheel: clear of standoffs, screws and the OLED; its rim must leave the case outline at the corner
+
+def check_wheel(hf):
+    """Wheel: clear of standoffs and screws, its rim leaves the case outline at the corner, pin into the rotor."""
     (wx, wy), wr = hf.wheel_xy()
     for x, y in hf.d['holes']:
         assert math.hypot(x - wx, y - wy) > wr + WHEEL_CUT + BOSS_D / 2, 'wheel hits a standoff'
@@ -984,24 +1043,28 @@ def check(hf, layers):
     assert pin_top < FLOOR + STANDOFF - 0.3, 'pin reaches the PCB'
     assert FLOOR + WHEEL_GAP + WHEEL_T > FLOOR + hf.enc_bottom(), 'rim no longer overlaps the encoder (hub not needed)'
 
-    # RP2040 window: the opening shows the parts, the lid (and the printed rim round it) stays clear of the bosses /
-    # spacers, the reset hole, the wheel and its axle, and inside the wall
+
+def check_mcu(hf):
+    """RP2040 window: the opening shows the parts, the lid (and the printed rim round it) stays clear of the bosses /
+    spacers, the reset hole, the wheel and its axle, and inside the wall."""
+    (wx, wy), wr = hf.wheel_xy()
     win, lid = hf.mcu_window(), hf.mcu_lid()
-    rimmed = lid.offset(LID_FIT + LID_RIM[0], JoinType.Round) ^ hf.inner - circle(*hf.d['reset'], RESET_D + 2 * LID_KEEP)
-    for b in hf.d['mcu']:
+    rimmed = lid.offset(LID_FIT + LID_RIM[0], JoinType.Round) ^ hf.inner - hf._reset_cut(RESET_D + 2 * LID_KEEP)
+    for b in hf.d['mcu_window']:
         assert (rect(*b) - win).area() < 0.01, 'window does not show the whole RP2040 / flash'
     assert (lid - hf.inner.offset(-LID_FIT + 0.01)).area() < 0.01, 'RP2040 lid reaches into the wall'
     assert (win - lid.offset(-LID_LEDGE_MIN + 0.01)).area() < 0.01, 'RP2040 window too close to the lid edge'
     for x, y in hf.d['holes']:
         assert (rimmed ^ circle(x, y, BOSS_D + 2 * LID_KEEP)).area() < 0.01, 'RP2040 lid hits a standoff'
     # the reset hole stays in the floor (3 mm of floor to the window: the laser shop's minimum between cuts)
-    assert (win ^ circle(*hf.d['reset'], RESET_D + 6.0)).area() < 0.01, 'RP2040 window too close to the reset hole'
+    assert (win ^ hf._reset_cut(RESET_D + 6.0)).area() < 0.01, 'RP2040 window too close to the reset hole'
     assert (rimmed ^ circle(wx, wy, 2 * (wr + WHEEL_CUT + LID_KEEP))).area() < 0.01, 'RP2040 lid under the wheel'
     assert FLOOR + LID_RIM[1] < FLOOR + STANDOFF - USB_SHELL[1] - 1.0, 'rim reaches the parts under the PCB'
 
-    if 'drum' in hf.d:
-        check_drum(hf)
 
+def check_closed(hf, layers):
+    def area(poly):
+        return abs(sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]))) / 2
     # the switch plate and the top frame must keep an unbroken outer edge (no connector notches)
     for name in ('plate', f'frame{N_FRAMES}'):
         outer_area = max(area(p) for p in polygons(layers[name]))

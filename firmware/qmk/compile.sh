@@ -1,10 +1,11 @@
 #!/bin/bash
 # Copy the keyboard definition into qmk_firmware and run `qmk compile`.
-# Usage: firmware/qmk/compile.sh [keymap]   (default: default)
+# Usage: firmware/qmk/compile.sh [keymap] [keyboard]   (defaults: default, nrsk; nrsk_enctest = the encoder test board)
 # The .uf2 is copied to firmware/qmk/build/.
 set -e
 cd "$(dirname "$0")"
 KM="${1:-default}"
+KB="${2:-nrsk}"
 
 # qmk CLI: PATH, else the repo's .venv
 command -v qmk >/dev/null || PATH="$(cd ../.. && pwd)/.venv/bin:$PATH"
@@ -25,8 +26,8 @@ if [ "$(arm-none-eabi-gcc -print-file-name=libc.a)" = libc.a ]; then
     exit 1
 fi
 
-rsync -a --delete keyboards/nrsk/ "$QMK_HOME/keyboards/nrsk/"
-qmk compile -kb nrsk -km "$KM"
+rsync -a --delete "keyboards/$KB/" "$QMK_HOME/keyboards/$KB/"
+qmk compile -kb "$KB" -km "$KM"
 mkdir -p build
-cp "$QMK_HOME/nrsk_$KM.uf2" build/
-echo "-> firmware/qmk/build/nrsk_$KM.uf2"
+cp "$QMK_HOME/${KB}_$KM.uf2" build/
+echo "-> firmware/qmk/build/${KB}_$KM.uf2"

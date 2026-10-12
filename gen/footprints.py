@@ -260,6 +260,33 @@ def drum_bearing():
     return name, s
 
 
+# Mac8 ConThrough XB series (two-board stacking pins): soldered on one board, its spring contacts plug into the
+# other board's plated holes, finished 0.8-0.9 mm (0.85 nominal; not bare copper). This is the plug-in side.
+CONTHROUGH_HOLE = 0.85
+
+
+def conthrough(n):
+    name = f'ConThrough_1x{n:02d}_P2.54mm_Contact'
+    s = (f'(footprint "{name}"\n  (version 20241229)\n  (generator "nrsk-gen")\n  (layer "F.Cu")\n'
+         f'  (descr "Plug-in side of a 1x{n} Mac8 ConThrough (XB-3 series, 2.54 mm): plated holes {CONTHROUGH_HOLE} mm '
+         'finished, pin 1 at the origin, pins along +Y")\n'
+         '  (tags "ConThrough XB stacking connector")\n  (attr through_hole)\n')
+    end = (n - 1) * 2.54
+    s += prop('Reference', 'REF**', (0, -2.5), 'F.SilkS', hide=True)
+    s += prop('Value', name, (0, end + 2.5), 'F.Fab', hide=True)
+    s += prop('Footprint', '', (0, 0), 'F.Fab', hide=True)
+    s += prop('Datasheet', '', (0, 0), 'F.Fab', hide=True)
+    s += prop('Description', '', (0, 0), 'F.Fab', hide=True)
+    s += rect(-1.27, -1.27, 1.27, end + 1.27, 'F.Fab', 0.1)   # no silkscreen: the module's outline is drawn instead
+    s += rect(-1.77, -1.77, 1.77, end + 1.77, 'F.CrtYd', 0.05)
+    for i in range(n):
+        shape = 'rect' if i == 0 else 'circle'
+        s += (f'  (pad "{i + 1}" thru_hole {shape} (at 0 {i * 2.54:.3f}) (size 1.5 1.5) (drill {CONTHROUGH_HOLE}) '
+              f'(layers "*.Cu" "*.Mask") (uuid "{uid()}"))\n')
+    s += ')\n'
+    return name, s
+
+
 def usb_c():
     """KiCad's HRO TYPE-C-31-M-12 with its outline moved from the silkscreen to the Fab layer: on the board
     tongue the outline's front ends would run into the tongue's rounded corners (clipped silk)."""
@@ -271,7 +298,7 @@ def usb_c():
 
 def main():
     os.makedirs(OUT, exist_ok=True)
-    items = [mx_hotswap(w) for w in WIDTHS] + [oled_module(), alps_ec05e(), alps_ec10e(), drum_bearing(), usb_c()]
+    items = [mx_hotswap(w) for w in WIDTHS] + [oled_module(), alps_ec05e(), alps_ec10e(), drum_bearing(), usb_c(), conthrough(9)]
     for name, s in items:
         open(os.path.join(OUT, name + '.kicad_mod'), 'w').write(s)
     print('wrote', [n for n, _ in items])

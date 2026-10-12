@@ -223,7 +223,7 @@ LCSC で買えるものは、すべて LCSC を最初の購入先にしていま
 - **水晶振動子**：Raspberry Pi のリファレンスと同じ Abracon ABM8-272-T3（12 MHz、負荷容量 10 pF）を 15 pF のコンデンサと組み合わせます。安価な YXC X322512MSB4SI は負荷容量 20 pF なので、そのままでは合いません。
 - **QSPI Flash**：W25Q128JVSIQ は LCSC に 2 つの部品番号があり、よく使われる C97521 は確認時に在庫切れでした。BOM には在庫のある C113767 を載せています。
 - **ロータリーエンコーダー**：Alps EC05E1220401 は LCSC（C116648）で 1 個から買えます。ホイールの六角ピンのはめあいは印刷機によって変わるので、対辺を変えた 7 本のピンを並べた `case/print/pin-coupon.stl` を印刷して確かめてください（手順は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）。ピンの対辺は `gen/make_case.py` の `PIN_AF` で変えられます。
-- **ドラム式ダイヤルのエンコーダー**：Alps EC10E1220505 は LCSC（C160888）で 5 個単位です。基板の表に挿入実装する部品なので、JLCPCB の部品実装には含めず、手で半田付けします。ドラムの六角ピンのはめあいは、サムホイールと同じく試し印刷で確かめてください。
+- **ドラム式ダイヤルのエンコーダー**：Alps EC10E1220505 は LCSC（C160888）で 5 個単位です。基板の表に挿入実装する部品なので、JLCPCB の部品実装には含めず、手で半田付けします。ドラムの六角ピンのはめあいは、サムホイールと同じく試し印刷で確かめてください。2 つのエンコーダーの機構と信号は、キーボードを作る前に [検証基板](docs/encoder-test-board.md) で確かめられます。
 - **OLED**：LCSC の HS91L02W2C01 は、写真ではピン順が GND/VCC/SCL/SDA ですが、3.3 V で動くかとピンヘッダが付くかはページに書かれていません。遊舎工房の品も代替として BOM に載せています。どちらもピン順を現物で確認してください。
 
 主な部品（左右合計）は次のとおりです。
@@ -315,6 +315,8 @@ spltnrskb/
 ├── docs/ordering.md             発注の手順（注文先ごとの部品と数量）
 ├── docs/pre-order-checklist.md  発注前の確認事項（検査結果、残るリスク、注文の順番）
 ├── docs/thumbwheel-check.md     サムホイールと OLED の実機確認の手順
+├── docs/encoder-test-board.md  2 つのエンコーダーだけを載せた検証基板（RP2040-Zero を差し込む）
+├── enctest/                     検証基板の KiCad プロジェクトとケース（enctest/case/）
 ├── docs/views.html              A と B を 3D で見比べるページ
 ├── docs/3d/                     docs/views.html のモデル（GLB）、照明（HDR）、床の影
 ├── docs/img/                    README の画像
@@ -352,6 +354,7 @@ spltnrskb/
 - A と B の比較画像、差込口、基板の差し込み手順の断面図：`render_compare.sh`、`compare_ab.py`、`port_slide.py`
 - OLED と開口の比較検討：`oled_variants.py`、`oled_study.sh`、`oled_sheet.py`、`port_variants.py`
 - 六角ピンの試し印刷：`pin_coupon.py`（`case/print/pin-coupon.stl`。使い方は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）
+- エンコーダーの検証基板：`build_enctest.sh`、`make_enctest.py`、`render_enctest.py`（使い方は [docs/encoder-test-board.md](docs/encoder-test-board.md)）
 
 KLE を編集した場合は `./build.sh` を実行すると、回路図、基板、配線、ERC/DRC、製造データ、筐体、BOM、QMK 定義をすべて作り直します。
 行の配線とダイオード周りはスクリプトで規則的に引き、残りを Freerouting（`tools/freerouting-2.4.1.jar`）に任せています。
