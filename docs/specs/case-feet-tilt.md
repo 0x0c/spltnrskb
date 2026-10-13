@@ -90,7 +90,7 @@
 
 ### 比較の方法
 
-OLED の高さを比べたときと同じく、3 案を `gen/tilt_variants.py` でモデルにし、`case/preview/tilt-variants/` に STL を書き出す。`gen/tilt_study.sh` で Blender のレンダリングを作り、`docs/img/tilt-study/` に比較の画像を並べる。カメラは 3 種類で、各案について次を描く。
+OLED の高さを比べたときと同じく、3 案を `gen/tilt_variants.py` でモデルにし、`case/preview/tilt-variants/` に STL を書き出す。`gen/tilt_study.sh` は、`gen/render_tilt.py` で Blender のレンダリングを作る。続けて `gen/tilt_sheet.py` が、比較の画像（`sheet.jpg`）と表（`table.md`）を `docs/img/tilt-study/` に書き出す。描くのは、ホイールと差込口の両方が奥にある左半分である。カメラは 3 種類で、各案について次を描く。
 
 - 横から見た 0°、3°、6°、9° の姿（4 枚を 1 行に並べる）
 - 底面（脚を付けた状態と外した状態）
@@ -140,7 +140,7 @@ OLED の高さを比べたときと同じく、3 案を `gen/tilt_variants.py` �
 | --- | --- | --- | --- | --- | --- |
 | 1 | 済 | ゴム足のくぼみのパラメーター、`feet()`、`check_feet()` を足し、トレイにくぼみを掘る | `gen/make_case.py`、`gen/make_enctest.py`、`case/print/`、`case/case_report.json`、`enctest/case/case_report.json` | `.venv/bin/python gen/make_case.py` の検査がすべて通る。`case_report.json` に左右の `feet_xy` が 5 点ずつ載る。`gen/make_enctest.py case` の検査も通る | なし |
 | 2 | 済 | 3 案のモデルを作る | `gen/tilt_variants.py`（新規）、`case/preview/tilt-variants/` | 3 案それぞれ、左右の脚の座を掘ったトレイと 3 種類の脚の STL が出る。各案で `check_tilt()` 相当の検査（角度、支持多角形、肉の厚さ、プラグ）の結果を表で出力する。通らない項目があれば、その案の制約として表に残す | 1 |
-| 3 | 未 | 3 案をレンダリングし、比較の画像と表を作る | `gen/tilt_study.sh`（新規）、`gen/render_blender.py`、`docs/img/tilt-study/` | 3 章の 3 種類のカメラの画像と、比較の表が `docs/img/tilt-study/` に出る。ユーザーに見せて 1 案を選んでもらう | 2 |
+| 3 | 済 | 3 案をレンダリングし、比較の画像と表を作る | `gen/tilt_study.sh`、`gen/render_tilt.py`、`gen/tilt_sheet.py`（いずれも新規）、`docs/img/tilt-study/` | 3 章の 3 種類のカメラの画像と、比較の表が `docs/img/tilt-study/` に出る。ユーザーに見せて 1 案を選んでもらう | 2 |
 | 4 | 未 | 選んだ案と理由を仕様書に書き足す | `docs/specs/case-feet-tilt.md` | 3 章の脚の機構と 4 章の表に、選んだ案と採らなかった 2 案の理由が載る。textlint の指摘が 0 件 | 3 |
 | 5 | 未 | 選んだ案をトレイに組み込み、脚の STL と `check_tilt()` を足す | `gen/make_case.py`、`case/print/`、`case/preview/` | `gen/make_case.py` の検査がすべて通る。`case/print/` に 3 種類の脚が出る | 4 |
 | 6 | 未 | 試し印刷の小片を作る | `gen/foot_coupon.py`（新規）、`case/print/foot-coupon.stl` | 3 つのくぼみと脚の座 1 つを持つ STL が出て、数字が読める | 5 |

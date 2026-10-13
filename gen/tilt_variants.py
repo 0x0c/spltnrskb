@@ -21,7 +21,7 @@ Writes, per mechanism <m> and half <side>, under case/preview/tilt-variants/<m>/
   <side>-tray.stl                      tray with the seats (and pads)
   <side>-leg-<seat>-<deg>.stl          leg attached to its seat (tray frame); F: unfolded
   <side>-legfoot-<seat>-<deg>.stl      rubber foot on that leg's tip (M, S)
-  <side>-folded-<seat>.stl             F: both legs folded into the pocket
+  <side>-folded-<seat>-<deg>.stl       F: that leg folded into the pocket
 and variants.json (seats, contact points, leg heights, checks) for the renders; prints the comparison table.
 Run with the project venv:  .venv/bin/python gen/tilt_variants.py
 """
@@ -296,6 +296,7 @@ def folding(st):
             folded = folded + bar.translate((0, 0, zp))
             down = bar.rotate((0, 90 * d, 0)).translate((0, 0, zp))       # tip straight down
             legs[(name, deg)] = dict(leg=down.transform(m), foot=None, h=h, body=ln, contact=c,
+                                     folded=bar.translate((0, 0, zp)).transform(m),
                                      ok_body=ln + F_T / 2 <= l_max + 0.5 + F_END)
         seats[name]['folded'] = folded.transform(m)
     return seats, tray_cut, legs
@@ -361,9 +362,8 @@ def run(side, key):
             rep['legs'][f'{n}-{deg}'] = dict(h=round(L['h'], 1), body=round(L['body'], 1),
                                             contact=[round(L['contact'][0], 2), round(-L['contact'][1], 2)])
     if key == 'F':
-        for n, s in seats.items():
-            if s is not None:
-                write_stl(os.path.join(out, f'{side}-folded-{n}.stl'), s['folded'])
+        for (n, deg), L in legs.items():
+            write_stl(os.path.join(out, f'{side}-folded-{n}-{deg}.stl'), L['folded'])
         rep['folded_in_tray'] = round(sum((s['folded'] ^ tray).volume() for s in seats.values() if s), 3)
     rep['tray_status'] = str(tray.status())
     rep['tray_genus'] = tray.genus()
