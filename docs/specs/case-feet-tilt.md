@@ -182,7 +182,7 @@ OLED の高さを比べたときと同じく、5 案をモデルにし、`case/p
 | 4 | 済 | 選んだ案と理由を仕様書に書き足す | `docs/specs/case-feet-tilt.md` | 3 章に台座の 2 案と選んだ案、組み込みの方法が、4 章の表に採らなかった 4 案の理由が載る。textlint の指摘が 0 件 | 3 |
 | 5 | 済 | 台座を `make_case.py` に組み込み、台座の STL と `check_tilt()` を足す。`tilt_stands.py` はこの関数を呼ぶ形に変える | `gen/make_case.py`、`gen/tilt_stands.py`、`case/print/`、`case/preview/`、`case/case_report.json` | `gen/make_case.py` の検査がすべて通る。`case/print/` に左右 3 個ずつの台座が、印刷の向きで出る。`gen/tilt_study.sh` の結果が変わらない | 4 |
 | 6 | 済 | 試し印刷の小片を作る | `gen/foot_coupon.py`（新規）、`case/print/foot-coupon.stl` | トレイのくぼみ 3 つと台座のくぼみ 3 つを持つ STL が出て、数字が読める | 5 |
-| 7 | 未 | BOM と注文の文書を更新する | `gen/make_bom.py`、`bom/`、`docs/ordering.md`、`docs/pre-order-checklist.md` | BOM でゴム足がトレイの片側 5 個になり、台座が印刷の部品として載る | 5 |
+| 7 | 済 | BOM と注文の文書を更新する | `gen/make_bom.py`、`gen/bom_sources.json`、`bom/`、`docs/ordering.md`、`docs/pre-order-checklist.md` | BOM でゴム足がトレイの片側 5 個になり、台座が印刷の部品として載る | 5 |
 | 8 | 未 | 組み立てガイドと 3D ビューアを更新する | `gen/assembly_guide.py`、`gen/case_viewer.py`、`case/preview/` | 組み立てガイドに、くぼみへゴム足を貼る手順と台座に載せる手順が入る。ビューアで角度を選ぶと、台座とトレイの位置が合っている | 5、7 |
 | 9 | 未 | README を更新し、レンダリングを作り直す | `README.md`、`docs/img/` | README の筐体の節に、くぼみと台座の説明と比較の画像へのリンクがある。textlint の指摘が 0 件。`./gen/render_all.sh` が通る | 5、6、7、8 |
 | 10 | 未 | 実物で確かめる | なし（結果は README に追記） | 小片でトレイと台座のくぼみの直径を決め、`FOOT_D` と `STAND_POCKET` に反映する。トレイと台座を印刷し、ゴム足がくぼみに収まること、各角度で打鍵しても筐体が台座の上でずれないこと、差込口にプラグを挿したまま台座を替えられることを確かめる | 6、9 |
