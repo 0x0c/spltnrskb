@@ -64,10 +64,13 @@ def hardware(hf, variant):
         add('nut', [hexagon(x, y, -1.6, 1.6, 4.0) for x, y in screws], steel)
         (wx, wy), _ = hf.wheel_xy()
         add('axle', [screw(wx, wy, 0, 8, head_d=5.5, head_h=1.8, d=3.0, up=True)], steel)
-    x0, y0, x1, y1, _ = hf.outer_box
-    feet = [(x0 + 14, y0 + 14), (x1 - 14, y0 + 14), (x0 + 14, y1 - 14), (x1 - 14, y1 - 14)]
-    z_bottom = 0.0 if variant in PRINTED else -1.6
-    add('feet', [Manifold.cylinder(3.8, 4.75, 4.75, 24).translate((x, -y, z_bottom - 3.8)) for x, y in feet], rubber)
+    if variant in PRINTED:          # in the recesses under the tray (make_case.Half.feet)
+        feet, z_top = hf.feet(), mc.FOOT_DEPTH
+    else:                           # stuck flat under the bottom plate, below the nuts
+        x0, y0, x1, y1, _ = hf.outer_box
+        feet, z_top = [(x0 + 14, y0 + 14), (x1 - 14, y0 + 14), (x0 + 14, y1 - 14), (x1 - 14, y1 - 14)], -1.6
+    add('feet', [Manifold.cylinder(mc.FOOT_H, 4.75, 4.75, 24).translate((x, -y, z_top - mc.FOOT_H)) for x, y in feet],
+        rubber)
     return out
 
 
@@ -150,8 +153,13 @@ def main():
             z_cover = z_plate + PLATE_T - COVER_T if variant in PRINTED else z_plate   # acrylic: on frame4, 0.5 mm proud
             cover = Manifold.extrude(hf.cover(), COVER_T).translate((0, 0, z_cover))
             parts.append((side, 'cover', pack(cover), 'mirror', 0.85))
+            if variant in PRINTED:   # tilt stands, under the untilted tray (the page tilts the half onto them)
+                for deg in mc.STAND_ANGLES:
+                    parts.append((side, f'stand{deg}', pack(hf.stand(deg)[0]), '#d9d4c7', 1.0))
         scenes[variant] = parts
     rep = json.load(open(os.path.join(OUT, 'case_report.json')))
+    STAND_ROW = ['ゴム足と台座', '底のくぼみにゴム足 × 5。U 字の台座（'
+                 + '、'.join(f'{d}°' for d in mc.STAND_ANGLES) + '）に載せて奥を上げられる']
     size = ' / '.join(f"{'左' if k == 'left' else '右'} {v['case_mm'][0]:g} × {v['case_mm'][1]:g}" for k, v in rep.items())
     spec_data = {
         'print': dict(title='A：3D プリントのトレイ + 透明アクリルのプレート', rows=[
@@ -159,14 +167,16 @@ def main():
             ['床 / 壁', f'{FLOOR:g} mm / 幅 8 mm'], ['基板の高さ', f'床から {STANDOFF:g} mm（ボス φ4.6）'],
             ['プレート', '透明アクリル 1.5 mm、上からスリムヘッドの M2 小ねじと壁の中の M2 ナットで固定'], ['トレイの角', f'外周の下端 R{TRAY_FILLET:g}・上端 R{TRAY_TOP_FILLET:g} のフィレット'], ['コネクタ', '基板裏面。プレートは切り欠きなし'], ['ホイール', '角にサムホイール × 2（ロータリーエンコーダー Alps EC05E1220401）'],
             ['OLED', f'ハーフミラーアクリル 2 mm、四隅 R{mc.CLEAR + mc.WALL + 4.0 - mc.COVER_FRAME:g}、周りの帯 {mc.COVER_FRAME:g} mm、両面テープで固定（プレートと面一）'],
-            ['ドラム', '右上にドラム式ダイヤル（Alps EC10E1220505、24 クリック）、ベゼルはプレートの切り欠きにはめる']]),
+            ['ドラム', '右上にドラム式ダイヤル（Alps EC10E1220505、24 クリック）、ベゼルはプレートの切り欠きにはめる'],
+            STAND_ROW]),
         'printtop': dict(title='B：全部 3D プリント（プレートも印刷）', rows=[
             ['外形 mm', size], ['高さ', f"{FLOOR + STANDOFF + PCB_T + PLATE_GAP + PLATE_T:g} mm（プレート上面まで）"],
             ['プレート', f'3D プリント 1.5 mm + 裏の補強 {mc.RIB_T:g} mm（スイッチの周りだけ 1.5 mm）'],
             ['トレイの角', f'外周の下端 R{TRAY_FILLET:g}・上端 R{TRAY_TOP_FILLET:g} のフィレット'],
             ['ホイール', '角にサムホイール × 2（ロータリーエンコーダー Alps EC05E1220401）、壁の上は外せる角キャップ'],
             ['OLED', f'ハーフミラーアクリル 2 mm、四隅 R{mc.CLEAR + mc.WALL + 4.0 - mc.COVER_FRAME:g}、周りの帯 {mc.COVER_FRAME:g} mm、両面テープで固定（プレートと面一）'],
-            ['ドラム', '右上にドラム式ダイヤル（Alps EC10E1220505、24 クリック）、ベゼルはプレートの切り欠きにはめる']]),
+            ['ドラム', '右上にドラム式ダイヤル（Alps EC10E1220505、24 クリック）、ベゼルはプレートの切り欠きにはめる'],
+            STAND_ROW]),
         'acrylic': dict(title='アクリル版（積層サンドイッチ）', rows=[
             ['外形 mm', size], ['材料', '枠と底板はマットクリア 3 mm、プレートは透明 1.5 mm、OLED カバーはハーフミラー 2 mm'], ['積層', f'底板 {BOTTOM_T:g} + 枠 {FRAME_T:g} × {N_FRAMES} + プレート {PLATE_T:g} mm'],
             ['高さ', f'{BOTTOM_T + N_FRAMES * FRAME_T + PLATE_T:g} mm'], ['基板の固定', f'M2 スペーサー {STANDOFF:g} mm × 8'], ['コネクタ', '基板裏面。プレートと最上段の枠は切り欠きなし'],
@@ -174,7 +184,10 @@ def main():
             ['ドラム', '右上にドラム式ダイヤル（Alps EC10E1220505、24 クリック）、ベゼルはプレートの切り欠きにはめる']]),
     }
     z = {v: {'pcb': (FLOOR if v in PRINTED else BOTTOM_T) + STANDOFF} for v in VARIANTS}
-    data = dict(DATA=scenes, POOL=pool, BOARDS=boards, SPEC=spec_data, Z=z)
+    # a half on a stand: tray frame -> desk (3 x 4, row major), per side and angle
+    tilt = {side: {deg: [round(v, 6) for row in mc.stand_pose(deg, Half(side).front_y()) for v in row]
+                   for deg in mc.STAND_ANGLES} for side in ('left', 'right')}
+    data = dict(DATA=scenes, POOL=pool, BOARDS=boards, SPEC=spec_data, Z=z, TILT=tilt)
     js = os.path.join(OUT, 'preview', 'model-data.js')
     open(js, 'w').write('window.NRSK = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n')
     path = os.path.join(OUT, 'preview', 'viewer.html')
@@ -213,12 +226,25 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .gap{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
 .gap input{width:min(160px,40vw);accent-color:var(--accent)}
 .gap output{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--fg);min-width:4.5em}
+.checks{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;border:0;margin:0;padding:0 2px;font-size:13px}
+.checks label{display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap}
+.checks input{accent-color:var(--accent);margin:0}
+.checks label.off{color:var(--muted);cursor:default}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.seg{display:flex;align-items:center;gap:0}
+.seg .lbl{font-size:13px;color:var(--muted);margin-right:6px}
+.seg button{border-radius:0;margin-left:-1px}.seg button:first-of-type{border-radius:6px 0 0 6px;margin-left:0}.seg button:last-of-type{border-radius:0 6px 6px 0}
+.seg[hidden]{display:none}
 </style>
 <canvas id="view" aria-label="キーボード筐体の 3D 表示。ドラッグで回転、右ドラッグか 2 本指でパン、ホイールかピンチでズーム、ダブルクリックで視点リセット"></canvas>
 <div id="ui" class="panel">
  <button id="v-print" data-v="print" class="on">A：プリント + アクリル蓋</button><button id="v-printtop" data-v="printtop">B：全部プリント</button><button id="v-acrylic" data-v="acrylic">アクリル版</button>
  <span class="sep"></span>
- <button id="t-switch" data-t="switch" class="on">スイッチ</button><button id="t-plate" data-t="plate" class="on">プレート</button><button id="t-wheel" data-t="wheel" class="on">ダイヤル</button>
+ <fieldset id="parts" class="checks"><legend class="sr">表示する部品</legend>
+  <label><input type="checkbox" data-c="case" checked>ケース</label><label><input type="checkbox" data-c="plate" checked>プレート</label><label><input type="checkbox" data-c="board" checked>基板</label><label><input type="checkbox" data-c="switch" checked>スイッチ</label><label><input type="checkbox" data-c="wheel" checked>ダイヤル</label><label><input type="checkbox" data-c="feet" checked>ゴム足</label><label id="stand-lbl"><input type="checkbox" data-c="stand" checked>台座</label>
+ </fieldset>
+ <span class="sep"></span>
+ <span id="angles" class="seg" role="group" aria-label="台座の角度"><span class="lbl">台座</span><button data-a="0" class="on">なし</button><button data-a="3">3°</button><button data-a="6">6°</button><button data-a="9">9°</button></span>
  <button id="t-explode" data-t="explode">分解表示</button>
  <label id="gap" class="gap" hidden>間隔 <input id="gap-in" type="range" min="0" max="40" step="1" value="10" aria-label="分解表示のレイヤー間隔（mm）"> <output id="gap-out">10 mm</output></label>
  <span class="sep"></span>
@@ -232,9 +258,13 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 <script src="model-data.js"></script>
 <script>
 // meshes are in model-data.js (shared with assembly.html)
-const {DATA, POOL, BOARDS, SPEC} = window.NRSK;   // BOARDS: per side {pcba: {group: [[pool id, matrices]]}, switches}
-const HIDDEN = ['insert', 'plate_screw', 'pcb_screw', 'standoff', 'bottom_screw', 'case_screw', 'nut', 'axle',
-                'feet'];   // hardware is shown in the assembly guide only
+const {DATA, POOL, BOARDS, SPEC, TILT} = window.NRSK;   // BOARDS: per side {pcba: {group: [[pool id, matrices]]}, switches}
+const HIDDEN = ['insert', 'plate_screw', 'pcb_screw', 'standoff', 'bottom_screw', 'case_screw', 'nut',
+                'axle'];   // screws and the like are shown in the assembly guide only
+// each part goes with one checkbox
+const CAT = n => n.startsWith('stand') ? 'stand' : n === 'feet' ? 'feet' : (n === 'plate' || n === 'cover') ? 'plate'
+  : ['pcb', 'pcba', 'oled', 'encoder', 'drumenc'].includes(n) ? 'board' : n === 'switch' ? 'switch'
+  : (n === 'wheel' || n.startsWith('drum')) ? 'wheel' : 'case';
 const b64 = (s, T) => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new T(u.buffer); };
 const canvas = document.getElementById('view');
 const renderer = new THREE.WebGLRenderer({canvas, antialias: true}); renderer.setPixelRatio(devicePixelRatio);
@@ -252,9 +282,11 @@ ctl.mouseButtons = {LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: 
 ctl.touches = {ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN};
 scene.add(new THREE.HemisphereLight(0xffffff, 0x666666, 0.9));
 const dl = new THREE.DirectionalLight(0xffffff, 0.6); dl.position.set(200, -300, 400); scene.add(dl);
-let group = null; const state = {v: 'print', switch: true, plate: true, wheel: true, explode: false, gap: 10};
+let group = null;
+const state = {v: 'print', angle: 0, explode: false, gap: 10,
+               show: {case: true, plate: true, board: true, switch: true, wheel: true, feet: true, stand: true}};
 // exploded view: each layer rises by its level x the gap set on the slider (mm)
-const LEVEL = {tray: 0, bottom: 0, wheel: 0, wheelcap: 2, encoder: 6, frame1: 1, frame2: 2, frame3: 3, frame4: 4, pcb: 6, pcba: 6, oled: 6.5,
+const LEVEL = {stand3: -2, stand6: -2, stand9: -2, feet: -1, tray: 0, bottom: 0, wheel: 0, wheelcap: 2, encoder: 6, frame1: 1, frame2: 2, frame3: 3, frame4: 4, pcb: 6, pcba: 6, oled: 6.5,
                drumenc: 6, drumblock: 6.5, drum: 7, drumbezel: 8, plate: 9, switch: 11.5, cover: 12.5};
 const GAP = 25;   // mm between the halves
 // matte (frosted) and clear acrylic, and the half-mirror OLED cover
@@ -297,17 +329,24 @@ function place(obj) { obj.position.z = obj.userData.z0 + (state.explode ? (LEVEL
 function build() {
   if (group) scene.remove(group);
   group = new THREE.Group();
-  const halves = {left: new THREE.Group(), right: new THREE.Group()};
-  const add = (side, layer, obj, z0 = 0) => { obj.userData = {layer, z0}; place(obj); halves[side].add(obj); };
+  const halves = {left: new THREE.Group(), right: new THREE.Group()}, tilted = {};
+  // on a stand the half is turned about its front feet onto the stand (tray frame -> desk); the stand comes along
+  for (const side of ['left', 'right']) {
+    const t = tilted[side] = new THREE.Group(), p = state.angle && TILT[side][state.angle];
+    t.matrixAutoUpdate = false;
+    if (p) t.matrix.set(...p, 0, 0, 0, 1);
+    halves[side].add(t);
+  }
+  const add = (side, layer, obj, z0 = 0) => { obj.userData = {layer, z0}; place(obj); tilted[side].add(obj); };
   for (const [side, name, m, color, op] of DATA[state.v]) {
     if (HIDDEN.includes(name)) continue;
-    const key = name.startsWith('drum') ? 'wheel' : name;   // the wheel toggle shows / hides the drum dial too
-    if (!state[key] && (key === 'switch' || key === 'plate' || key === 'wheel')) continue;
-    if (name === 'pcba') {
-      add(side, 'pcba', board(Object.values(BOARDS[side].pcba).flat()), m);
-      if (state.switch) add(side, 'switch', board(Object.values(BOARDS[side].switches).flat()), m);
+    if (name === 'pcba') {         // KiCad's board, with the switches as their own checkbox
+      if (state.show.board) add(side, 'pcba', board(Object.values(BOARDS[side].pcba).flat()), m);
+      if (state.show.switch) add(side, 'switch', board(Object.values(BOARDS[side].switches).flat()), m);
       continue;
     }
+    const c = CAT(name);
+    if (!state.show[c] || (c === 'stand' && name !== `stand${state.angle}`)) continue;
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(b64(m.v, Float32Array), 3));
     g.setIndex(new THREE.BufferAttribute(b64(m.i, Uint32Array), 1));
@@ -317,7 +356,7 @@ function build() {
     add(side, name, new THREE.Mesh(g, mat));
   }
   group.add(halves.left, halves.right);
-  group.userData.halves = halves;
+  group.userData.halves = halves; group.userData.tilted = tilted;
   scene.add(group); layout(); spec();
 }
 // side by side on wide screens, stacked on tall (phone) screens
@@ -332,6 +371,7 @@ function fit() {
   // place the camera on a fixed viewing direction and find the closest distance at which all
   // eight corners of the model's bounding box stay inside the frame (with a margin)
   const box = new THREE.Box3().setFromObject(group);
+  if (box.isEmpty()) return;               // every checkbox off
   const c = box.getCenter(new THREE.Vector3());
   const corners = [];
   for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) corners.push(new THREE.Vector3(x, y, z));
@@ -358,22 +398,38 @@ function onResize() {
   const wide = cam.aspect >= 1;
   if (wide !== lastWide) { lastWide = wide; layout(); fit(); }
 }
+// stands exist for the printed trays only; the stand checkbox only matters with an angle chosen
+function standUI() {
+  const printed = state.v !== 'acrylic';
+  if (!printed) state.angle = 0;
+  document.getElementById('angles').hidden = !printed;
+  document.querySelectorAll('[data-a]').forEach(x => x.classList.toggle('on', +x.dataset.a === state.angle));
+  const lbl = document.getElementById('stand-lbl'), box = lbl.querySelector('input');
+  lbl.hidden = !printed; box.disabled = !state.angle; lbl.classList.toggle('off', !state.angle);
+  lbl.title = state.angle ? '' : '台座の角度を選ぶと表示できます';
+}
 document.querySelectorAll('button[data-v], button[data-t]').forEach(b => b.addEventListener('click', () => {
-  if (b.dataset.v) { state.v = b.dataset.v; document.querySelectorAll('[data-v]').forEach(x => x.classList.toggle('on', x === b)); }
+  if (b.dataset.v) { state.v = b.dataset.v; document.querySelectorAll('[data-v]').forEach(x => x.classList.toggle('on', x === b)); standUI(); }
   else { state[b.dataset.t] = !state[b.dataset.t]; b.classList.toggle('on', state[b.dataset.t]); }
   if (b.dataset.t === 'explode') document.getElementById('gap').hidden = !state.explode;
   build(); if (b.dataset.v || b.dataset.t === 'explode') fit();
 }));
+document.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => {
+  state.angle = +b.dataset.a; standUI(); build(); fit();
+}));
+document.querySelectorAll('[data-c]').forEach(box => box.addEventListener('change', () => {
+  state.show[box.dataset.c] = box.checked; build();
+}));
 const gapIn = document.getElementById('gap-in'), gapOut = document.getElementById('gap-out');
 gapIn.addEventListener('input', () => {
   state.gap = +gapIn.value; gapOut.textContent = `${state.gap} mm`;
-  for (const h of Object.values(group.userData.halves)) h.children.forEach(place);
+  for (const t of Object.values(group.userData.tilted)) t.children.forEach(place);
 });
 gapIn.addEventListener('change', fit);   // refit once the slider is released
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', bg);
 new MutationObserver(bg).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
 addEventListener('resize', onResize);
-bg(); resize(); build(); lastWide = cam.aspect >= 1; fit();
+bg(); resize(); standUI(); build(); lastWide = cam.aspect >= 1; fit();
 canvas.addEventListener('dblclick', fit);
 document.getElementById('t-reset').addEventListener('click', fit);
 // spec card collapses to its title line so it stays out of the way of the model; remembered per viewer
