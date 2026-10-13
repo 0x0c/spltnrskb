@@ -169,10 +169,7 @@ def main():
     mats = dict(case=material('case', '#d9d8d3', 0.62), key=material('key', '#f4f3ef', 0.45),
                 leg=material('leg', '#e07a2f', 0.55), rubber=material('rubber', '#2b2b2b', 0.8),
                 metal=material('metal', '#c9ccd0', 0.25, 1.0), plug=material('plug', '#3a3d42', 0.5),
-                switch=material('switch', '#2b2d30', 0.5), stand=material('stand', '#f4f6f7', 0.08))
-    sb = mats['stand'].node_tree.nodes['Principled BSDF']     # stands: clear, like the acrylic display stands
-    sb.inputs['Transmission Weight'].default_value = 1.0
-    sb.inputs['IOR'].default_value = 1.49
+                switch=material('switch', '#2b2d30', 0.5), stand=material('stand', '#d9d8d3', 0.62))   # printed, as the tray
     lift = rep.get('lift', 0.0)
     kb = link(bpy.data.objects.new('keyboard', None))
     import_stl(os.path.join(VAR, MECH, f'{SIDE}-tray.stl'), mats['case'], kb)

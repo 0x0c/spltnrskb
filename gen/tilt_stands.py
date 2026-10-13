@@ -1,4 +1,4 @@
-"""Tilt stands: the half sits on a printed stand that follows the case outline (case/preview/tilt-variants/, R and U).
+"""Tilt stands: the half sits on a 3D printed stand that follows the case outline (case/preview/tilt-variants/, R and U).
 
 Instead of legs under the tray, a separate stand with a sloped top: the case's rubber feet drop into pockets in the
 top (so the case cannot slide off), and the stand stands on the desk with its whole footprint.
@@ -18,7 +18,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from manifold3d import CrossSection, JoinType, Manifold  # noqa: E402
-from make_case import Half, hull, hull_margin, write_stl  # noqa: E402
+from make_case import TRAY_FILLET, Half, hull, hull_margin, write_stl  # noqa: E402
 from tilt_variants import ANGLES, DIR, FOOT_PROUD, plug_boxes  # noqa: E402
 
 RING_W = 16.0          # band width in from the outline: the feet (8 mm in, 9.5 mm across) sit on it with 3 mm spare
@@ -26,7 +26,9 @@ POCKET = 2.0           # feet pockets: the foot stands this deep in the stand (0
 POCKET_D = 9.5 + 0.6
 LIFT = 3.0             # R: stand under the front feet' pockets
 U_PAST = 15.0          # U: the side arms run this far toward the front past the side foot
-STANDS = {'R': ('台座（全周）', LIFT), 'U': ('台座（奥の U 字）', 0.0)}
+TOP_FILLET = TRAY_FILLET   # round on the stand's top edges: the same as the tray's bottom edge sitting on it
+BED = 220.0                # printer bed (as the tray: Ender-3, Bambu Lab A1 / P1 / X1, Prusa MK4)
+STANDS = {'R': ('3D プリントの台座（全周）', LIFT), 'U': ('3D プリントの台座（奥の U 字）', 0.0)}
 
 
 def pose(deg, front_y, lift):
@@ -58,7 +60,14 @@ def stand(hf, key, deg, front_y):
         feet = [f for f in feet if -f[1] > y_cut]
     # prism under the tray down past the desk, cut at the desk plane, pockets for the feet
     top = -FOOT_PROUD + POCKET                    # stand top, tray frame
-    prism = Manifold.extrude(band, 200.0).translate((0, 0, top - 200.0))
+    # printed (bottom on the bed, pockets up): straight walls, the top edges rounded by stacked offset slices
+    r, n = TOP_FILLET, 8
+    prism = Manifold.extrude(band, 200.0 - r).translate((0, 0, top - 200.0))
+    for i in range(n):
+        za, zb = top - r + r * i / n, top - r + r * (i + 1) / n
+        zm = (za + zb) / 2 - (top - r)
+        inset = r - math.sqrt(max(r * r - zm * zm, 0.0))
+        prism = prism + Manifold.extrude(band.offset(-inset, JoinType.Round), zb - za + 0.001).translate((0, 0, za))
     desk = Manifold.cube((1000, 1000, 500)).translate((-500, -500, 0)).transform(inverse(pose(deg, front_y, lift)))
     m = prism ^ desk
     for x, y in feet:
@@ -88,6 +97,7 @@ def run(side, key):
         poly = hull(pts)
         margin = min(hull_margin(poly, (k['cx'], k['cy'])) for k in hf.d['keys'])
         bb = world.bounding_box()
+        assert bb[3] - bb[0] <= BED and bb[4] - bb[1] <= BED, f'{key} {deg} stand does not fit the bed'
         rep['angles'][deg] = dict(margin=round(float(margin), 2), angle_err=0.0,
                                   plug_hit=round(sum((pl ^ m).volume() for pl in plugs), 3),
                                   plug_above_desk=1.0, leg_in_tray=round((m ^ tray).volume(), 3), seats_found=True,

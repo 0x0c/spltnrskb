@@ -57,7 +57,7 @@ def table(rs):
         lines.append('| ' + ' | '.join([f"{r['label']}（{r['key']}）", r['steps'], r['parts'], r['margin'], r['err'],
                                           r['checks'], r['switch'], r['store']]) + ' |')
     note = ('支持の余裕は、もっとも外側のキーの中心から支持多角形の辺までの距離（負は外）。'
-            '印刷のサポート材は 5 案とも要らない（底面から開く穴と溝の天井は、ブリッジで印刷できる幅。台座は底面を下にし、くぼみが上を向く）。')
+            '印刷のサポート材は 5 案とも要らない（底面から開く穴と溝の天井は、ブリッジで印刷できる幅。台座は底面を下にして印刷し、くぼみが上を向く）。台座はトレイと同じ 220 mm 角の造形範囲に入る。')
     open(os.path.join(D, 'table.md'), 'w').write('\n'.join(lines) + '\n\n' + note + '\n')
     print('wrote', os.path.join(D, 'table.md'))
 
