@@ -82,6 +82,17 @@ FOOT_DEPTH = 1.0      # leaves a 1.0 mm floor; the foot stands 2.8 mm proud
 FOOT_INSET = 8.0      # outline corner -> recess centre, first try
 FOOT_KEEP = 1.0       # recess edge to counterbores, pilot holes, the reset hole and the wheel
 FOOT_STEP = 0.5       # a blocked recess slides along the edge toward the middle in these steps
+FOOT_H = 3.8          # the foot's height: it stands FOOT_PROUD below the tray bottom
+FOOT_PROUD = FOOT_H - FOOT_DEPTH
+# tilt stand (docs/specs/case-feet-tilt.md): a separate printed U along the back edge and both sides, its top sloped by
+# the angle; the back three feet drop into pockets in it, the front two stay on the desk. One stand per angle.
+STAND_ANGLES = (3, 6, 9)
+STAND_W = 16.0        # band width in from the outline: the feet (8 mm in, 9.5 mm across) sit on it with 3 mm spare
+STAND_POCKET = (10.1, 2.0)   # feet pockets: d, depth (0.8 mm left between the tray bottom and the stand top)
+STAND_PAST = 15.0     # the side arms run this far toward the front past the foot beside the wheel
+STAND_FILLET = TRAY_FILLET   # round on the stand's top edges: the same as the tray's bottom edge sitting on it
+STAND_FLOOR = 1.5     # thinnest stand under a pocket
+BED = 220.0           # printer bed, as for the tray (Ender-3, Bambu Lab A1 / P1 / X1, Prusa MK4)
 PLATE_FILLET = 1.0    # all-printed plate: rounded top outer edge (prints fine top-down: 1 mm reach on the bed side)
 SWITCH_CUT = 14.0
 # OLED: window in the switch plate, filled by a half-mirror acrylic cover flush with the plate top. Half-mirror
@@ -202,6 +213,24 @@ def hull_margin(poly, p):
     for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]):
         m = min(m, ((x1 - x0) * (p[1] - y0) - (y1 - y0) * (p[0] - x0)) / math.hypot(x1 - x0, y1 - y0))
     return m
+
+
+def stand_pose(deg, front_y, lift=0.0):
+    """Tray frame -> world (3 x 4 affine) of a half on a tilt stand: raised by deg about the front feet's contact line
+    (board y front_y, FOOT_PROUD under the tray bottom), that line on the desk (z = 0), then lifted by lift."""
+    t = math.radians(deg)
+    c, s = math.cos(t), math.sin(t)
+    yp, zp = -front_y, -FOOT_PROUD
+    return [[1, 0, 0, 0],
+            [0, c, -s, yp - c * yp + s * zp],
+            [0, s, c, zp - s * yp - c * zp + FOOT_PROUD + lift]]
+
+
+def affine_inverse(m):
+    """Inverse of a rigid 3 x 4 affine."""
+    r = [[m[j][i] for j in range(3)] for i in range(3)]
+    t = [-sum(r[i][j] * m[j][3] for j in range(3)) for i in range(3)]
+    return [r[i] + [t[i]] for i in range(3)]
 
 
 def hexagon(af, h):
@@ -419,6 +448,49 @@ class Half:
                 pts.append(slide(x, oy0 + FOOT_INSET, 0, FOOT_STEP))
             self._feet = pts
         return self._feet
+
+    def front_y(self):
+        """Board y of the front feet (the line the half tilts about on a stand)."""
+        return max(y for _, y in self.feet())
+
+    def stand(self, deg, ring=False, lift=0.0):
+        """Tilt stand for deg (tray frame, under the tray): the band along the outline, its top STAND_POCKET above the
+        feet's bottoms with the top edges rounded, cut at the desk, pockets for the feet it carries. The U (default)
+        runs along the back edge and down both sides STAND_PAST past the foot beside the wheel; ring = the whole
+        outline (tilt study), with the front lifted by lift."""
+        key = (deg, ring, lift)
+        if key in getattr(self, '_stands', {}):
+            return self._stands[key]
+        band = self.outer - self.outer.offset(-STAND_W, JoinType.Round)
+        feet = self.feet()
+        if not ring:
+            ox0, oy0, ox1, oy1, _ = self.outer_box
+            y_cut = -(feet[4][1] + STAND_PAST)                 # tray frame
+            band = band ^ CrossSection.square((ox1 - ox0 + 2, -oy0 - y_cut + 1)).translate((ox0 - 1, y_cut))
+            feet = [f for f in feet if -f[1] > y_cut]
+        # printed bottom down, pockets up: straight walls, the top edges rounded by stacked offset slices
+        top, r, n = -FOOT_PROUD + STAND_POCKET[1], STAND_FILLET, 8
+        m = Manifold.extrude(band, 200.0 - r).translate((0, 0, top - 200.0))
+        for i in range(n):
+            za, zb = top - r + r * i / n, top - r + r * (i + 1) / n
+            zm = (za + zb) / 2 - (top - r)
+            inset = r - math.sqrt(max(r * r - zm * zm, 0.0))
+            m = m + Manifold.extrude(band.offset(-inset, JoinType.Round), zb - za + 0.001).translate((0, 0, za))
+        desk = Manifold.cube((1000, 1000, 500)).translate((-500, -500, 0)).transform(
+            affine_inverse(stand_pose(deg, self.front_y(), lift)))
+        m = m ^ desk
+        d, depth = STAND_POCKET
+        for x, y in feet:
+            m = m - Manifold.cylinder(depth + 0.01, d / 2, d / 2, 64).translate((x, -y, -FOOT_PROUD))
+        self._stands = {**getattr(self, '_stands', {}), key: (m, feet)}
+        return m, feet
+
+    def plugs3d(self):
+        """USB-C plugs in the back-edge ports (tray frame): 12.5 x 7 mm, 25 mm out of the wall."""
+        oy0 = self.outer_box[1]
+        z = FLOOR + STANDOFF - 1.7
+        return [Manifold.cube((12.5, 25.0, 7.0)).translate((c['center'][0] - 6.25, -oy0 - 2.0, z - 3.5))
+                for c in self.d['connectors'].values() if c.get('edge') == 'top']
 
 
     # perimeter screws on the wall centre line --------------------------------------
@@ -913,6 +985,14 @@ def write_half(hf, out, parts=True, laser=True):
     if parts:
         write_stl(os.path.join(out, 'print', f'{side}-wheel.stl'), hf.wheel3d())
         write_stl(os.path.join(out, 'print', f'{side}-wheel-cap.stl'), hf.wheel_cap())   # 3D-print variant
+    stands = {}
+    if parts and hf.feet():        # tilt stands: printed bottom down (print/), under the untilted tray (preview/)
+        for deg in STAND_ANGLES:
+            m, _ = hf.stand(deg)
+            w = m.transform(stand_pose(deg, hf.front_y()))
+            write_stl(os.path.join(out, 'print', f'{side}-stand-{deg}.stl'), w)
+            write_stl(os.path.join(out, 'preview', f'{side}-stand-{deg}-placed.stl'), m)
+            stands[deg] = dict(height=round(float(w.bounding_box()[5]), 1), volume_cm3=round(w.volume() / 1000, 1))
     if parts and 'drum' in hf.d:   # drum dial: drum (resin print), bearing block and bezel, each with its bottom at z = 0
         for name, m in (('drum', hf.drum3d()), ('drum-block', hf.drum_block3d()), ('drum-bezel', hf.drum_bezel3d())):
             write_stl(os.path.join(out, 'print', f'{side}-{name}.stl'), m.translate((0, 0, -m.bounding_box()[2])))
@@ -932,7 +1012,7 @@ def write_half(hf, out, parts=True, laser=True):
                   height_acrylic=BOTTOM_T + N_FRAMES * FRAME_T + PLATE_T,
                   screws=len(hf.screws), screws_xy=[[round(float(x), 3), round(float(y), 3)] for x, y in hf.screws], pcb_holes=len(hf.d['holes']),
                   tray_volume_cm3=round(tray.volume() / 1000, 1),
-                  feet_xy=[[round(float(x), 3), round(float(y), 3)] for x, y in hf.feet()],
+                  feet_xy=[[round(float(x), 3), round(float(y), 3)] for x, y in hf.feet()], stands=stands,
                   plate_genus=plate.genus(), tray_status=str(tray.status()))
     return layers, report
 
@@ -1022,6 +1102,7 @@ def check(hf, layers):
         check_oled(hf)
     check_wheel(hf)
     check_feet(hf)
+    check_tilt(hf)
     if 'drum' in hf.d:
         check_drum(hf)
     check_closed(hf, layers)
@@ -1086,6 +1167,33 @@ def check_feet(hf):
     support = hull(feet)
     for k in hf.d['keys']:
         assert hull_margin(support, (k['cx'], k['cy'])) > 0, f"key at ({k['cx']}, {k['cy']}) outside the feet"
+
+
+def check_tilt(hf):
+    """Tilt stands: the pocket floors and the front feet's contact line on one plane at the angle, every key inside
+    the support (the stand's footprint and the front feet), a floor under the pockets, clear of the tray and the plugs,
+    on the printer bed."""
+    if not hf.feet():
+        return
+    tray = hf.tray()
+    front = [(x, y) for x, y in hf.feet() if y == hf.front_y()]
+    for deg in STAND_ANGLES:
+        m, feet = hf.stand(deg)
+        pose = stand_pose(deg, hf.front_y())
+        w = m.transform(pose)
+        for x, y in feet:                   # pocket floor: where the foot's bottom lands
+            p = [sum(pose[i][j] * v for j, v in enumerate((x, -y, -FOOT_PROUD))) + pose[i][3] for i in range(3)]
+            a = math.degrees(math.atan2(p[2], p[1] + hf.front_y()))
+            assert abs(a - deg) <= 0.2, f'{deg} deg stand: foot at ({x}, {y}) lands at {a:.2f} deg'
+            assert p[2] >= STAND_FLOOR, f'{deg} deg stand: {p[2]:.2f} mm under the pocket at ({x}, {y})'
+        pts = [(q[0], -q[1]) for poly in w.slice(0.05).to_polygons() for q in poly] + front
+        support = hull(pts)
+        for k in hf.d['keys']:
+            assert hull_margin(support, (k['cx'], k['cy'])) > 0, f"{deg} deg: key at ({k['cx']}, {k['cy']}) outside"
+        assert (m ^ tray).volume() < 1e-3, f'{deg} deg stand hits the tray'
+        assert all((m ^ pl).volume() < 1e-3 for pl in hf.plugs3d()), f'{deg} deg stand hits a plug'
+        b = w.bounding_box()
+        assert b[3] - b[0] <= BED and b[4] - b[1] <= BED and abs(b[2]) < 1e-6, f'{deg} deg stand off the bed'
 
 
 def check_closed(hf, layers):

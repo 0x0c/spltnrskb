@@ -306,15 +306,8 @@ MECHS = {'M': ('磁石式', magnet), 'F': ('折りたたみ式', folding), 'S': 
 
 
 def plug_boxes(hf):
-    """USB-C plugs in the back-edge ports (tray frame): 12.5 x 7 mm, 25 mm out of the wall."""
-    ox0, oy0, ox1, oy1, _ = hf.outer_box
-    z = FLOOR + STANDOFF - 1.7
-    out = []
-    for c in hf.d['connectors'].values():
-        if c.get('edge') == 'top':
-            x = c['center'][0]
-            out.append(Manifold.cube((12.5, 25.0, 7.0)).translate((x - 6.25, -oy0 - 2.0, z - 3.5)))
-    return out
+    """USB-C plugs in the back-edge ports (tray frame)."""
+    return hf.plugs3d()
 
 
 def run(side, key):

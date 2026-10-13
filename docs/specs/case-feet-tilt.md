@@ -180,7 +180,7 @@ OLED の高さを比べたときと同じく、5 案をモデルにし、`case/p
 | 2 | 済 | 3 案のモデルを作る | `gen/tilt_variants.py`（新規）、`case/preview/tilt-variants/` | 3 案それぞれ、左右の脚の座を掘ったトレイと 3 種類の脚の STL が出る。各案で `check_tilt()` 相当の検査（角度、支持多角形、肉の厚さ、プラグ）の結果を表で出力する。通らない項目があれば、その案の制約として表に残す | 1 |
 | 3 | 済 | 3 案をレンダリングし、比較の画像と表を作る | `gen/tilt_study.sh`、`gen/render_tilt.py`、`gen/tilt_sheet.py`（いずれも新規）、`docs/img/tilt-study/` | 3 章の 3 種類のカメラの画像と、比較の表が `docs/img/tilt-study/` に出る。ユーザーに見せて 1 案を選んでもらう | 2 |
 | 4 | 済 | 選んだ案と理由を仕様書に書き足す | `docs/specs/case-feet-tilt.md` | 3 章に台座の 2 案と選んだ案、組み込みの方法が、4 章の表に採らなかった 4 案の理由が載る。textlint の指摘が 0 件 | 3 |
-| 5 | 未 | 台座を `make_case.py` に組み込み、台座の STL と `check_tilt()` を足す。`tilt_stands.py` はこの関数を呼ぶ形に変える | `gen/make_case.py`、`gen/tilt_stands.py`、`case/print/`、`case/preview/`、`case/case_report.json` | `gen/make_case.py` の検査がすべて通る。`case/print/` に左右 3 個ずつの台座が、印刷の向きで出る。`gen/tilt_study.sh` の結果が変わらない | 4 |
+| 5 | 済 | 台座を `make_case.py` に組み込み、台座の STL と `check_tilt()` を足す。`tilt_stands.py` はこの関数を呼ぶ形に変える | `gen/make_case.py`、`gen/tilt_stands.py`、`case/print/`、`case/preview/`、`case/case_report.json` | `gen/make_case.py` の検査がすべて通る。`case/print/` に左右 3 個ずつの台座が、印刷の向きで出る。`gen/tilt_study.sh` の結果が変わらない | 4 |
 | 6 | 未 | 試し印刷の小片を作る | `gen/foot_coupon.py`（新規）、`case/print/foot-coupon.stl` | トレイのくぼみ 3 つと台座のくぼみ 3 つを持つ STL が出て、数字が読める | 5 |
 | 7 | 未 | BOM と注文の文書を更新する | `gen/make_bom.py`、`bom/`、`docs/ordering.md`、`docs/pre-order-checklist.md` | BOM でゴム足がトレイの片側 5 個になり、台座が印刷の部品として載る | 5 |
 | 8 | 未 | 組み立てガイドと 3D ビューアを更新する | `gen/assembly_guide.py`、`gen/case_viewer.py`、`case/preview/` | 組み立てガイドに、くぼみへゴム足を貼る手順と台座に載せる手順が入る。ビューアで角度を選ぶと、台座とトレイの位置が合っている | 5、7 |

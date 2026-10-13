@@ -73,6 +73,20 @@
     20.5
    ]
   ],
+  "stands": {
+   "3": {
+    "height": 9.0,
+    "volume_cm3": 31.8
+   },
+   "6": {
+    "height": 16.0,
+    "volume_cm3": 56.8
+   },
+   "9": {
+    "height": 22.9,
+    "volume_cm3": 82.0
+   }
+  },
   "plate_genus": 51,
   "tray_status": "Error.NoError"
  },
@@ -150,6 +164,20 @@
     22.5
    ]
   ],
+  "stands": {
+   "3": {
+    "height": 9.0,
+    "volume_cm3": 34.9
+   },
+   "6": {
+    "height": 16.0,
+    "volume_cm3": 62.2
+   },
+   "9": {
+    "height": 22.9,
+    "volume_cm3": 89.8
+   }
+  },
   "plate_genus": 58,
   "tray_status": "Error.NoError"
  }
