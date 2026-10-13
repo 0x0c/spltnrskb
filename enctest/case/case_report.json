@@ -31,6 +31,7 @@
   ],
   "pcb_holes": 4,
   "tray_volume_cm3": 21.8,
+  "feet_xy": [],
   "plate_genus": 7,
   "tray_status": "Error.NoError"
  }

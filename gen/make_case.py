@@ -74,6 +74,14 @@ CAP_FIT = 0.15
 RIB_T = 2.0                  # all-printed variant: web under the printed plate (PCB top + 1.5)
 TRAY_FILLET = 2.0     # 3D-printed tray: rounded bottom outer edge
 TRAY_TOP_FILLET = 0.6 # small round on the top outer edge, under the plate
+# rubber feet (3M CS-02, 9.5 x 3.8 mm) sit in round recesses under the tray (docs/specs/case-feet-tilt.md): near the
+# corners, clear of the screw counterbores (the plate comes off without peeling a foot), the boss pilot holes, the
+# reset hole and the corner wheel
+FOOT_D = 10.0         # recess diameter (0.25 mm radial play round the foot)
+FOOT_DEPTH = 1.0      # leaves a 1.0 mm floor; the foot stands 2.8 mm proud
+FOOT_INSET = 8.0      # outline corner -> recess centre, first try
+FOOT_KEEP = 1.0       # recess edge to counterbores, pilot holes, the reset hole and the wheel
+FOOT_STEP = 0.5       # a blocked recess slides along the edge toward the middle in these steps
 PLATE_FILLET = 1.0    # all-printed plate: rounded top outer edge (prints fine top-down: 1 mm reach on the bed side)
 SWITCH_CUT = 14.0
 # OLED: window in the switch plate, filled by a half-mirror acrylic cover flush with the plate top. Half-mirror
@@ -171,6 +179,29 @@ def inside(cs, p):
 
 def circle(x, y, d):
     return CrossSection.circle(d / 2).translate((x, -y))
+
+
+def hull(pts):
+    """Convex hull (monotone chain), counter-clockwise taking the coordinates as they are (y up)."""
+    pts = sorted(set(pts))
+
+    def half(seq):
+        out = []
+        for p in seq:
+            while len(out) >= 2 and ((out[-1][0] - out[-2][0]) * (p[1] - out[-2][1]) -
+                                     (out[-1][1] - out[-2][1]) * (p[0] - out[-2][0])) <= 0:
+                out.pop()
+            out.append(p)
+        return out[:-1]
+    return half(pts) + half(pts[::-1])
+
+
+def hull_margin(poly, p):
+    """Distance from p in to the nearest edge of the convex polygon poly (from hull()); negative outside."""
+    m = math.inf
+    for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]):
+        m = min(m, ((x1 - x0) * (p[1] - y0) - (y1 - y0) * (p[0] - x0)) / math.hypot(x1 - x0, y1 - y0))
+    return m
 
 
 def hexagon(af, h):
@@ -351,6 +382,44 @@ class Half:
     def _reset_cut(self, d):
         return circle(*self.d['reset'], d) if 'reset' in self.d else CrossSection()
 
+    # rubber feet under the tray ----------------------------------------------------------
+    def foot_keepout(self):
+        """What a foot recess must stay FOOT_KEEP away from: counterbores, boss pilot holes, the reset hole, the wheel
+        (its disc and wall opening, the axle post inside)."""
+        cs = self.holes(self.screws, SCREW_CB[0]) + self.holes(self.d['holes'], PILOT_D) + self._reset_cut(RESET_D)
+        return cs + self.wheel_cut() if 'wheel' in self.d else cs
+
+    def foot_fits(self, p):
+        x, y = p
+        if (circle(x, y, FOOT_D + 2 * (TRAY_FILLET + 0.5)) - self.outer).area() > 1e-6:   # off the bottom fillet
+            return False
+        return (circle(x, y, FOOT_D + 2 * FOOT_KEEP) ^ self.foot_keepout()).area() < 1e-6
+
+    def feet(self):
+        """Foot recess centres (board coordinates). One per corner: it starts FOOT_INSET in from the outline corner
+        and slides along the back / front edge toward the middle until it fits. The wheel fills its corner, so that
+        foot ends up well along the back edge; a fifth foot slides down the outer side edge instead, so the corner
+        keys stay inside the feet. The encoder test board (built from a keyboard half, case_data 'source') keeps a
+        plain floor."""
+        if 'source' in self.d:
+            return []
+        if not hasattr(self, '_feet'):
+            ox0, oy0, ox1, oy1, _ = self.outer_box
+
+            def slide(x, y, dx, dy):
+                while not self.foot_fits((x, y)):
+                    x, y = x + dx, y + dy
+                    assert ox0 < x < ox1 and oy0 < y < oy1, 'no room for a foot'
+                return x, y
+            pts = [slide(x, y, step, 0) for y in (oy0 + FOOT_INSET, oy1 - FOOT_INSET)
+                   for x, step in ((ox0 + FOOT_INSET, FOOT_STEP), (ox1 - FOOT_INSET, -FOOT_STEP))]
+            if 'wheel' in self.d:
+                (wx, _), _ = self.wheel_xy()
+                x = ox0 + FOOT_INSET if wx < (ox0 + ox1) / 2 else ox1 - FOOT_INSET
+                pts.append(slide(x, oy0 + FOOT_INSET, 0, FOOT_STEP))
+            self._feet = pts
+        return self._feet
+
 
     # perimeter screws on the wall centre line --------------------------------------
     def _screws(self):
@@ -481,6 +550,8 @@ class Half:
         if 'reset' in self.d:
             rx, ry = self.d['reset']
             body = body - Manifold.cylinder(FLOOR + 0.02, RESET_D / 2, RESET_D / 2).translate((rx, -ry, -0.01))
+        for x, y in self.feet():
+            body = body - Manifold.cylinder(FOOT_DEPTH + 0.01, FOOT_D / 2, FOOT_D / 2).translate((x, -y, -0.01))
         return body
 
     def _filleted(self, top):
@@ -861,6 +932,7 @@ def write_half(hf, out, parts=True, laser=True):
                   height_acrylic=BOTTOM_T + N_FRAMES * FRAME_T + PLATE_T,
                   screws=len(hf.screws), screws_xy=[[round(float(x), 3), round(float(y), 3)] for x, y in hf.screws], pcb_holes=len(hf.d['holes']),
                   tray_volume_cm3=round(tray.volume() / 1000, 1),
+                  feet_xy=[[round(float(x), 3), round(float(y), 3)] for x, y in hf.feet()],
                   plate_genus=plate.genus(), tray_status=str(tray.status()))
     return layers, report
 
@@ -949,6 +1021,7 @@ def check(hf, layers):
     if hf.window_box is not None:
         check_oled(hf)
     check_wheel(hf)
+    check_feet(hf)
     if 'drum' in hf.d:
         check_drum(hf)
     check_closed(hf, layers)
@@ -995,6 +1068,24 @@ def check_wheel(hf):
     assert abs(pin_top - (FLOOR + hf.enc_bottom() + PIN_ENGAGE)) < 1e-6, 'pin does not reach into the rotor'
     assert pin_top < FLOOR + STANDOFF - 0.3, 'pin reaches the PCB'
     assert FLOOR + WHEEL_GAP + WHEEL_T > FLOOR + hf.enc_bottom(), 'rim no longer overlaps the encoder (hub not needed)'
+
+
+def check_feet(hf):
+    """Foot recesses: off the bottom fillet, clear of counterbores, pilot holes, the reset hole and the wheel, a floor
+    left above them, and every key centre inside the feet (no key press lifts a corner)."""
+    feet = hf.feet()
+    if not feet:
+        return
+    assert len(feet) == 5, feet
+    assert FLOOR - FOOT_DEPTH >= 1.0 - 1e-9, 'floor above the foot recesses too thin'
+    for p in feet:
+        assert hf.foot_fits(p), f'foot recess at {p} hits the fillet, a hole or the wheel'
+    for a in feet:
+        for b in feet:
+            assert a == b or math.dist(a, b) > FOOT_D + 1.0, f'foot recesses at {a} and {b} run together'
+    support = hull(feet)
+    for k in hf.d['keys']:
+        assert hull_margin(support, (k['cx'], k['cy'])) > 0, f"key at ({k['cx']}, {k['cy']}) outside the feet"
 
 
 def check_closed(hf, layers):
