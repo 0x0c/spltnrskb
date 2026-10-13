@@ -1,4 +1,4 @@
-"""Renders of the tilt-leg study (docs/specs/case-feet-tilt.md step 3), one mechanism per run, left half.
+"""Renders of the tilt-leg study (legs M, F, S and stands R, U) (docs/specs/case-feet-tilt.md step 3), one mechanism per run, left half.
 
     blender -b -P gen/render_tilt.py -- --mech M [--samples 48] [--res 1000]
 
@@ -169,7 +169,11 @@ def main():
     mats = dict(case=material('case', '#d9d8d3', 0.62), key=material('key', '#f4f3ef', 0.45),
                 leg=material('leg', '#e07a2f', 0.55), rubber=material('rubber', '#2b2b2b', 0.8),
                 metal=material('metal', '#c9ccd0', 0.25, 1.0), plug=material('plug', '#3a3d42', 0.5),
-                switch=material('switch', '#2b2d30', 0.5))
+                switch=material('switch', '#2b2d30', 0.5), stand=material('stand', '#f4f6f7', 0.08))
+    sb = mats['stand'].node_tree.nodes['Principled BSDF']     # stands: clear, like the acrylic display stands
+    sb.inputs['Transmission Weight'].default_value = 1.0
+    sb.inputs['IOR'].default_value = 1.49
+    lift = rep.get('lift', 0.0)
     kb = link(bpy.data.objects.new('keyboard', None))
     import_stl(os.path.join(VAR, MECH, f'{SIDE}-tray.stl'), mats['case'], kb)
     plate = import_stl(os.path.join(ROOT, 'case', 'print', f'{SIDE}-plate.stl'), mats['case'], kb)
@@ -195,15 +199,16 @@ def main():
             kind, *rest = fn[len(SIDE) + 1:-4].split('-')
             seat, deg = rest[0], int(rest[1])
             legs[(kind, seat, deg)] = import_stl(os.path.join(VAR, MECH, fn),
-                                                 mats['rubber' if kind == 'legfoot' else 'leg'], kb)
+                                                 mats[{'legfoot': 'rubber', 'stand': 'stand'}.get(kind, 'leg')], kb)
 
     def show(deg, unfolded=None):
         """Legs for deg on (0: off; F: folded), feet always; unfolded overrides which F legs stand."""
         on = {deg} if unfolded is None else unfolded
         for (kind, seat, d), o in legs.items():
-            vis = (kind in ('leg', 'legfoot') and d in on) or (kind == 'folded' and d not in on)
+            vis = (kind in ('leg', 'legfoot', 'stand') and d in on) or (kind == 'folded' and d not in on)
             o.hide_render = not vis
-        kb.matrix_world = tilt(deg if unfolded is None else 0, front_y)
+        up = lift if unfolded is None and deg else 0.0
+        kb.matrix_world = Matrix.Translation(Vector((0, 0, up * MM))) @ tilt(deg if unfolded is None else 0, front_y)
 
     os.makedirs(OUT, exist_ok=True)
     sc = bpy.context.scene
@@ -234,6 +239,12 @@ def main():
     show(max(angles))
     back = camera('back', (-70, 200, 75), (70, 5, 4), lens=40)
     shot('back', back, RES, int(RES * 0.66))
+    stands = [o for (kind, _, d), o in legs.items() if kind == 'stand' and d == max(angles)]
+    if stands:                  # the stand on its own, from the front left above: its shape and the feet pockets
+        for o in kb.children:
+            o.hide_render = o not in stands
+        alone = camera('alone', (-120, -260, 230), (80, -50, 5), lens=45)
+        shot('stand', alone, RES, int(RES * 0.66))
 
 
 main()

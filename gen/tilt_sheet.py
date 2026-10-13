@@ -20,6 +20,8 @@ MECHS = {
     'F': dict(per_seat='M2 ネジとナット 1 組', per_leg='—', switch='脚を起こす（工具なし）', store='要らない'),
     'S': dict(per_seat='M3 インサート 1、M3 皿ネジ 1', per_leg='ゴム足 1',
               switch='皿ネジを外して別の脚を留める（ドライバー）', store='要る（片側 9 本）'),
+    'R': dict(stand=True, switch='台座を取り替えて載せ直す（工具なし）', store='要る（片側 3 個）'),
+    'U': dict(stand=True, switch='台座を取り替えて載せ直す（工具なし）', store='要る（片側 3 個）'),
 }
 ITEMS = [('seats', '脚の座'), ('angle', '角度'), ('support', '支持多角形'), ('plug', 'プラグ'), ('legs', '脚の形')]
 
@@ -33,10 +35,15 @@ def rows():
         margin = [min(v['margin'] for v in r['angles'].values()) for r in (L, R)]
         err = max(v['angle_err'] for r in (L, R) for v in r['angles'].values())
         failed = [name for item, name in ITEMS if not (L['check'][item] and R['check'][item])]
+        if info.get('stand'):
+            top = L['angles'][str(max(angles))]
+            parts = (f"印刷の台座 {len(angles)} 個（トレイは変えない）、{max(angles)}° の台座は高さ {top['height']} mm、"
+                     f"体積 {top['volume']} cm³")
+        else:
+            parts = (f"脚の座 {seats} か所（{info['per_seat']}）、印刷の脚 {seats * len(angles)} 本"
+                     + (f"（1 本ごとに{info['per_leg']}）" if info['per_leg'] != '—' else ''))
         out.append(dict(
-            key=key, label=L['label'], steps='、'.join(f'{a}°' for a in angles),
-            parts=f"脚の座 {seats} か所（{info['per_seat']}）、印刷の脚 {seats * len(angles)} 本"
-                  + (f"（1 本ごとに {info['per_leg']}）" if info['per_leg'] != '—' else ''),
+            key=key, label=L['label'], steps='、'.join(f'{a}°' for a in angles), parts=parts,
             margin=f'左 {margin[0]:.1f} mm、右 {margin[1]:.1f} mm', err=f'{err:.2f}°',
             checks='すべて通る' if not failed else '通らない：' + '、'.join(failed),
             switch=info['switch'], store=info['store']))
@@ -50,7 +57,7 @@ def table(rs):
         lines.append('| ' + ' | '.join([f"{r['label']}（{r['key']}）", r['steps'], r['parts'], r['margin'], r['err'],
                                           r['checks'], r['switch'], r['store']]) + ' |')
     note = ('支持の余裕は、もっとも外側のキーの中心から支持多角形の辺までの距離（負は外）。'
-            '印刷のサポート材は 3 案とも要らない（底面から開く穴と溝の天井は、ブリッジで印刷できる幅）。')
+            '印刷のサポート材は 5 案とも要らない（底面から開く穴と溝の天井は、ブリッジで印刷できる幅。台座は底面を下にし、くぼみが上を向く）。')
     open(os.path.join(D, 'table.md'), 'w').write('\n'.join(lines) + '\n\n' + note + '\n')
     print('wrote', os.path.join(D, 'table.md'))
 
@@ -80,13 +87,14 @@ def sheet(rs):
                         transform=ax.transAxes)
             ax.set_title(f'{deg}°（外側から）', loc='left', fontsize=11, color='#555')
             ax.axis('off')
-        for j, (shot, label) in enumerate((('bottom-0', '底面：脚なし'), ('bottom-legs', '底面：脚あり'),
+        thing = '台座' if MECHS[r['key']].get('stand') else '脚'
+        for j, (shot, label) in enumerate((('bottom-0', f'底面：{thing}なし'), ('bottom-legs', f'底面：{thing}あり'),
                                            ('back', f"奥の寄り：{r['steps'].split('、')[-1]}"))):
             ax = fig.add_subplot(gs[3 * i + 2, 4 * j:4 * j + 4])
             ax.imshow(plt.imread(os.path.join(D, f"{r['key']}-{shot}.jpg")))
             ax.set_title(label, loc='left', fontsize=11, color='#555')
             ax.axis('off')
-    fig.suptitle('チルト脚の 3 案（左半分）', fontsize=24, y=0.995)
+    fig.suptitle('チルト脚と台座の比較（左半分）', fontsize=24, y=0.995)
     fig.savefig(os.path.join(D, 'sheet.jpg'), dpi=70, bbox_inches='tight', pil_kwargs=dict(quality=85))
     print('wrote', os.path.join(D, 'sheet.jpg'))
 
