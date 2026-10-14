@@ -1,0 +1,954 @@
+{
+ "M": {
+  "left": {
+   "label": "磁石式",
+   "seats": {
+    "outer": [
+     26.5,
+     -9.5
+    ],
+    "inner": [
+     156.12,
+     -9.5
+    ],
+    "side": [
+     -3.5,
+     20.5
+    ]
+   },
+   "pads": 51.7,
+   "legs": {
+    "outer-3": {
+     "h": 9.5,
+     "body": 6.7,
+     "contact": [
+      26.5,
+      -9.5
+     ]
+    },
+    "inner-3": {
+     "h": 9.5,
+     "body": 6.7,
+     "contact": [
+      156.12,
+      -9.5
+     ]
+    },
+    "side-3": {
+     "h": 7.9,
+     "body": 5.1,
+     "contact": [
+      -3.5,
+      20.5
+     ]
+    },
+    "outer-6": {
+     "h": 16.2,
+     "body": 13.4,
+     "contact": [
+      26.5,
+      -9.5
+     ]
+    },
+    "inner-6": {
+     "h": 16.2,
+     "body": 13.4,
+     "contact": [
+      156.12,
+      -9.5
+     ]
+    },
+    "side-6": {
+     "h": 13.0,
+     "body": 10.2,
+     "contact": [
+      -3.5,
+      20.5
+     ]
+    },
+    "outer-9": {
+     "h": 23.0,
+     "body": 20.2,
+     "contact": [
+      26.5,
+      -9.5
+     ]
+    },
+    "inner-9": {
+     "h": 23.0,
+     "body": 20.2,
+     "contact": [
+      156.12,
+      -9.5
+     ]
+    },
+    "side-9": {
+     "h": 18.2,
+     "body": 15.4,
+     "contact": [
+      -3.5,
+      20.5
+     ]
+    }
+   },
+   "angles": {
+    "3": {
+     "margin": 1.45,
+     "angle_err": 0.013,
+     "plug_hit": 0.0,
+     "plug_above_desk": 15.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true
+    },
+    "6": {
+     "margin": 1.45,
+     "angle_err": 0.016,
+     "plug_hit": 0.0,
+     "plug_above_desk": 23.4,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true
+    },
+    "9": {
+     "margin": 1.45,
+     "angle_err": 0.017,
+     "plug_hit": 0.0,
+     "plug_above_desk": 32.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true
+    }
+   },
+   "notes": [],
+   "tray_status": "Error.NoError",
+   "tray_genus": 15,
+   "check": {
+    "seats": true,
+    "angle": true,
+    "support": true,
+    "ribs": true,
+    "plug": true,
+    "legs": true,
+    "steps": 3
+   }
+  },
+  "right": {
+   "label": "磁石式",
+   "seats": {
+    "outer": [
+     148.03,
+     -9.5
+    ],
+    "inner": [
+     -1.0,
+     -9.5
+    ],
+    "side": [
+     178.03,
+     22.5
+    ]
+   },
+   "pads": 51.7,
+   "legs": {
+    "outer-3": {
+     "h": 9.5,
+     "body": 6.7,
+     "contact": [
+      148.03,
+      -9.5
+     ]
+    },
+    "inner-3": {
+     "h": 9.5,
+     "body": 6.7,
+     "contact": [
+      -1.0,
+      -9.5
+     ]
+    },
+    "side-3": {
+     "h": 7.8,
+     "body": 5.0,
+     "contact": [
+      178.03,
+      22.5
+     ]
+    },
+    "outer-6": {
+     "h": 16.2,
+     "body": 13.4,
+     "contact": [
+      148.03,
+      -9.5
+     ]
+    },
+    "inner-6": {
+     "h": 16.2,
+     "body": 13.4,
+     "contact": [
+      -1.0,
+      -9.5
+     ]
+    },
+    "side-6": {
+     "h": 12.8,
+     "body": 10.0,
+     "contact": [
+      178.03,
+      22.5
+     ]
+    },
+    "outer-9": {
+     "h": 23.0,
+     "body": 20.2,
+     "contact": [
+      148.03,
+      -9.5
+     ]
+    },
+    "inner-9": {
+     "h": 23.0,
+     "body": 20.2,
+     "contact": [
+      -1.0,
+      -9.5
+     ]
+    },
+    "side-9": {
+     "h": 17.9,
+     "body": 15.1,
+     "contact": [
+      178.03,
+      22.5
+     ]
+    }
+   },
+   "angles": {
+    "3": {
+     "margin": 6.96,
+     "angle_err": 0.013,
+     "plug_hit": 0.0,
+     "plug_above_desk": 15.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true
+    },
+    "6": {
+     "margin": 6.96,
+     "angle_err": 0.01,
+     "plug_hit": 0.0,
+     "plug_above_desk": 23.4,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true
+    },
+    "9": {
+     "margin": 6.96,
+     "angle_err": 0.017,
+     "plug_hit": 0.0,
+     "plug_above_desk": 32.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true
+    }
+   },
+   "notes": [],
+   "tray_status": "Error.NoError",
+   "tray_genus": 16,
+   "check": {
+    "seats": true,
+    "angle": true,
+    "support": true,
+    "ribs": true,
+    "plug": true,
+    "legs": true,
+    "steps": 3
+   }
+  }
+ },
+ "F": {
+  "left": {
+   "label": "折りたたみ式",
+   "seats": {
+    "outer": [
+     55.0,
+     -11.05
+    ],
+    "inner": [
+     160.18,
+     -1.5
+    ],
+    "side": [
+     -5.05,
+     59.5
+    ]
+   },
+   "pads": 315.9,
+   "legs": {
+    "outer-3": {
+     "h": 9.6,
+     "body": 11.6,
+     "contact": [
+      55.0,
+      -11.05
+     ]
+    },
+    "inner-3": {
+     "h": 9.1,
+     "body": 11.1,
+     "contact": [
+      160.18,
+      -1.5
+     ]
+    },
+    "side-3": {
+     "h": 5.9,
+     "body": 7.9,
+     "contact": [
+      -5.05,
+      59.5
+     ]
+    },
+    "outer-9": {
+     "h": 23.2,
+     "body": 25.2,
+     "contact": [
+      55.0,
+      -11.05
+     ]
+    },
+    "inner-9": {
+     "h": 21.7,
+     "body": 23.7,
+     "contact": [
+      160.18,
+      -1.5
+     ]
+    },
+    "side-9": {
+     "h": 12.0,
+     "body": 14.0,
+     "contact": [
+      -5.05,
+      59.5
+     ]
+    }
+   },
+   "angles": {
+    "3": {
+     "margin": -21.29,
+     "angle_err": 0.044,
+     "plug_hit": 0.0,
+     "plug_above_desk": 15.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true
+    },
+    "9": {
+     "margin": -21.29,
+     "angle_err": 0.032,
+     "plug_hit": 0.0,
+     "plug_above_desk": 32.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true
+    }
+   },
+   "notes": [],
+   "folded_in_tray": 0.0,
+   "tray_status": "Error.NoError",
+   "tray_genus": 18,
+   "check": {
+    "seats": true,
+    "angle": true,
+    "support": false,
+    "ribs": true,
+    "plug": true,
+    "legs": true,
+    "steps": 2
+   }
+  },
+  "right": {
+   "label": "折りたたみ式",
+   "seats": {
+    "outer": [
+     113.53,
+     -11.05
+    ],
+    "inner": [
+     -5.05,
+     -1.5
+    ],
+    "side": [
+     179.58,
+     59.5
+    ]
+   },
+   "pads": 315.9,
+   "legs": {
+    "outer-3": {
+     "h": 9.6,
+     "body": 11.6,
+     "contact": [
+      113.53,
+      -11.05
+     ]
+    },
+    "inner-3": {
+     "h": 9.1,
+     "body": 11.1,
+     "contact": [
+      -5.05,
+      -1.5
+     ]
+    },
+    "side-3": {
+     "h": 5.9,
+     "body": 7.9,
+     "contact": [
+      179.58,
+      59.5
+     ]
+    },
+    "outer-9": {
+     "h": 23.2,
+     "body": 25.2,
+     "contact": [
+      113.53,
+      -11.05
+     ]
+    },
+    "inner-9": {
+     "h": 21.7,
+     "body": 23.7,
+     "contact": [
+      -5.05,
+      -1.5
+     ]
+    },
+    "side-9": {
+     "h": 12.0,
+     "body": 14.0,
+     "contact": [
+      179.58,
+      59.5
+     ]
+    }
+   },
+   "angles": {
+    "3": {
+     "margin": -3.54,
+     "angle_err": 0.044,
+     "plug_hit": 0.0,
+     "plug_above_desk": 15.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true
+    },
+    "9": {
+     "margin": -3.54,
+     "angle_err": 0.032,
+     "plug_hit": 0.0,
+     "plug_above_desk": 32.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true
+    }
+   },
+   "notes": [],
+   "folded_in_tray": 0.0,
+   "tray_status": "Error.NoError",
+   "tray_genus": 19,
+   "check": {
+    "seats": true,
+    "angle": true,
+    "support": false,
+    "ribs": true,
+    "plug": true,
+    "legs": true,
+    "steps": 2
+   }
+  }
+ },
+ "S": {
+  "left": {
+   "label": "ねじ込み式",
+   "seats": {
+    "outer": [
+     26.5,
+     -9.5
+    ],
+    "inner": [
+     156.12,
+     -9.5
+    ],
+    "side": [
+     -3.5,
+     20.5
+    ]
+   },
+   "pads": 4.7,
+   "legs": {
+    "outer-3": {
+     "h": 9.5,
+     "body": 6.7,
+     "contact": [
+      26.5,
+      -9.5
+     ]
+    },
+    "inner-3": {
+     "h": 9.5,
+     "body": 6.7,
+     "contact": [
+      156.12,
+      -9.5
+     ]
+    },
+    "side-3": {
+     "h": 7.9,
+     "body": 5.1,
+     "contact": [
+      -3.5,
+      20.5
+     ]
+    },
+    "outer-6": {
+     "h": 16.2,
+     "body": 13.4,
+     "contact": [
+      26.5,
+      -9.5
+     ]
+    },
+    "inner-6": {
+     "h": 16.2,
+     "body": 13.4,
+     "contact": [
+      156.12,
+      -9.5
+     ]
+    },
+    "side-6": {
+     "h": 13.0,
+     "body": 10.2,
+     "contact": [
+      -3.5,
+      20.5
+     ]
+    },
+    "outer-9": {
+     "h": 23.0,
+     "body": 20.2,
+     "contact": [
+      26.5,
+      -9.5
+     ]
+    },
+    "inner-9": {
+     "h": 23.0,
+     "body": 20.2,
+     "contact": [
+      156.12,
+      -9.5
+     ]
+    },
+    "side-9": {
+     "h": 18.2,
+     "body": 15.4,
+     "contact": [
+      -3.5,
+      20.5
+     ]
+    }
+   },
+   "angles": {
+    "3": {
+     "margin": 1.45,
+     "angle_err": 0.013,
+     "plug_hit": 0.0,
+     "plug_above_desk": 15.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true
+    },
+    "6": {
+     "margin": 1.45,
+     "angle_err": 0.016,
+     "plug_hit": 0.0,
+     "plug_above_desk": 23.4,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true
+    },
+    "9": {
+     "margin": 1.45,
+     "angle_err": 0.017,
+     "plug_hit": 0.0,
+     "plug_above_desk": 32.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true
+    }
+   },
+   "notes": [],
+   "tray_status": "Error.NoError",
+   "tray_genus": 12,
+   "check": {
+    "seats": true,
+    "angle": true,
+    "support": true,
+    "ribs": true,
+    "plug": true,
+    "legs": true,
+    "steps": 3
+   }
+  },
+  "right": {
+   "label": "ねじ込み式",
+   "seats": {
+    "outer": [
+     148.03,
+     -9.5
+    ],
+    "inner": [
+     -1.0,
+     -9.5
+    ],
+    "side": [
+     178.03,
+     22.5
+    ]
+   },
+   "pads": 4.7,
+   "legs": {
+    "outer-3": {
+     "h": 9.5,
+     "body": 6.7,
+     "contact": [
+      148.03,
+      -9.5
+     ]
+    },
+    "inner-3": {
+     "h": 9.5,
+     "body": 6.7,
+     "contact": [
+      -1.0,
+      -9.5
+     ]
+    },
+    "side-3": {
+     "h": 7.8,
+     "body": 5.0,
+     "contact": [
+      178.03,
+      22.5
+     ]
+    },
+    "outer-6": {
+     "h": 16.2,
+     "body": 13.4,
+     "contact": [
+      148.03,
+      -9.5
+     ]
+    },
+    "inner-6": {
+     "h": 16.2,
+     "body": 13.4,
+     "contact": [
+      -1.0,
+      -9.5
+     ]
+    },
+    "side-6": {
+     "h": 12.8,
+     "body": 10.0,
+     "contact": [
+      178.03,
+      22.5
+     ]
+    },
+    "outer-9": {
+     "h": 23.0,
+     "body": 20.2,
+     "contact": [
+      148.03,
+      -9.5
+     ]
+    },
+    "inner-9": {
+     "h": 23.0,
+     "body": 20.2,
+     "contact": [
+      -1.0,
+      -9.5
+     ]
+    },
+    "side-9": {
+     "h": 17.9,
+     "body": 15.1,
+     "contact": [
+      178.03,
+      22.5
+     ]
+    }
+   },
+   "angles": {
+    "3": {
+     "margin": 6.96,
+     "angle_err": 0.013,
+     "plug_hit": 0.0,
+     "plug_above_desk": 15.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true
+    },
+    "6": {
+     "margin": 6.96,
+     "angle_err": 0.01,
+     "plug_hit": 0.0,
+     "plug_above_desk": 23.4,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true
+    },
+    "9": {
+     "margin": 6.96,
+     "angle_err": 0.017,
+     "plug_hit": 0.0,
+     "plug_above_desk": 32.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true
+    }
+   },
+   "notes": [],
+   "tray_status": "Error.NoError",
+   "tray_genus": 13,
+   "check": {
+    "seats": true,
+    "angle": true,
+    "support": true,
+    "ribs": true,
+    "plug": true,
+    "legs": true,
+    "steps": 3
+   }
+  }
+ },
+ "R": {
+  "left": {
+   "label": "3D プリントの台座（全周）",
+   "seats": {},
+   "lift": 3.0,
+   "legs": {},
+   "angles": {
+    "3": {
+     "margin": 20.88,
+     "angle_err": 0.0,
+     "plug_hit": 0.0,
+     "plug_above_desk": 1.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true,
+     "height": 12.0,
+     "volume": 74.4
+    },
+    "6": {
+     "margin": 20.76,
+     "angle_err": 0.0,
+     "plug_hit": 0.0,
+     "plug_above_desk": 1.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true,
+     "height": 19.0,
+     "volume": 105.1
+    },
+    "9": {
+     "margin": 20.66,
+     "angle_err": 0.0,
+     "plug_hit": 0.0,
+     "plug_above_desk": 1.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true,
+     "height": 25.9,
+     "volume": 136.2
+    }
+   },
+   "notes": [],
+   "tray_status": "Error.NoError",
+   "check": {
+    "seats": true,
+    "angle": true,
+    "support": true,
+    "ribs": true,
+    "plug": true,
+    "legs": true,
+    "steps": 3
+   }
+  },
+  "right": {
+   "label": "3D プリントの台座（全周）",
+   "seats": {},
+   "lift": 3.0,
+   "legs": {},
+   "angles": {
+    "3": {
+     "margin": 20.88,
+     "angle_err": 0.0,
+     "plug_hit": 0.0,
+     "plug_above_desk": 1.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true,
+     "height": 12.0,
+     "volume": 79.5
+    },
+    "6": {
+     "margin": 20.76,
+     "angle_err": 0.0,
+     "plug_hit": 0.0,
+     "plug_above_desk": 1.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true,
+     "height": 19.0,
+     "volume": 112.3
+    },
+    "9": {
+     "margin": 20.66,
+     "angle_err": 0.0,
+     "plug_hit": 0.0,
+     "plug_above_desk": 1.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true,
+     "height": 25.9,
+     "volume": 145.6
+    }
+   },
+   "notes": [],
+   "tray_status": "Error.NoError",
+   "check": {
+    "seats": true,
+    "angle": true,
+    "support": true,
+    "ribs": true,
+    "plug": true,
+    "legs": true,
+    "steps": 3
+   }
+  }
+ },
+ "U": {
+  "left": {
+   "label": "3D プリントの台座（奥の U 字）",
+   "seats": {},
+   "lift": 0.0,
+   "legs": {},
+   "angles": {
+    "3": {
+     "margin": 13.03,
+     "angle_err": 0.0,
+     "plug_hit": 0.0,
+     "plug_above_desk": 1.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true,
+     "height": 9.0,
+     "volume": 31.8
+    },
+    "6": {
+     "margin": 13.03,
+     "angle_err": 0.0,
+     "plug_hit": 0.0,
+     "plug_above_desk": 1.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true,
+     "height": 16.0,
+     "volume": 56.8
+    },
+    "9": {
+     "margin": 13.03,
+     "angle_err": 0.0,
+     "plug_hit": 0.0,
+     "plug_above_desk": 1.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true,
+     "height": 22.9,
+     "volume": 82.0
+    }
+   },
+   "notes": [],
+   "tray_status": "Error.NoError",
+   "check": {
+    "seats": true,
+    "angle": true,
+    "support": true,
+    "ribs": true,
+    "plug": true,
+    "legs": true,
+    "steps": 3
+   }
+  },
+  "right": {
+   "label": "3D プリントの台座（奥の U 字）",
+   "seats": {},
+   "lift": 0.0,
+   "legs": {},
+   "angles": {
+    "3": {
+     "margin": 8.31,
+     "angle_err": 0.0,
+     "plug_hit": 0.0,
+     "plug_above_desk": 1.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true,
+     "height": 9.0,
+     "volume": 34.9
+    },
+    "6": {
+     "margin": 8.3,
+     "angle_err": 0.0,
+     "plug_hit": 0.0,
+     "plug_above_desk": 1.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true,
+     "height": 16.0,
+     "volume": 62.2
+    },
+    "9": {
+     "margin": 8.29,
+     "angle_err": 0.0,
+     "plug_hit": 0.0,
+     "plug_above_desk": 1.0,
+     "leg_in_tray": 0.0,
+     "seats_found": true,
+     "bodies_ok": true,
+     "height": 22.9,
+     "volume": 89.8
+    }
+   },
+   "notes": [],
+   "tray_status": "Error.NoError",
+   "check": {
+    "seats": true,
+    "angle": true,
+    "support": true,
+    "ribs": true,
+    "plug": true,
+    "legs": true,
+    "steps": 3
+   }
+  }
+ }
+}
