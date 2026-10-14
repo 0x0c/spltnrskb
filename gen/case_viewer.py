@@ -7,6 +7,7 @@ The boards are shown as KiCad exports them (gen/export_3d.py -> build/3d/*.glb, 
 3D model). Without those exports the viewer falls back to a plain board, OLED and switch blocks.
 """
 import base64
+import hashlib
 import math
 import json
 import os
@@ -189,10 +190,16 @@ def main():
                    for deg in mc.STAND_ANGLES} for side in ('left', 'right')}
     data = dict(DATA=scenes, POOL=pool, BOARDS=boards, SPEC=spec_data, Z=z, TILT=tilt)
     js = os.path.join(OUT, 'preview', 'model-data.js')
-    open(js, 'w').write('window.NRSK = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n')
+    text = 'window.NRSK = ' + json.dumps(data, ensure_ascii=False, separators=(',', ':')) + ';\n'
+    open(js, 'w').write(text)
     path = os.path.join(OUT, 'preview', 'viewer.html')
-    open(path, 'w').write(TEMPLATE)
+    open(path, 'w').write(TEMPLATE.replace('__DATA_VER__', data_version(text)))
     print('wrote', path, 'and', js, f'{os.path.getsize(js) / 1e6:.1f} MB')
+
+
+def data_version(text):
+    """Short hash of model-data.js for its URL, so a browser never pairs a new page with cached old data."""
+    return hashlib.sha256(text.encode()).hexdigest()[:10]
 
 
 TEMPLATE = r'''<meta charset="utf-8">
@@ -255,7 +262,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 <div id="spec" class="panel"><div id="spec-head"><h1 id="spec-title"></h1><button id="spec-min" type="button" aria-expanded="true" aria-controls="spec-dl" aria-label="仕様を折りたたむ" title="仕様を折りたたむ">−</button></div><dl id="spec-dl"></dl></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="model-data.js"></script>
+<script src="model-data.js?v=__DATA_VER__"></script>
 <script>
 // meshes are in model-data.js (shared with assembly.html)
 const {DATA, POOL, BOARDS, SPEC, TILT} = window.NRSK;   // BOARDS: per side {pcba: {group: [[pool id, matrices]]}, switches}
