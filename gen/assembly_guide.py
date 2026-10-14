@@ -3,6 +3,7 @@
 Each step names the groups of parts it adds; the page animates them into place, dims what is already
 fitted and moves the camera to the view the step needs. Steps exist for both case variants.
 """
+import hashlib
 import json
 import os
 import sys
@@ -162,6 +163,9 @@ def main():
         (wx, wy), _ = Half(side).wheel_xy()
         focus[side] = [wx, -wy]
     html = TEMPLATE.replace('__STEPS__', json.dumps(data, ensure_ascii=False)).replace('__FOCUS__', json.dumps(focus)).replace('__LIFT__', f'{PORT_LIFT:g}')
+    # same version tag as viewer.html (case_viewer.data_version), so a cached old model-data.js is never used
+    ver = hashlib.sha256(open(os.path.join(OUT, 'preview', 'model-data.js')).read().encode()).hexdigest()[:10]
+    html = html.replace('__DATA_VER__', ver)
     path = os.path.join(OUT, 'preview', 'assembly.html')
     open(path, 'w').write(html)
     print('wrote', path, len(data['print']), 'print steps,', len(data['acrylic']), 'acrylic steps')
@@ -230,7 +234,7 @@ button:disabled{opacity:.4;cursor:default}
 </section>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="model-data.js"></script>
+<script src="model-data.js?v=__DATA_VER__"></script>
 <script>
 const {DATA, POOL, BOARDS, Z} = window.NRSK;
 const STEPS = __STEPS__;
