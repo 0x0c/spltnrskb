@@ -45,6 +45,7 @@ TOP = arg('--top', 'acrylic')
 PORTS = arg('--ports', None)                 # USB-C/TRRS opening study style (case/preview/port-variants, made for the former TRRS link), left half only
 NO_CABLES = '--no-cables' in args                # switch plate: 'acrylic' (clear, laser cut) or 'print' (printed, with web)
 WEB = arg('--web', None)                     # 'glb:<path>', 'env:<path>' or 'shadow:<path>': assets of the 3D page instead of shots
+STAND = arg('--stand', None)                 # tilt stand angle (3, 6, 9): each half sits on its stand, raised at the back
 VIEWS_DIR = arg('--views-dir', None)         # shots go here as <name><suffix>.png instead of docs/img/render-<name><suffix>.png
 VARIANTS = os.path.join(ROOT, 'case', 'preview', 'oled-variants')
 
@@ -77,6 +78,7 @@ MAT = {}
 
 def materials():
     MAT['case'] = principled('case', srgb('#d9d8d3'), 0.62)
+    MAT['rubber'] = principled('rubber feet', srgb('#2a2d31'), 0.8)
     MAT['white'] = principled('keycap white', srgb('#f4f3ef'), 0.42, sss=0.15)
     MAT['orange'] = principled('keycap orange', srgb('#f24d00'), 0.45, sss=0.1)
     MAT['switch'] = principled('switch', srgb('#2b2d30'), 0.5)
@@ -465,6 +467,17 @@ def build_half(side, world):
         objs.append(cover)
         data['oled_module'] = None
     objs += corner_wheel(side)
+    if STAND:                # the rubber feet in the tray's recesses and the stand under them (make_case.Half.stand)
+        rep = json.load(open(os.path.join(ROOT, 'case', 'case_report.json')))[side]
+        for x, y in rep['feet_xy']:
+            bpy.ops.mesh.primitive_cylinder_add(vertices=32, radius=4.75 * MM, depth=FOOT_H * MM,
+                                                location=(x * MM, -y * MM, (FOOT_DEPTH - FOOT_H / 2) * MM))
+            foot = bpy.context.active_object
+            foot.name = f'{side} foot'
+            foot.data.materials.append(MAT['rubber'])
+            objs.append(foot)
+        objs.append(import_stl(os.path.join(ROOT, 'case', 'preview', f'{side}-stand-{STAND}-placed.stl'), MAT['case'],
+                               f'{side} stand'))
     objs += drum_dial(side)
     if OLED_H is not None and OLED_H not in ('0', '0.0'):
         # the display moved away from the plate window: close the window (plate without it)
@@ -512,6 +525,18 @@ def build_half(side, world):
     for o in objs:
         o.matrix_world = world @ o.matrix_world
     return data
+
+
+FOOT_H, FOOT_DEPTH = 3.8, 1.0      # rubber feet and their recesses (make_case.py)
+
+
+def stand_pose(side, deg):
+    """Tray frame -> desk for a half on its tilt stand, in metres: raised by deg about the front feet's contact line,
+    that line on the desk (as make_case.stand_pose)."""
+    rep = json.load(open(os.path.join(ROOT, 'case', 'case_report.json')))[side]
+    yp, zp = -max(y for _, y in rep['feet_xy']) * MM, -(FOOT_H - FOOT_DEPTH) * MM
+    return (Matrix.Translation(Vector((0, 0, -zp))) @ Matrix.Translation(Vector((0, yp, zp)))
+            @ Matrix.Rotation(math.radians(deg), 4, 'X') @ Matrix.Translation(Vector((0, -yp, -zp))))
 
 
 def board_point(world, x, y, z):
@@ -651,6 +676,8 @@ def main():
         place = Vector((sgn * (w / 2 + GAP_BETWEEN / 2) * MM, 0, 0))
         W[side] = (Matrix.Translation(place) @ Matrix.Rotation(math.radians(-sgn * SPLAY), 4, 'Z')
                    @ Matrix.Translation(Vector((-cx * MM, cy * MM, 0))))
+        if STAND:
+            W[side] = W[side] @ stand_pose(side, float(STAND))
     data = {s: build_half(s, W[s]) for s in ('left', 'right')}
     ob = data['left']['oled_module'] or data['left']['oled']['box']
     oled_c = board_point(W['left'], (ob[0] + ob[2]) / 2, (ob[1] + ob[3]) / 2, Z_PLATE_TOP)

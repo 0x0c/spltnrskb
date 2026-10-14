@@ -1,7 +1,7 @@
 """Design-review page: the finished keyboard in 3D, path traced in the browser -> docs/views.html.
 
 The model, the studio lighting and the floor shadows come from gen/export_web3d.sh (docs/3d/), made from the same
-Blender scene as the renders; the close-ups below the viewer are the A / B renders of gen/render_compare.sh (whole
+Blender scene as the renders, flat on the desk and on each tilt stand (<a|b>-stand<deg>.glb); the close-ups below the viewer are the A / B renders of gen/render_compare.sh (whole
 board, OLED, left wheel) and gen/render_details.sh (docs/img/details/<shot>-<variant>.jpg).
 Open docs/views.html through a local web server (e.g. python3 -m http.server -d docs), file:// cannot load the model.
 """
@@ -37,13 +37,17 @@ DETAILS = [
     ('内側の角とケーブル', shot('detail')),
     ('USB-C × 2', shot('ports')),
     ('USB-C × 2・ケーブルなし', shot('ports-nocable')),
+    ('台座 9°・側面', shot('profile-stand9')),
+    ('台座 9°・背面', shot('back-stand9')),
 ]
+STANDS = (3, 6, 9)       # tilt stand angles with a model in docs/3d (make_case.STAND_ANGLES)
 
 
 def main():
     details = {v: [(t, f'img/{files[v]}') for t, files in DETAILS
                    if v in files and os.path.exists(os.path.join(DOCS, 'img', files[v]))] for v in 'ab'}
-    data = json.dumps({'details': details}, ensure_ascii=False)
+    stands = [d for d in STANDS if all(os.path.exists(os.path.join(DOCS, '3d', f'{v}-stand{d}.glb')) for v in 'ab')]
+    data = json.dumps({'details': details, 'stands': stands}, ensure_ascii=False)
     html = (TEMPLATE.replace('/*DATA*/null', data)
             .replace('{THREE}', THREE).replace('{BVH}', BVH).replace('{PATHTRACER}', PATHTRACER))
     out = os.path.join(DOCS, 'views.html')
@@ -90,6 +94,7 @@ button:focus-visible,.stage canvas:focus-visible{outline:2px solid var(--accent)
 .chip:hover{border-color:var(--muted)}
 .toggles{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
 .toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;user-select:none}
+.toggle[hidden]{display:none}
 .toggle input{accent-color:var(--accent);width:16px;height:16px;margin:0}
 .toggle select{font:inherit;font-size:13px;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
 .hint{font-size:12px;color:var(--muted);margin:0}
@@ -146,6 +151,8 @@ body:has(.lb[open]){overflow:hidden}
         <label class="toggle">サンプル数 <select id="spp"></select></label>
         <label class="toggle"><input type="checkbox" id="dof"> ボケ</label>
         <label class="toggle"><input type="checkbox" id="cables"> ケーブル</label>
+        <label class="toggle" id="stand-box"><input type="checkbox" id="stand"> 台座</label>
+        <label class="toggle" id="deg-box">角度 <select id="deg" aria-label="台座の角度"></select></label>
         <button class="chip" id="full">全画面</button>
       </div>
     </div>
@@ -196,7 +203,7 @@ const PRESETS = [
 ];
 const $ = id => document.getElementById(id);
 // path tracing is off by default (it keeps the GPU busy); the checkbox turns it on
-const state = {v: 'a', pt: false, dof: true, cables: true, spp: 64, spin: false};
+const state = {v: 'a', pt: false, dof: true, cables: true, spp: 64, spin: false, stand: false, deg: 9};
 try { Object.assign(state, JSON.parse(localStorage.getItem('nrsk-views3d') || '{}')); } catch (e) {}
 const save = () => { try { localStorage.setItem('nrsk-views3d', JSON.stringify(state)); } catch (e) {} };
 
@@ -246,14 +253,17 @@ scene.add(floor);
 const models = {};
 let dirty = true, ready = false, sceneSet = false;
 
-function shadowKey() { return `${state.v}${state.cables ? '' : '-nocable'}`; }
+// a model per case variant, flat on the desk or with both halves on a tilt stand
+const STANDS = DATA.stands || [];
+function modelKey() { return `${state.v}${state.stand && STANDS.includes(state.deg) ? `-stand${state.deg}` : ''}`; }
+function shadowKey() { return `${modelKey()}${state.cables ? '' : '-nocable'}`; }
 
 // what is not shown is taken out of the scene, not hidden: the path tracer would still trace hidden meshes
 const cables = {};
 function applyScene() {
-  for (const [v, root] of Object.entries(models)) {
-    if (v === state.v) scene.add(root); else scene.remove(root);
-    for (const c of cables[v]) { if (state.cables) root.add(c); else root.remove(c); }
+  for (const [k, root] of Object.entries(models)) {
+    if (k === modelKey()) scene.add(root); else scene.remove(root);
+    for (const c of cables[k]) { if (state.cables) root.add(c); else root.remove(c); }
   }
   // the baked shadow only in the raster view: the path tracer would darken the floor twice
   floorMat.aoMap = state.pt ? null : floorTex[shadowKey()] || null;
@@ -356,6 +366,9 @@ canvas.addEventListener('keydown', e => {
 function renderToggles() {
   document.querySelectorAll('header .seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === state.v));
   $('spin').checked = state.spin; $('pt').checked = state.pt; $('dof').checked = state.dof; $('cables').checked = state.cables;
+  if (!STANDS.includes(state.deg)) state.deg = STANDS[STANDS.length - 1];
+  $('stand-box').hidden = $('deg-box').hidden = !STANDS.length;
+  $('stand').checked = state.stand; $('deg').value = state.deg; $('deg').disabled = !state.stand;
   if (!SPP.includes(state.spp)) state.spp = 64;
   $('spp').value = state.spp;
   $('dof').disabled = $('spp').disabled = !state.pt;
@@ -363,7 +376,7 @@ function renderToggles() {
 }
 document.querySelectorAll('header .seg button').forEach(b => b.addEventListener('click', async () => {
   state.v = b.dataset.v; save(); renderToggles(); renderDetails();
-  await load(state.v); applyScene();
+  await load(modelKey()); applyScene();
 }));
 $('spin').addEventListener('change', e => { state.spin = e.target.checked; spinWait = 0; save(); });
 $('pt').addEventListener('change', e => { state.pt = e.target.checked; save(); renderToggles(); applyScene(); });
@@ -371,6 +384,10 @@ $('spp').innerHTML = SPP.map(n => `<option value="${n}">${n}</option>`).join('')
 $('spp').addEventListener('change', e => { state.spp = +e.target.value; save(); });   // more: tracing carries on, fewer: it stops
 $('dof').addEventListener('change', e => { state.dof = e.target.checked; save(); applyCamera(); });
 $('cables').addEventListener('change', e => { state.cables = e.target.checked; save(); applyScene(); });
+$('deg').innerHTML = STANDS.map(d => `<option value="${d}">${d}°</option>`).join('');
+const restand = async () => { save(); renderToggles(); await load(modelKey()); applyScene(); };
+$('stand').addEventListener('change', e => { state.stand = e.target.checked; restand(); });
+$('deg').addEventListener('change', e => { state.deg = +e.target.value; restand(); });
 $('full').addEventListener('click', () => {
   if (document.fullscreenElement) document.exitFullscreen();
   else $('stage').requestFullscreen?.();
@@ -381,7 +398,7 @@ const draco = new DRACOLoader().setDecoderPath('{THREE}/examples/jsm/libs/draco/
 const gltf = new GLTFLoader().setDRACOLoader(draco);
 const texLoader = new THREE.TextureLoader();
 const pending = {};
-function load(v) {
+function load(v) {          // v: a model key (modelKey())
   return pending[v] ??= Promise.all([
     gltf.loadAsync(`3d/${v}.glb`, e => {
       if (!ready && e.total) $('loading').textContent = `読み込んでいます… ${Math.round(100 * e.loaded / e.total)}%`;
@@ -407,7 +424,8 @@ async function start() {
   const env = await new HDRLoader().loadAsync('3d/studio.hdr');
   env.mapping = THREE.EquirectangularReflectionMapping;
   scene.environment = env;
-  await load(state.v);
+  renderToggles();
+  await load(modelKey());
   applyScene();
   ready = true;
   $('loading').hidden = true;
