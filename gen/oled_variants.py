@@ -24,22 +24,32 @@ KEYCAP_CLEAR = 0.6        # pod wall to keycap skirt
 LENS_T = 1.0
 POD_WALL = 1.6            # pod rim around the module
 MODULE = (12.0, 38.0)     # vertical 0.91" module (w, h)
-# module centre for the raised variants (board-local mm), chosen clear of keycaps, over the wall
-RAISED_CENTRE = {'left': (160.6, 53.5), 'right': (-0.2, 15.7)}
+# module centre y for the raised variants (board-local mm), chosen clear of keycaps. x is not fixed: the pod
+# is pushed out against the case wall on the OLED side (left: x1, right: x0), see wall_cx()
+RAISED_CY = {'left': 53.5, 'right': 15.7}
 
 # tilted variants: module lies on a plane facing the typist, rising toward the back of the board.
-#   cx     : module centre x (board-local)      yf : board y of the module's front edge
+#   cx     : module centre x (board-local); 'wall' = pushed against the case wall like the raised pod
+#   yf     : board y of the module's front edge
 #   w, L   : module size across / along the slope   deg : tilt   zf : lens top at the front edge
 TILTED = {
-    'tilt-v': dict(w=12.0, L=38.0, deg=17.0, zf=1.5, cx={'left': 160.9, 'right': -0.6}, yf={'left': 37.0, 'right': 33.0}),
+    'tilt-v': dict(w=12.0, L=38.0, deg=17.0, zf=1.5, cx='wall', yf={'left': 37.0, 'right': 33.0}),
     'tilt-h': dict(w=38.0, L=12.0, deg=50.0, zf=4.0, cx={'left': 128.0, 'right': 33.0}, yf={'left': -1.7, 'right': -1.7}),
 }
+
+
+def wall_cx(hf, w):
+    """Centre x of a module w wide whose pod foot ends flush with the case outline on the OLED side."""
+    ox0, _, ox1, _, _ = hf.outer_box
+    half = w / 2 + POD_WALL
+    return ox0 + half if hf.side == 'right' else ox1 - half
 
 
 def tilted(hf, side, t):
     """Wedge pod + lens for a tilted module. Returns (pod, lens, frame) with frame for the renderer."""
     th = math.radians(t['deg'])
-    w, L, cx, yf, zf = t['w'], t['L'], t['cx'][side], t['yf'][side], t['zf']
+    w, L, yf, zf = t['w'], t['L'], t['yf'][side], t['zf']
+    cx = wall_cx(hf, w) if t['cx'] == 'wall' else t['cx'][side]
     depth = L * math.cos(th)
     foot = rect(cx - w / 2 - POD_WALL, yf - depth - POD_WALL, cx + w / 2 + POD_WALL, yf + POD_WALL)
     foot = foot.offset(-1.0, JoinType.Round).offset(1.0, JoinType.Round)
@@ -76,8 +86,8 @@ def main():
     info = {'heights': HEIGHTS, 'lens_t': LENS_T}
     for side in ('left', 'right'):
         hf = Half(side)
-        cx, cy = RAISED_CENTRE[side]
         mw, mh = MODULE
+        cx, cy = wall_cx(hf, mw), RAISED_CY[side]
         module = (cx - mw / 2, cy - mh / 2, cx + mw / 2, cy + mh / 2)
         win = rect(module[0] + 0.3, module[1] + 0.3, module[2] - 0.3, module[3] - 0.3)
         foot = rect(module[0] - POD_WALL, module[1] - POD_WALL, module[2] + POD_WALL, module[3] + POD_WALL)
