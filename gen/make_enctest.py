@@ -319,7 +319,7 @@ def pcb():
 # --- case (project venv) -------------------------------------------------------------
 def case():
     from manifold3d import CrossSection, JoinType, Manifold
-    from make_case import (BOSS_D, BUTTON_KEEP, CLEAR, FLOOR, SWITCH_CUT, PCB_T, PLATE_GAP, STANDOFF, Half, check, inside, rect,
+    from make_case import (BOSS_D, BUTTON_KEEP, CLEAR, FLOOR, FOOT_D, SWITCH_CUT, PCB_T, PLATE_GAP, STANDOFF, Half, check, inside, rect,
                            write_half)
 
     hf = Half(SIDE)
@@ -395,6 +395,9 @@ def case():
     for x, y in hf.d['buttons']:
         own = own + rect(x - BUTTON_KEEP - 1.0, y - BUTTON_KEEP - 1.0, x + BUTTON_KEEP + 1.0, y + BUTTON_KEEP + 1.0)
     box = box - Manifold.extrude(own, 30.0).translate((0, 0, -1.0))
+    # and the keyboard's rubber-foot recesses under the floor (this board's tray has none)
+    for x, y in ref.feet():
+        box = box - Manifold.cylinder(30.0, FOOT_D / 2 + 0.5, FOOT_D / 2 + 0.5).translate((x, -y, -1.0))
     for name, a, b in (('plate', hf.plate3d_printed(), ref.plate3d_printed()), ('tray', hf.tray(), ref.tray())):
         assert str(a.status()) == str(b.status()) == 'Error.NoError' and a.volume() > 0, name
         a, b = a ^ box, b ^ box

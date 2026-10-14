@@ -133,7 +133,17 @@ def steps(variant, n_screws, n_holes, n_cover):
     add('キースイッチ',
         'MX 互換スイッチをプレートの上から差し込みます。ピンが曲がっていないか確かめ、まっすぐ押し込んでソケットに入れます。最後にキーキャップを付けます。',
         ['switch'], 'top', ['MX 互換スイッチ'])
-    add('ゴム足', '底の四隅にゴム足を貼ります。', ['feet'], 'bottom', ['ゴム足 × 4'], 'bottom')
+    if variant == 'acrylic':
+        add('ゴム足', '底の四隅にゴム足を貼ります。', ['feet'], 'bottom', ['ゴム足 × 4'], 'bottom')
+    else:
+        add('ゴム足',
+            '底の 5 か所のくぼみに、ゴム足を押し込んで貼ります。くぼみはネジの座ぐりを避けているので、プレートを外すときにゴム足を剥がす必要はありません。'
+            'ホイールの角は、ホイールを挟んで 2 個です。',
+            ['feet'], 'bottom', ['ゴム足 × 5'], 'bottom')
+        add('台座（好みで）',
+            '奥を上げたいときは、U 字の台座（3°、6°、9°）に載せます。上面のくぼみに奥の 3 つのゴム足を落とし込むと位置が決まり、手前の 2 つのゴム足は机に載ります。'
+            'ネジは使わないので、角度を変えるときは台座を取り替えるだけです。図は 6° の台座です。',
+            ['stand6'], 'bottom', ['台座（3D プリント）'], 'bottom')
     add('接続と書き込み',
         '奥の辺の 2 つの USB-C のうち、内側（OLED の上）が左右の接続用、外側がパソコン用です。左右の内側どうしを USB-C ケーブル（C-C、データ通信用）で'
         'つなぎ、片側の外側の口をパソコンにつなぎます。最初はフラッシュが空なので、USB を挿すと RPI-RP2 ドライブが出ます。'
@@ -286,6 +296,7 @@ function plain(m, color, op) {
 // groups[name] = THREE.Group placed at its final position
 let groups = {}, root = null;
 const state = {v: 'print', side: 'left', step: 0, dim: true, playing: false};
+const STAND = 'stand6';
 function build() {
   if (root) scene.remove(root);
   root = new THREE.Group(); groups = {};
@@ -299,6 +310,7 @@ function build() {
       continue;
     }
     if (['pcb', 'oled'].includes(name) && BOARDS) continue;
+    if (name.startsWith('stand') && name !== STAND) continue;   // the guide shows one stand, in its own step
     put(name, plain(m, color, OPACITY[name] || op));
   }
   for (const g of Object.values(groups)) g.userData.home = g.position.clone();
@@ -316,9 +328,11 @@ function glow(group, on) {
 function visibleAt(i) {
   // groups fitted up to step i (step 0 shows the finished keyboard)
   const steps = STEPS[state.v];
-  if (i === 0 || i === steps.length - 1) return new Set(Object.keys(groups));
   const s = new Set();
-  for (let k = 1; k <= i; k++) steps[k].new.forEach(n => s.add(n));
+  if (i === 0 || i === steps.length - 1) Object.keys(groups).forEach(n => s.add(n));
+  else for (let k = 1; k <= i; k++) steps[k].new.forEach(n => s.add(n));
+  if (!steps[i].new.includes(STAND)) s.delete(STAND);   // the stand is optional: only in its step
+  if (i === 0 || i === steps.length - 1) return s;
   // the board is built on the bench first, then the case; it joins the case at its own step
   const joins = steps.findIndex(st => !st.boardOnly && st.new.includes('board'));
   if (steps[i].boardOnly) { for (const n of [...s]) if (!PCBA.includes(n)) s.delete(n); }
