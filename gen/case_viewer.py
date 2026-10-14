@@ -238,7 +238,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
 <canvas id="view" aria-label="キーボード筐体の 3D 表示。ドラッグで回転、右ドラッグか 2 本指でパン、ホイールかピンチでズーム、ダブルクリックで視点リセット"></canvas>
 <div id="ui" class="panel">
- <button id="v-print" data-v="print" class="on">A：プリント + アクリル蓋</button><button id="v-printtop" data-v="printtop">B：全部プリント</button><button id="v-acrylic" data-v="acrylic">アクリル版</button>
+ <button id="v-print" data-v="print" class="on">A：プリント + アクリル蓋</button><button id="v-printtop" data-v="printtop">B：全部プリント</button><button id="v-acrylic" data-v="acrylic">アクリル版</button><button id="v-board" data-v="board">基板のみ</button>
  <span class="sep"></span>
  <fieldset id="parts" class="checks"><legend class="sr">表示する部品</legend>
   <label><input type="checkbox" data-c="case" checked>ケース</label><label><input type="checkbox" data-c="plate" checked>プレート</label><label><input type="checkbox" data-c="board" checked>基板</label><label><input type="checkbox" data-c="switch" checked>スイッチ</label><label><input type="checkbox" data-c="wheel" checked>ダイヤル</label><label><input type="checkbox" data-c="feet" checked>ゴム足</label><label id="stand-lbl"><input type="checkbox" data-c="stand" checked>台座</label>
@@ -265,6 +265,10 @@ const HIDDEN = ['insert', 'plate_screw', 'pcb_screw', 'standoff', 'bottom_screw'
 const CAT = n => n.startsWith('stand') ? 'stand' : n === 'feet' ? 'feet' : (n === 'plate' || n === 'cover') ? 'plate'
   : ['pcb', 'pcba', 'oled', 'encoder', 'drumenc'].includes(n) ? 'board' : n === 'switch' ? 'switch'
   : (n === 'wheel' || n.startsWith('drum')) ? 'wheel' : 'case';
+// board-only view: the boards and what is soldered to them, taken from the A scene (same board height in B)
+const BOARD_ONLY = ['board', 'switch'];
+SPEC.board = {title: '基板のみ', rows: [['基板', 'FR-4 1.6 mm（左右 2 枚）'],
+  ['実装', 'スイッチ・OLED・ロータリーエンコーダー（サムホイール用 EC05E、ドラム用 EC10E）']]};
 const b64 = (s, T) => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new T(u.buffer); };
 const canvas = document.getElementById('view');
 const renderer = new THREE.WebGLRenderer({canvas, antialias: true}); renderer.setPixelRatio(devicePixelRatio);
@@ -338,7 +342,8 @@ function build() {
     halves[side].add(t);
   }
   const add = (side, layer, obj, z0 = 0) => { obj.userData = {layer, z0}; place(obj); tilted[side].add(obj); };
-  for (const [side, name, m, color, op] of DATA[state.v]) {
+  const boardOnly = state.v === 'board';
+  for (const [side, name, m, color, op] of DATA[boardOnly ? 'print' : state.v]) {
     if (HIDDEN.includes(name)) continue;
     if (name === 'pcba') {         // KiCad's board, with the switches as their own checkbox
       if (state.show.board) add(side, 'pcba', board(Object.values(BOARDS[side].pcba).flat()), m);
@@ -346,7 +351,7 @@ function build() {
       continue;
     }
     const c = CAT(name);
-    if (!state.show[c] || (c === 'stand' && name !== `stand${state.angle}`)) continue;
+    if (!state.show[c] || (boardOnly && !BOARD_ONLY.includes(c)) || (c === 'stand' && name !== `stand${state.angle}`)) continue;
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(b64(m.v, Float32Array), 3));
     g.setIndex(new THREE.BufferAttribute(b64(m.i, Uint32Array), 1));
@@ -359,18 +364,33 @@ function build() {
   group.userData.halves = halves; group.userData.tilted = tilted;
   scene.add(group); layout(); spec();
 }
+// world box including each instance of the KiCad boards (Box3.setFromObject in r128 skips instance matrices)
+function bounds(obj) {
+  obj.updateWorldMatrix(true, true);
+  const box = new THREE.Box3(), b = new THREE.Box3(), m = new THREE.Matrix4();
+  obj.traverse(o => {
+    if (!o.geometry) return;
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    const n = o.isInstancedMesh ? o.count : 1;
+    for (let i = 0; i < n; i++) {
+      if (o.isInstancedMesh) o.getMatrixAt(i, m); else m.identity();
+      box.union(b.copy(o.geometry.boundingBox).applyMatrix4(m.premultiply(o.matrixWorld)));
+    }
+  });
+  return box;
+}
 // side by side on wide screens, stacked on tall (phone) screens
 function layout() {
   const {left, right} = group.userData.halves;
   right.position.set(0, 0, 0);
-  const lb = new THREE.Box3().setFromObject(left), rb = new THREE.Box3().setFromObject(right);
+  const lb = bounds(left), rb = bounds(right);
   if (cam.aspect >= 1) right.position.set(lb.max.x + GAP - rb.min.x, lb.max.y - rb.max.y, 0);
   else right.position.set(lb.min.x - rb.min.x, lb.min.y - GAP - rb.max.y, 0);
 }
 function fit() {
   // place the camera on a fixed viewing direction and find the closest distance at which all
   // eight corners of the model's bounding box stay inside the frame (with a margin)
-  const box = new THREE.Box3().setFromObject(group);
+  const box = bounds(group);
   if (box.isEmpty()) return;               // every checkbox off
   const c = box.getCenter(new THREE.Vector3());
   const corners = [];
@@ -400,13 +420,17 @@ function onResize() {
 }
 // stands exist for the printed trays only; the stand checkbox only matters with an angle chosen
 function standUI() {
-  const printed = state.v !== 'acrylic';
+  const printed = state.v === 'print' || state.v === 'printtop';
   if (!printed) state.angle = 0;
   document.getElementById('angles').hidden = !printed;
   document.querySelectorAll('[data-a]').forEach(x => x.classList.toggle('on', +x.dataset.a === state.angle));
   const lbl = document.getElementById('stand-lbl'), box = lbl.querySelector('input');
   lbl.hidden = !printed; box.disabled = !state.angle; lbl.classList.toggle('off', !state.angle);
   lbl.title = state.angle ? '' : '台座の角度を選ぶと表示できます';
+  // the board-only view leaves the case, plate, dials and feet out whatever their checkboxes say
+  document.querySelectorAll('[data-c]').forEach(x => {
+    if (!BOARD_ONLY.includes(x.dataset.c) && x.dataset.c !== 'stand') x.disabled = state.v === 'board'; x.parentElement.classList.toggle('off', x.disabled);
+  });
 }
 document.querySelectorAll('button[data-v], button[data-t]').forEach(b => b.addEventListener('click', () => {
   if (b.dataset.v) { state.v = b.dataset.v; document.querySelectorAll('[data-v]').forEach(x => x.classList.toggle('on', x === b)); standUI(); }
