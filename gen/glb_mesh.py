@@ -100,7 +100,9 @@ def load(path, pool):
             lo, hi = P.min(0), P.max(0)
             sc = np.where(hi > lo, (hi - lo) / 65534, 1.0)
             q = np.round((P - lo) / sc - 32767).astype(np.int16)
-            key = hashlib.sha1(q.tobytes() + I.tobytes() + json.dumps(mats[mat]).encode()).hexdigest()
+            # q is normalised to the part's box: the box goes into the key too, or a box of another size matches
+            key = hashlib.sha1(q.tobytes() + I.tobytes() + lo.tobytes() + sc.tobytes()
+                               + json.dumps(mats[mat]).encode()).hexdigest()
             if key not in index:
                 index[key] = len(items)
                 items.append(dict(mat=mats[mat], v=b64(q), o=(lo + 32767 * sc).tolist(), s=sc.tolist(),
