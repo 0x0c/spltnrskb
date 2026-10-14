@@ -22,6 +22,7 @@ body{background:var(--bg);color:var(--fg);font:14px/1.5 var(--sans);overflow:hid
 #spec dt{color:var(--muted)}#spec dd{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums}
 .sep{width:1px;background:var(--line);margin:0 2px}
 button{font:inherit;font-size:13px;border:1px solid var(--line);background:transparent;color:var(--fg);border-radius:6px;padding:4px 10px;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}
 button.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .gap[hidden]{display:none}
@@ -32,9 +33,9 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
 <canvas id="view" aria-label="キーボード筐体の 3D 表示。ドラッグで回転、右ドラッグか 2 本指でパン、ホイールかピンチでズーム、ダブルクリックで視点リセット"></canvas>
 <div id="ui" class="panel">
- <button id="v-print" data-v="print" class="on">A：プリント + アクリル蓋</button><button id="v-printtop" data-v="printtop">B：全部プリント</button><button id="v-acrylic" data-v="acrylic">アクリル版</button>
+ <button id="v-print" data-v="print" class="on">A：プリント + アクリル蓋</button><button id="v-printtop" data-v="printtop">B：全部プリント</button><button id="v-acrylic" data-v="acrylic">アクリル版</button><button id="v-board" data-v="board">基板のみ</button>
  <span class="sep"></span>
- <button id="t-switch" data-t="switch" class="on">スイッチ</button><button id="t-plate" data-t="plate" class="on">プレート</button><button id="t-wheel" data-t="wheel" class="on">ダイヤル</button>
+ <button id="t-base" data-t="base" class="on">台座</button><button id="t-switch" data-t="switch" class="on">スイッチ</button><button id="t-plate" data-t="plate" class="on">プレート</button><button id="t-wheel" data-t="wheel" class="on">ダイヤル</button>
  <button id="t-explode" data-t="explode">分解表示</button>
  <label id="gap" class="gap" hidden>間隔 <input id="gap-in" type="range" min="0" max="40" step="1" value="10" aria-label="分解表示のレイヤー間隔（mm）"> <output id="gap-out">10 mm</output></label>
  <span class="sep"></span>
@@ -48,7 +49,13 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 <script src="model-data.js"></script>
 <script>
 // meshes are in model-data.js (shared with assembly.html)
-const {DATA, POOL, BOARDS, SPEC} = window.NRSK;   // BOARDS: per side {pcba: {group: [[pool id, matrices]]}, switches}
+const {DATA, POOL, BOARDS, SPEC} = window.NRSK;
+// board-only view: the boards and what is soldered to them, taken from the A scene (same board height in B)
+const BOARD_PARTS = ['pcba', 'pcb', 'switch', 'oled', 'encoder', 'drumenc'];
+const BASE = ['tray', 'wheelcap', 'bottom', 'frame1', 'frame2', 'frame3', 'frame4'];   // the 台座 toggle
+SPEC.board = {title: '基板のみ', rows: [['基板', 'FR-4 1.6 mm（左右 2 枚）'],
+  ['実装', 'スイッチ・OLED・ロータリーエンコーダー（サムホイール用 EC05E、ドラム用 EC10E）'],
+  ['表示', 'スイッチのボタンで、スイッチの表示と非表示を切り替え']]};   // BOARDS: per side {pcba: {group: [[pool id, matrices]]}, switches}
 const HIDDEN = ['insert', 'plate_screw', 'pcb_screw', 'standoff', 'bottom_screw', 'case_screw', 'nut', 'axle',
                 'feet'];   // hardware is shown in the assembly guide only
 const b64 = (s, T) => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new T(u.buffer); };
@@ -68,7 +75,7 @@ ctl.mouseButtons = {LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: 
 ctl.touches = {ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN};
 scene.add(new THREE.HemisphereLight(0xffffff, 0x666666, 0.9));
 const dl = new THREE.DirectionalLight(0xffffff, 0.6); dl.position.set(200, -300, 400); scene.add(dl);
-let group = null; const state = {v: 'print', switch: true, plate: true, wheel: true, explode: false, gap: 10};
+let group = null; const state = {v: 'print', base: true, switch: true, plate: true, wheel: true, explode: false, gap: 10};
 // exploded view: each layer rises by its level x the gap set on the slider (mm)
 const LEVEL = {tray: 0, bottom: 0, wheel: 0, wheelcap: 2, encoder: 6, frame1: 1, frame2: 2, frame3: 3, frame4: 4, pcb: 6, pcba: 6, oled: 6.5,
                drumenc: 6, drumblock: 6.5, drum: 7, drumbezel: 8, plate: 9, switch: 11.5, cover: 12.5};
@@ -115,8 +122,10 @@ function build() {
   group = new THREE.Group();
   const halves = {left: new THREE.Group(), right: new THREE.Group()};
   const add = (side, layer, obj, z0 = 0) => { obj.userData = {layer, z0}; place(obj); halves[side].add(obj); };
-  for (const [side, name, m, color, op] of DATA[state.v]) {
+  const boardOnly = state.v === 'board';
+  for (const [side, name, m, color, op] of DATA[boardOnly ? 'print' : state.v]) {
     if (HIDDEN.includes(name)) continue;
+    if (boardOnly ? !BOARD_PARTS.includes(name) : !state.base && BASE.includes(name)) continue;
     const key = name.startsWith('drum') ? 'wheel' : name;   // the wheel toggle shows / hides the drum dial too
     if (!state[key] && (key === 'switch' || key === 'plate' || key === 'wheel')) continue;
     if (name === 'pcba') {
@@ -136,18 +145,33 @@ function build() {
   group.userData.halves = halves;
   scene.add(group); layout(); spec();
 }
+// world box including each instance of the KiCad boards (Box3.setFromObject in r128 skips instance matrices)
+function bounds(obj) {
+  obj.updateWorldMatrix(true, true);
+  const box = new THREE.Box3(), b = new THREE.Box3(), m = new THREE.Matrix4();
+  obj.traverse(o => {
+    if (!o.geometry) return;
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    const n = o.isInstancedMesh ? o.count : 1;
+    for (let i = 0; i < n; i++) {
+      if (o.isInstancedMesh) o.getMatrixAt(i, m); else m.identity();
+      box.union(b.copy(o.geometry.boundingBox).applyMatrix4(m.premultiply(o.matrixWorld)));
+    }
+  });
+  return box;
+}
 // side by side on wide screens, stacked on tall (phone) screens
 function layout() {
   const {left, right} = group.userData.halves;
   right.position.set(0, 0, 0);
-  const lb = new THREE.Box3().setFromObject(left), rb = new THREE.Box3().setFromObject(right);
+  const lb = bounds(left), rb = bounds(right);
   if (cam.aspect >= 1) right.position.set(lb.max.x + GAP - rb.min.x, lb.max.y - rb.max.y, 0);
   else right.position.set(lb.min.x - rb.min.x, lb.min.y - GAP - rb.max.y, 0);
 }
 function fit() {
   // place the camera on a fixed viewing direction and find the closest distance at which all
   // eight corners of the model's bounding box stay inside the frame (with a margin)
-  const box = new THREE.Box3().setFromObject(group);
+  const box = bounds(group);
   const c = box.getCenter(new THREE.Vector3());
   const corners = [];
   for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) corners.push(new THREE.Vector3(x, y, z));
@@ -178,6 +202,7 @@ document.querySelectorAll('button[data-v], button[data-t]').forEach(b => b.addEv
   if (b.dataset.v) { state.v = b.dataset.v; document.querySelectorAll('[data-v]').forEach(x => x.classList.toggle('on', x === b)); }
   else { state[b.dataset.t] = !state[b.dataset.t]; b.classList.toggle('on', state[b.dataset.t]); }
   if (b.dataset.t === 'explode') document.getElementById('gap').hidden = !state.explode;
+  if (b.dataset.v) for (const t of ['base', 'plate', 'wheel']) document.getElementById(`t-${t}`).disabled = state.v === 'board';
   build(); if (b.dataset.v || b.dataset.t === 'explode') fit();
 }));
 const gapIn = document.getElementById('gap-in'), gapOut = document.getElementById('gap-out');
