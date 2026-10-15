@@ -1,5 +1,11 @@
 """Three-view drawings (third-angle projection, JIS) of the printed case parts: case/drawings/<name>.svg.
 
+make_case.write_stl calls draw() for every STL it writes into a print/ directory, so make_case.py, foot_coupon.py,
+pin_coupon.py and make_enctest.py keep the drawings next to it (<dir>/drawings/) up to date; run this script by
+hand to redraw without regenerating the STLs. A drawing is skipped when nothing it depends on changed: each SVG
+records a hash of its STL, this script and the options (<!-- source ... -->), and a matching hash leaves it as is
+(--force redraws anyway).
+
 Each STL in case/print/ (or the STLs given on the command line) is drawn as a top view, a front view and a right
 side view on an A3 sheet, at the largest standard scale that fits, with the overall dimensions and a title block.
 Visible edges are solid lines and hidden edges dashed: the edges are the sharp edges of the mesh (faces meeting at
@@ -12,7 +18,7 @@ they lie in the STL (stands in their print pose, the printed plate top side up).
     python3 gen/case_drawings.py                      # every STL in case/print/
     python3 gen/case_drawings.py case/print/left-tray.stl --no-hidden
 """
-import argparse, glob, math, os, sys
+import argparse, glob, hashlib, math, os, re, sys
 import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -305,7 +311,7 @@ class Sheet:
         self.poly([(cx - 5, y), (cx + 5, y)], 'ctr')
         self.poly([(cx, y - 5), (cx, y + 5)], 'ctr')
 
-    def svg(self, title):
+    def svg(self, title, source):
         W, H = SHEET
         style = ('.v{fill:none;stroke:#000;stroke-width:0.35;stroke-linecap:round;stroke-linejoin:round}'
                  '.h{fill:none;stroke:#000;stroke-width:0.18;stroke-dasharray:1.5 0.8}'
@@ -314,12 +320,28 @@ class Sheet:
                  'stroke-dasharray:4 0.8 0.8 0.8}'
                  '.t{font-family:"Noto Sans CJK JP","Hiragino Sans","Yu Gothic",sans-serif;fill:#000}')
         return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}mm" height="{H}mm" viewBox="0 0 {W} {H}">'
-                f'<title>{title}</title><style>{style}</style>'
+                f'<!-- source {source} --><title>{title}</title><style>{style}</style>'
                 f'<rect width="{W}" height="{H}" fill="#fff"/>' + '\n'.join(self.out) + '</svg>\n')
 
 
-def draw(path, out_dir, hidden=True):
+def source_hash(path, hidden):
+    """Hash of everything a drawing depends on: the STL, this script and the options."""
+    h = hashlib.sha256()
+    for f in (path, os.path.abspath(__file__)):
+        h.update(open(f, 'rb').read())
+    h.update(f'{os.path.relpath(path, ROOT)} hidden={hidden}'.encode())
+    return h.hexdigest()[:16]
+
+
+def draw(path, out_dir, hidden=True, force=False):
+    """Draw path into out_dir/<name>.svg; returns (svg path, scale), the scale None when it was up to date."""
     name = os.path.splitext(os.path.basename(path))[0]
+    dst = os.path.join(out_dir, f'{name}.svg')
+    source = source_hash(path, hidden)
+    if not force and os.path.exists(dst):
+        m = re.search(r'<!-- source (\w+) -->', open(dst, encoding='utf-8').read(400))
+        if m and m.group(1) == source:
+            return dst, None
     tris = read_stl(path)
     verts, pairs, other = edges_of(tris)
     lo, hi = verts.min(axis=0), verts.max(axis=0)
@@ -356,7 +378,8 @@ def draw(path, out_dir, hidden=True):
         sh.poly([(X, yy), (X + tw, yy)], 'dim')
     sh.poly([(X + 95, Y), (X + 95, Y + th / 2)], 'dim')
     sh.poly([(X + 120, Y), (X + 120, Y + th / 2)], 'dim')
-    sh.text(X + 3, Y + th - 6.5, 'nrsk 分割キーボード v2 筐体', size=3.2, anchor='start')
+    project = 'nrsk エンコーダー検証基板 筐体' if 'enctest' in os.path.relpath(path, ROOT).split(os.sep) else 'nrsk 分割キーボード v2 筐体'
+    sh.text(X + 3, Y + th - 6.5, project, size=3.2, anchor='start')
     sh.text(X + 3, Y + th / 2 + 3.5, f'部品：{name}', size=4.2, anchor='start')
     sh.text(X + 3, Y + 9.5, f'{os.path.relpath(path, ROOT)}', size=2.6, anchor='start')
     sh.text(X + 3, Y + 4, f'外形 {fmt(size[0])} × {fmt(size[1])} × {fmt(size[2])}　単位 mm', size=2.6, anchor='start')
@@ -365,8 +388,7 @@ def draw(path, out_dir, hidden=True):
     sh.projection_symbol(X + 135, Y + 10)
     sh.text(X + 135, Y + 2.5, '第三角法', size=2.4)
     os.makedirs(out_dir, exist_ok=True)
-    dst = os.path.join(out_dir, f'{name}.svg')
-    open(dst, 'w').write(sh.svg(f'{name} 三面図'))
+    open(dst, 'w', encoding='utf-8').write(sh.svg(f'{name} 三面図', source))
     return dst, sc
 
 
@@ -375,11 +397,12 @@ def main():
     ap.add_argument('stl', nargs='*', help='STL files (default: case/print/*.stl)')
     ap.add_argument('-o', '--out', default=OUT, help='output directory (default: case/drawings)')
     ap.add_argument('--no-hidden', action='store_true', help='leave out the hidden (dashed) lines')
+    ap.add_argument('--force', action='store_true', help='redraw even when the drawing is up to date')
     a = ap.parse_args()
     paths = a.stl or sorted(glob.glob(os.path.join(ROOT, 'case', 'print', '*.stl')))
     for p in paths:
-        dst, sc = draw(os.path.abspath(p), a.out, hidden=not a.no_hidden)
-        print(f'{os.path.relpath(dst, ROOT)}  {scale_text(sc)}')
+        dst, sc = draw(os.path.abspath(p), a.out, hidden=not a.no_hidden, force=a.force)
+        print(f'{os.path.relpath(dst, ROOT)}  {scale_text(sc) if sc else "up to date"}')
 
 
 if __name__ == '__main__':

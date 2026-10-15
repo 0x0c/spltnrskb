@@ -52,7 +52,7 @@ done
 NRSK_KC="$KC" "$KPY" gen/export_3d.py $SIDES
 python3 gen/make_qmk.py
 VENV="$PWD/.venv/bin/python"
-if [ -x "$VENV" ]; then "$VENV" gen/make_case.py && "$VENV" gen/case_preview.py && "$VENV" gen/case_section.py && "$VENV" gen/case_viewer.py && "$VENV" gen/assembly_guide.py && "$VENV" gen/case_drawings.py; fi
+if [ -x "$VENV" ]; then "$VENV" gen/make_case.py && "$VENV" gen/case_preview.py && "$VENV" gen/case_section.py && "$VENV" gen/case_viewer.py && "$VENV" gen/assembly_guide.py; fi
 python3 gen/make_bom.py >/dev/null
 NRSK_KC="$KC" python3 gen/make_jlc.py $SIDES
 ./gen/doc_images.sh

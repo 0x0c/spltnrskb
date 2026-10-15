@@ -962,6 +962,9 @@ def write_stl(path, man):
             vx, vy, vz = p2 - p0
             n = (uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx)
             f.write(struct.pack('<12fH', *n, *p0, *p1, *p2, 0))
+    if os.path.basename(os.path.dirname(os.path.abspath(path))) == 'print':   # a printed part: redraw its three views
+        from case_drawings import draw
+        draw(os.path.abspath(path), os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(path))), 'drawings'))
 
 
 def write_half(hf, out, parts=True, laser=True):

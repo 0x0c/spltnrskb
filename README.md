@@ -205,7 +205,7 @@ B〜F は OLED を基板の外側（壁の上）へ移すため、基板のコ�
 
 ![左のトレイの三面図](case/drawings/left-tray.svg)
 
-`gen/case_drawings.py` が STL から作ります（numpy だけで動きます）。メッシュの稜線（面どうしが 35° より大きく折れる辺）と輪郭を拾い、深度バッファで見える部分と隠れる部分に分けます。フィレットは薄い段を積み重ねた形なので、段の辺は描かず、フィレットの両端の線だけを残します。STL を指定すると、その部品だけを描きます（`python3 gen/case_drawings.py case/print/left-tray.stl`、かくれ線なしは `--no-hidden`）。
+STL を書き出すスクリプト（`make_case.py`、`foot_coupon.py`、`pin_coupon.py`、`make_enctest.py`）は、`print/` に STL を書くたびに、同じ階層の `drawings/` の三面図を作り直します（検証基板の筐体は `enctest/case/drawings/`）。各 SVG には、元の STL、`gen/case_drawings.py`、オプションのハッシュを記録しています。どれも変わっていなければ描き直しを省くので、STL の中身が同じなら時間はかかりません。描くのは `gen/case_drawings.py` です（numpy だけで動きます）。メッシュの稜線（面どうしが 35° より大きく折れる辺）と輪郭を拾い、深度バッファで見える部分と隠れる部分に分けます。フィレットは薄い段を積み重ねた形なので、段の辺は描かず、フィレットの両端の線だけを残します。STL を指定すると、その部品だけを描きます（`python3 gen/case_drawings.py case/print/left-tray.stl`、かくれ線なしは `--no-hidden`、変更がなくても描き直すときは `--force`）。
 
 ### ゴム足と台座
 
@@ -334,7 +334,7 @@ spltnrskb/
 ├── docs/pre-order-checklist.md  発注前の確認事項（検査結果、残るリスク、注文の順番）
 ├── docs/thumbwheel-check.md     サムホイールと OLED の実機確認の手順
 ├── docs/encoder-test-board.md  2 つのエンコーダーだけを載せた検証基板（RP2040-Zero を差し込む）
-├── enctest/                     検証基板の KiCad プロジェクトとケース（enctest/case/）
+├── enctest/                     検証基板の KiCad プロジェクトとケース（enctest/case/、三面図は enctest/case/drawings/）
 ├── docs/views.html              A と B を 3D で見比べるページ
 ├── docs/3d/                     docs/views.html のモデル（GLB）、照明（HDR）、床の影
 ├── docs/img/                    README の画像
@@ -361,7 +361,7 @@ spltnrskb/
 | 基板 | `make_pcb.py`、`route.py`、`sexpr.py` | 部品の配置、Freerouting による自動配線、KiCad ファイルの読み書き |
 | 3D 出力 | `export_3d.py`、`glb_mesh.py` | ビューア用の基板メッシュ（`build/3d/`、Git の管理対象外） |
 | ファームウェア | `make_qmk.py` | `firmware/qmk/keyboards/nrsk/` |
-| 筐体 | `make_case.py`、`case_preview.py`、`case_section.py`、`case_viewer.py`、`assembly_guide.py`、`case_drawings.py` | `case/` 以下のすべて |
+| 筐体 | `make_case.py`、`case_preview.py`、`case_section.py`、`case_viewer.py`、`assembly_guide.py`、`case_drawings.py`（`make_case.py` から呼ばれる） | `case/` 以下のすべて |
 | 部品表 | `make_bom.py`、`bom_sources.json` | `bom/`（購入先の情報は `bom_sources.json` に手で記入） |
 | JLCPCB の実装データ | `make_jlc.py` | `fab/<side>/nrsk-<side>-jlc-bom.csv`、`fab/<side>/nrsk-<side>-jlc-cpl.csv` |
 | README の画像 | `doc_images.sh` | `docs/img/left-*.png`、`docs/img/right-*.png`、断面図 |
