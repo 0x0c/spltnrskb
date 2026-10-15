@@ -114,16 +114,19 @@ OLED_GLASS_TOP = PLATE_GAP + PLATE_T - COVER_T - TAPE_T   # = 2.5: glass top abo
 SWITCH_TOP_KEEPOUT = 8.4     # half size of an MX top housing (15.6 mm) + 0.6 mm
 # corner thumbwheel: lies under the PCB, rim out of the corner. An Alps EC05E1220401 (hollow-shaft encoder,
 # 12 detents) hangs from the PCB back on the wheel axis; a hex pin on the wheel top drives its rotor, and the
-# clicks come from the encoder. The thumb's side force is taken by the floor post (acrylic: an M3 screw), which
-# has radial play, so the board-to-tray tolerance does not bind the wheel between post and encoder.
+# clicks come from the encoder. The thumb's side force is taken by a steel parallel pin pressed up through the floor /
+# bottom plate (no printed axle), which has radial play in the wheel's bore, so the board-to-tray tolerance does not
+# bind the wheel between pin and encoder.
 WHEEL_T = 4.1
 WHEEL_GAP = 0.3              # wheel bottom above the floor / bottom plate
 WHEEL_CUT = 0.6              # radial clearance of the wall opening
 WHEEL_KNURLS = 32            # rounded teeth on the rim: the grip
 TOOTH_DEPTH = 0.5            # valley depth of the rim teeth
-BORE_D, BORE_DEPTH = 4.0, 2.0          # axle bore from below
-POST_D = 3.6                 # printed axle post (3D print variant): 0.2 mm radial play in the bore
-AXLE_HOLE_D = 3.2            # M3 axle screw through the bottom plate (acrylic variant)
+AXLE_D = 3.0                 # axle: steel parallel pin, 3 x 5 (3D print, 2 mm floor) / 3 x 6 (acrylic, 3 mm bottom)
+AXLE_UP = 3.0                # pin top above the floor / bottom plate; its bottom end is flush with the underside
+BORE_D, BORE_DEPTH = AXLE_D + 0.4, AXLE_UP - WHEEL_GAP + 0.3   # axle bore from below: 0.2 mm radial play, 0.3 above the pin
+AXLE_PRINT_HOLE = 3.0        # through the tray floor: FDM holes come out a little small, so the pin presses in
+AXLE_HOLE_D = 3.0            # through the acrylic bottom plate (a drop of glue if the cut comes out loose)
 # Alps EC05E1220401 (catalog drawing No.3): body 5.7 wide (7.6 over the side tabs), 2.5 / 3.7 from the rotor
 # axis, 2.7 below the PCB back; hex hole 1.72 A/F through the rotor, entered from the wheel side
 ENC_W, ENC_TAB_W, ENC_UP, ENC_DOWN, ENC_H = 5.7, 7.6, 2.5, 3.7, 2.7
@@ -138,7 +141,7 @@ STAB_X = 11.938
 # drum dial (right half, docs/specs/drum-dial.md). Local frame: origin = Alps EC10E footprint origin (rotor axis
 # projected onto the board at the encoder's shaft-insert face, from case_data 'drum'), +x along the axis toward
 # the drum, y across (board y), z above the PCB top. The drum spins between the encoder rotor (hex pin) and a
-# printed bearing block on the PCB (round pin in a snap-in U slot); a printed bezel clipped into a plate opening
+# printed bearing block on the PCB (a steel pin pressed into the drum end, in a snap-in U slot); a printed bezel clipped into a plate opening
 # hoods the encoder and the block and holds the block down.
 EC10_AXIS = 7.0                       # EC10E1220505: axis 7 mm above the board
 EC10_BRACKET = (-6.1, -4.9, 0.0, 4.9, 2.0)    # metal bracket: x0, y0, x1, y1, top z
@@ -148,7 +151,8 @@ EC10_HEX_DEPTH = 1.7
 DRUM_GROOVES, DRUM_GROOVE_DEPTH, DRUM_HELIX = 36, 0.4, 30.0   # diagonal knurl: rounded grooves, helix angle
 DRUM_CHAMFER = 0.5
 DRUM_PIN_ENGAGE = 1.6                 # hex pin length inside the rotor (<= EC10_HEX_DEPTH)
-DRUM_ROUND_PIN = (2.0, 2.5)           # bearing end: diameter, length
+DRUM_ROUND_PIN = (2.0, 2.5)           # bearing end: steel parallel pin 2 x 6, diameter, length out of the drum
+DRUM_PIN_IN = 3.5                     # the pin's length pressed into the drum end (hole 0.3 deeper; resin holes come out a little small)
 BLOCK_T, BLOCK_HALF_W = 3.0, 3.5      # bearing block: thickness along the axis, half width across
 BLOCK_R = 1.0                         # bearing block: radius of the top corners (seen along the axis)
 BLOCK_TOP = EC10_AXIS + 1.5
@@ -414,7 +418,7 @@ class Half:
     # rubber feet under the tray ----------------------------------------------------------
     def foot_keepout(self):
         """What a foot recess must stay FOOT_KEEP away from: counterbores, boss pilot holes, the reset hole, the wheel
-        (its disc and wall opening, the axle post inside)."""
+        (its disc and wall opening, the axle pin inside)."""
         cs = self.holes(self.screws, SCREW_CB[0]) + self.holes(self.d['holes'], PILOT_D) + self._reset_cut(RESET_D)
         return cs + self.wheel_cut() if 'wheel' in self.d else cs
 
@@ -617,8 +621,8 @@ class Half:
             if p['conn'].get('open_top'):       # encoder test board: the board drops in, the plate closes the top
                 zt = wall_top + 0.1
             body = body - Manifold.extrude(p['chan'], zt - zp).translate((0, 0, zp)) - self.port_hole(p, z_pcb)
-        body = body + Manifold.cylinder(WHEEL_GAP + BORE_DEPTH - 0.3, POST_D / 2, POST_D / 2, 48).translate(
-            (wx, -wy, FLOOR))
+        body = body - Manifold.cylinder(FLOOR + 0.02, AXLE_PRINT_HOLE / 2, AXLE_PRINT_HOLE / 2, 48).translate(
+            (wx, -wy, -0.01))
         if 'reset' in self.d:
             rx, ry = self.d['reset']
             body = body - Manifold.cylinder(FLOOR + 0.02, RESET_D / 2, RESET_D / 2).translate((rx, -ry, -0.01))
@@ -749,7 +753,7 @@ class Half:
         return m - self._daxis(bore, -7.0)
 
     def drum3d(self):
-        """Knurled drum: hex pin into the encoder rotor on the -x end, round pin into the block on the +x end."""
+        """Knurled drum: hex pin into the encoder rotor on the -x end, a hole for the steel pin on the +x end."""
         r = DRUM_D / 2
         n = DRUM_GROOVES * 12
         pts = []
@@ -767,9 +771,21 @@ class Half:
         corner = PIN_AF / math.sqrt(3)
         pin = hexagon(PIN_AF, pin_len) ^ Manifold.cylinder(pin_len, corner, PIN_AF / 2 - PIN_CHAMFER, 24)
         pin = pin.rotate((0, -90, 0))            # tip toward -x
+        d, depth = DRUM_ROUND_PIN[0], DRUM_PIN_IN + 0.3
+        hole = self._along_x(Manifold.cylinder(depth + 0.01, d / 2, d / 2, 32)).translate((DRUM_W - depth, 0, 0))
+        return self._daxis(body + pin - hole, DRUM_GAP)
+
+    def drum_pin3d(self):
+        """Steel parallel pin pressed into the drum's +x end; it turns in the block's slot."""
         d, l = DRUM_ROUND_PIN
-        rpin = self._along_x(Manifold.cylinder(l, d / 2, d / 2, 32))
-        return self._daxis(body + pin + rpin.translate((DRUM_W, 0, 0)), DRUM_GAP)
+        pin = self._along_x(Manifold.cylinder(DRUM_PIN_IN + l, d / 2, d / 2, 32))
+        return self._daxis(pin.translate((DRUM_W - DRUM_PIN_IN, 0, 0)), DRUM_GAP)
+
+    def axle3d(self, z_base, length):
+        """The wheel's axle: a steel parallel pin up through the floor / bottom plate (top at z_base), bottom end flush
+        with the underside."""
+        (x, y), _ = self.wheel_xy()
+        return Manifold.cylinder(length, AXLE_D / 2, AXLE_D / 2, 48).translate((x, -y, z_base + AXLE_UP - length))
 
     def _dbox_rounded(self, x0, hw, z0, x1, z1, r, end):
         """Box in the drum's local frame (x0..x1, |y| <= hw, z0..z1) rounded to r on every edge except the bottom
@@ -1038,6 +1054,10 @@ def check_drum(hf):
                        (block, plate, 'block hits the plate'), (block, enc, 'block hits the encoder')):
         assert (a ^ b).volume() < 1e-3, name
     assert drum.bounding_box()[2] >= 0.3, 'drum too close to the PCB'
+    pin = hf.drum_pin3d()
+    for b, name in ((drum, 'drum'), (block, 'block'), (bezel, 'bezel'), (enc, 'encoder')):
+        assert (pin ^ b).volume() < 1e-3, f'drum pin hits the {name}'
+    assert DRUM_PIN_IN + DRUM_ROUND_PIN[1] == 6.0, 'drum pin no longer a stock 2 x 6'
     tip = DRUM_GAP - (DRUM_GAP - EC10_ROTOR_FACE + DRUM_PIN_ENGAGE)
     assert abs((EC10_ROTOR_FACE - tip) - DRUM_PIN_ENGAGE) < 1e-9 and DRUM_PIN_ENGAGE <= EC10_HEX_DEPTH
     assert abs(float(drum.bounding_box()[0]) - (hf._dl(tip, 0)[0])) < 0.01, 'hex pin does not reach the rotor'
@@ -1149,6 +1169,13 @@ def check_wheel(hf):
     assert abs(pin_top - (FLOOR + hf.enc_bottom() + PIN_ENGAGE)) < 1e-6, 'pin does not reach into the rotor'
     assert pin_top < FLOOR + STANDOFF - 0.3, 'pin reaches the PCB'
     assert FLOOR + WHEEL_GAP + WHEEL_T > FLOOR + hf.enc_bottom(), 'rim no longer overlaps the encoder (hub not needed)'
+    # axle: steel pins of stock lengths, clear of the wheel, deep in its bore, clear of the hub above the bore
+    for base, length in ((FLOOR, FLOOR + AXLE_UP), (BOTTOM_T, BOTTOM_T + AXLE_UP)):
+        assert length in (5.0, 6.0), 'axle pin no longer a stock 3 x 5 / 3 x 6'
+        w = hf.wheel3d().translate((0, 0, base + WHEEL_GAP))
+        assert (w ^ hf.axle3d(base, length)).volume() < 1e-3, 'wheel hits its axle pin'
+    assert AXLE_UP - WHEEL_GAP >= 2.5, 'axle pin too short in the bore'
+    assert hf.hub_top() - WHEEL_GAP - BORE_DEPTH >= 0.6, 'bore too close to the lowered hub'
 
 
 def check_feet(hf):

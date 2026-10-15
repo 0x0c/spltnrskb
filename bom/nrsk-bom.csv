@@ -30,9 +30,10 @@ MCU,　└ 代替,,,,,Winbond W25Q16JVSSIQ（2 MB、同じ 208 mil）,LCSC C8231
 キースイッチ,　└ 代替,,,,,Kailh Super Speed Silver（リニア、3 ピン）,遊舎工房,"¥1,540 / 35 個",https://shop.yushakobo.jp/products/4280,在庫少
 キースイッチ,ホットスワップソケット,Kailh CPG151101S11（MX 用）,38,42,80,Kailh（HanElectricity）CPG151101S11-16,LCSC C41430893,US$0.043（10 個単位）,https://www.lcsc.com/product-detail/C41430893.html,"2026-10-10 に確認（在庫 217,980）"
 キースイッチ,スタビライザ 2 u（PCB マウント）,ネジ止め式推奨,1,2,3,GDK-02 Pre-lubed PCB Mount Stabilizer,遊舎工房,¥770 / セット,https://shop.yushakobo.jp/products/11952,左 Shift、右 Backspace、右 Enter；LCSC に該当品なし；1 セットで 2 u が 4 個分。1 セットで足りる
-入力,サムホイール,直径 29.2 mm × 厚さ 4.1 mm、外周に 32 山のすべり止め、上面にエンコーダーを回す六角ピン（対辺 1.66 mm）（case/print/<side>-wheel.stl）,1,1,2,case/print/<side>-wheel.stl,自作（3D プリント）,,,六角ピンのはめあいは試し印刷で調整する；LCSC に該当品なし（自作の 3D プリント部品）
-入力,ドラム（ドラム式ダイヤル）,直径 13 mm × 幅 21.6 mm、斜めのローレット、左端にエンコーダーを回す六角ピン（対辺 1.66 mm）、右端に丸ピン（直径 2 mm）（case/print/right-drum.stl）,0,1,1,case/print/right-drum.stl,自作（光造形、JLC3DP など）,,,六角ピンのはめあいは試し印刷で調整する；LCSC に該当品なし（自作の 3D プリント部品）。斜めのローレットを出すため光造形の樹脂で作る
-入力,ドラムの軸受けブロック,基板の穴 2 つに差し込み、ドラムの丸ピンを U 字の溝で受ける（case/print/right-drum-block.stl）,0,1,1,case/print/right-drum-block.stl,自作（3D プリント）,,,溝のスナップフィットは試し印刷で調整する；LCSC に該当品なし（自作の 3D プリント部品）
+入力,サムホイール,直径 29.2 mm × 厚さ 4.1 mm、外周に 32 山のすべり止め、上面にエンコーダーを回す六角ピン（対辺 1.66 mm）、下面に軸穴（直径 3.4 mm × 深さ 3 mm）（case/print/<side>-wheel.stl）,1,1,2,case/print/<side>-wheel.stl,自作（3D プリント）,,,六角ピンのはめあいは試し印刷で調整する；LCSC に該当品なし（自作の 3D プリント部品）
+入力,ドラム（ドラム式ダイヤル）,直径 13 mm × 幅 21.6 mm、斜めのローレット、左端にエンコーダーを回す六角ピン（対辺 1.66 mm）、右端に軸の平行ピンを圧入する穴（直径 2 mm × 深さ 3.8 mm）（case/print/right-drum.stl）,0,1,1,case/print/right-drum.stl,自作（光造形、JLC3DP など）,,,六角ピンのはめあいは試し印刷で調整する；LCSC に該当品なし（自作の 3D プリント部品）。斜めのローレットを出すため光造形の樹脂で作る
+入力,平行ピン φ2 × 6 mm（ステンレス）,ドラムの軸。ドラムの右端の穴に 3.5 mm 圧入し、2.5 mm 出す,0,1,1,,,,,購入先未調査
+入力,ドラムの軸受けブロック,基板の穴 2 つに差し込み、ドラムの軸の平行ピンを U 字の溝で受ける（case/print/right-drum-block.stl）,0,1,1,case/print/right-drum-block.stl,自作（3D プリント）,,,溝のスナップフィットは試し印刷で調整する；LCSC に該当品なし（自作の 3D プリント部品）
 入力,ドラムのベゼル,枠をプレートの穴に収めて上面を面一にし、下のつばでプレートの下面に掛ける。エンコーダーと軸受けブロックを覆う（case/print/right-drum-bezel.stl）,0,1,1,case/print/right-drum-bezel.stl,自作（3D プリント）,,,3D プリントの A、B、アクリル版で共通；LCSC に該当品なし（自作の 3D プリント部品）
 キーキャップ,キーキャップ 1 u,,,,69,DSA 無刻印キーキャップ 1 u（PBT、22 色）,遊舎工房,¥55,https://shop.yushakobo.jp/products/dsa-blank-keycaps,LCSC に該当品なし
 キーキャップ,キーキャップ 1.25 u,,,,5,Signature Plastics DSA 1.25 u,spkeyboards.com（米国）,US$3.50,https://spkeyboards.com/products/dsa-1-25-space,LCSC に該当品なし；国内で DSA 1.25 u が見つからなかったため海外通販。輸入時に関税・消費税
@@ -64,7 +65,8 @@ OLED カバー,透明両面テープ 厚さ 0.5 mm,カバーと OLED のガラ�
 3D プリント版 A,M2 ナット（ナット受け用）,壁上面のくぼみの下の六角穴に入れる,10,10,20,大阪魂 六角ナット 1 種 M2（SUS304、対辺 4 × 厚さ 1.6）,MonotaRO,¥164 / 20 個,https://www.monotaro.com/p/2876/3624/,LCSC に該当品なし
 3D プリント版 A,　└ 代替,,,,,エスコ EA949LT-720 六角ナット M2（真鍮、ニッケルめっき）,MonotaRO,¥798 / 80 個,https://www.monotaro.com/p/5052/3646/,
 3D プリント版 A,M2 × 6 mm スリムヘッド小ねじ,頭 φ4.0 × 高さ 0.5 mm、透明アクリルのプレートを上から留める,10,10,20,大阪魂 (+)スリムヘッド小ねじ ステンレス M2 × 6（φ4 × 0.5、注文コード 41746713）,MonotaRO,7 本入り,https://www.monotaro.com/p/4174/6713/,LCSC に該当品なし（頭の低い M2 は皿ネジだけ）
-アクリル版,M3 × 8 mm なべネジ,サムホイールの軸（底板の下から差し込む）,1,1,2,Shuntian PM3X8（ニッケルめっき）,LCSC C357544,US$0.23 / 100 本（100 本単位）,https://www.lcsc.com/product-detail/C357544.html,"3D プリント版はトレイの軸を使う；2026-10-10 に確認（在庫 27,500）"
+3D プリント版,平行ピン φ3 × 5 mm（ステンレス）,サムホイールの軸。トレイの床の穴に下から圧入し、下端を底面にそろえる,1,1,2,,,,,購入先未調査
+アクリル版,平行ピン φ3 × 6 mm（ステンレス）,サムホイールの軸。底板の穴に下から差し込み、下端を底面にそろえる,1,1,2,,,,,緩ければエポキシ接着剤を少量；購入先未調査
 3D プリント版 B,M2 × 12 mm なべネジ（底から）,トレイ底の座ぐりから壁を通してプレート裏のインサートへ,10,10,20,TRUSCO Y823-0212 ナベ頭小ねじ ステンレス M2 × 12,MonotaRO,¥395 / 20 本,https://www.monotaro.com/p/2498/0167/,LCSC に該当品なし
 3D プリント版 B,　└ 代替,,,,,エスコ EA949NF-212 鍋頭小ねじ ステンレス M2 × 12,MonotaRO,¥275 / 16 本,https://www.monotaro.com/g/02450718/,
 3D プリント版,M2 × 6 mm タッピングネジ,基板をボス（下穴 φ1.6）へ固定,8,8,16,Shuntian PA2X6nie（なべ、頭 φ3.5、ニッケルめっき）,LCSC C357360,US$0.16 / 100 本（100 本単位）,https://www.lcsc.com/product-detail/C357360.html,"2026-10-10 に確認（在庫 2,900）"

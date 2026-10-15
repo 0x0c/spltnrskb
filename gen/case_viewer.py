@@ -63,8 +63,8 @@ def hardware(hf, variant):
         add('bottom_screw', [screw(x, y, 0, 5, up=True) for x, y in holes], steel)
         add('case_screw', [screw(x, y, z_plate_top, 20) for x, y in screws], steel)   # from the top through everything
         add('nut', [hexagon(x, y, -1.6, 1.6, 4.0) for x, y in screws], steel)
-        (wx, wy), _ = hf.wheel_xy()
-        add('axle', [screw(wx, wy, 0, 8, head_d=5.5, head_h=1.8, d=3.0, up=True)], steel)
+    z_floor = FLOOR if variant in PRINTED else BOTTOM_T    # the wheel's axle: a steel pin flush with the underside
+    add('axle', [hf.axle3d(z_floor, z_floor + mc.AXLE_UP)], steel)
     if variant in PRINTED:          # in the recesses under the tray (make_case.Half.feet)
         feet, z_top = hf.feet(), mc.FOOT_DEPTH
     else:                           # stuck flat under the bottom plate, below the nuts
@@ -147,6 +147,7 @@ def main():
                     parts.append((side, 'drumenc', pack(hf.ec10e3d().translate((0, 0, zt))), '#202225', 1.0))
                 parts.append((side, 'drumblock', pack(hf.drum_block3d().translate((0, 0, zt))), '#d9d4c7', 1.0))
                 parts.append((side, 'drum', pack(hf.drum3d().translate((0, 0, zt))), '#c9ccd1', 1.0))
+                parts.append((side, 'drumpin', pack(hf.drum_pin3d().translate((0, 0, zt))), '#a9adb3', 1.0))
                 parts.append((side, 'drumbezel', pack(hf.drum_bezel3d().translate((0, 0, zt))), '#d9d4c7', 1.0))
             for name, m, color in hardware(hf, variant):
                 if m is not None:
