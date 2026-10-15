@@ -1,9 +1,9 @@
-"""Three-view drawings (third-angle projection, JIS) of the printed case parts: case/drawings/<name>.svg.
+"""Three-view drawings (third-angle projection, JIS) of the printed case parts: case/drawings/<name>.pdf.
 
 make_case.write_stl calls draw() for every STL it writes into a print/ directory, so make_case.py, foot_coupon.py,
 pin_coupon.py and make_enctest.py keep the drawings next to it (<dir>/drawings/) up to date; run this script by
-hand to redraw without regenerating the STLs. A drawing is skipped when nothing it depends on changed: each SVG
-records a hash of its STL, this script and the options (<!-- source ... -->), and a matching hash leaves it as is
+hand to redraw without regenerating the STLs. A drawing is skipped when nothing it depends on changed: each PDF
+records a hash of its STL, this script and the options (a "%source" comment), and a matching hash leaves it as is
 (--force redraws anyway).
 
 Each STL in case/print/ (or the STLs given on the command line) is drawn as a top view, a front view and a right
@@ -18,7 +18,7 @@ they lie in the STL (stands in their print pose, the printed plate top side up).
     python3 gen/case_drawings.py                      # every STL in case/print/
     python3 gen/case_drawings.py case/print/left-tray.stl --no-hidden
 """
-import argparse, glob, hashlib, math, os, re, sys
+import argparse, glob, hashlib, math, os, re, sys, zlib
 import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -189,7 +189,7 @@ def view_lines(tris, verts, pairs, other, view):
 
 
 def chain(segs, nd=3):
-    """Join segments that share end points into polylines (smaller SVG, cleaner dashes)."""
+    """Join segments that share end points into polylines (smaller file, cleaner dashes)."""
     def key(p):
         return (round(p[0], nd), round(p[1], nd))
     at = {}
@@ -245,33 +245,83 @@ def layout(size):
     return (n, d), k, pos
 
 
+# Helvetica advance widths (1/1000 em) of ASCII 32..126, for placing centred and right-aligned text
+HELV = [278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556,
+        556, 556, 556, 556, 278, 278, 584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667,
+        556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556, 333, 556,
+        556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722,
+        500, 500, 500, 334, 260, 334, 584]
+MM = 72 / 25.4                # PDF points per mm
+# line styles: width (mm), dash pattern (mm), round caps and joins
+STYLES = {'v': (0.35, [], True), 'h': (0.18, [1.5, 0.8], False), 'dim': (0.18, [], False), 'fr': (0.5, [], False),
+          'ctr': (0.18, [4, 0.8, 0.8, 0.8], False)}
+
+
+def runs(s):
+    """Split text into (font, text) runs: Latin in Helvetica (F1), Japanese in the CID font (F2)."""
+    out = []
+    for ch in s:
+        f = 'F1' if 32 <= ord(ch) < 127 or ch == '×' else 'F2'
+        if out and out[-1][0] == f:
+            out[-1][1] += ch
+        else:
+            out.append([f, ch])
+    return out
+
+
+def run_width(f, t):
+    if f == 'F2':
+        return 1000 * len(t)          # full-width
+    return sum(584 if ch == '×' else HELV[ord(ch) - 32] for ch in t)
+
+
+def pdf_string(f, t):
+    if f == 'F2':
+        return '<' + t.encode('utf-16-be').hex().upper() + '>'
+    b = t.encode('cp1252').replace(b'\\', b'\\\\').replace(b'(', b'\\(').replace(b')', b'\\)')
+    return '(' + ''.join(chr(c) if 32 <= c < 127 else f'\\{c:03o}' for c in b) + ')'
+
+
 class Sheet:
+    """One A3 page in sheet mm (origin lower left, y up), written out as a PDF."""
     def __init__(self):
-        self.out = []
+        self.ops = []
+        self.style = None
 
-    def y(self, y):                 # sheet mm (y up) -> SVG (y down)
-        return SHEET[1] - y
-
-    def poly(self, pts, cls):
-        d = 'M' + 'L'.join(f'{x:.2f},{self.y(y):.2f}' for x, y in pts)
-        self.out.append(f'<path class="{cls}" d="{d}"/>')
+    def _stroke_style(self, cls):
+        if self.style != cls:
+            w, dash, rnd = STYLES[cls]
+            self.ops.append(f'{w} w {1 if rnd else 0} J {1 if rnd else 0} j [{" ".join(map(str, dash))}] 0 d')
+            self.style = cls
 
     def paths(self, lines, cls):
-        d = ''.join('M' + 'L'.join(f'{x:.2f},{self.y(y):.2f}' for x, y in ln) for ln in lines)
-        if d:
-            self.out.append(f'<path class="{cls}" d="{d}"/>')
+        lines = [ln for ln in lines if len(ln) > 1]
+        if not lines:
+            return
+        self._stroke_style(cls)
+        for ln in lines:
+            self.ops.append(f'{ln[0][0]:.2f} {ln[0][1]:.2f} m ' + ' '.join(f'{x:.2f} {y:.2f} l' for x, y in ln[1:]))
+        self.ops.append('S')
 
-    def text(self, x, y, s, size=3.5, anchor='middle', rot=0, cls='t'):
-        tr = f' transform="rotate({rot} {x:.2f} {self.y(y):.2f})"' if rot else ''
-        self.out.append(f'<text class="{cls}" x="{x:.2f}" y="{self.y(y):.2f}" font-size="{size}" '
-                        f'text-anchor="{anchor}"{tr}>{s}</text>')
+    def poly(self, pts, cls):
+        self.paths([pts], cls)
+
+    def text(self, x, y, s, size=3.5, anchor='middle', rot=0):
+        """Text with its baseline at (x, y); rot=-90 reads from bottom to top."""
+        rs = runs(s)
+        w = sum(run_width(f, t) for f, t in rs) * size / 1000
+        dx = {'start': 0, 'middle': -w / 2, 'end': -w}[anchor]
+        c, sn = (0, 1) if rot else (1, 0)
+        ox, oy = x + dx * c, y + dx * sn
+        body = ' '.join(f'/{f} {size} Tf {pdf_string(f, t)} Tj' for f, t in rs)
+        self.ops.append(f'BT {c} {sn} {-sn} {c} {ox:.2f} {oy:.2f} Tm {body} ET')
 
     def arrow(self, tip, direction):
         ux, uy = direction
         L, w = 3.0, 0.9
         bx, by = tip[0] - ux * L, tip[1] - uy * L
-        self.out.append(f'<path class="arr" d="M{tip[0]:.2f},{self.y(tip[1]):.2f}'
-                        f'L{bx - uy * w:.2f},{self.y(by + ux * w):.2f}L{bx + uy * w:.2f},{self.y(by - ux * w):.2f}Z"/>')
+        self.ops.append(f'{tip[0]:.2f} {tip[1]:.2f} m {bx - uy * w:.2f} {by + ux * w:.2f} l '
+                        f'{bx + uy * w:.2f} {by - ux * w:.2f} l f')
 
     def dim_h(self, xa, xb, y_edge, y_line, value):
         """Horizontal dimension between xa and xb, drawn at y_line, extension lines from y_edge."""
@@ -311,17 +361,41 @@ class Sheet:
         self.poly([(cx - 5, y), (cx + 5, y)], 'ctr')
         self.poly([(cx, y - 5), (cx, y + 5)], 'ctr')
 
-    def svg(self, title, source):
+    def pdf(self, title, source):
+        """The page as PDF bytes. Japanese text uses the standard Adobe-Japan1 font HeiseiKakuGo-W5, not embedded:
+        the viewer substitutes its own Japanese gothic font. source goes into a comment for the up-to-date check."""
         W, H = SHEET
-        style = ('.v{fill:none;stroke:#000;stroke-width:0.35;stroke-linecap:round;stroke-linejoin:round}'
-                 '.h{fill:none;stroke:#000;stroke-width:0.18;stroke-dasharray:1.5 0.8}'
-                 '.dim{fill:none;stroke:#000;stroke-width:0.18}.arr{fill:#000;stroke:none}'
-                 '.fr{fill:none;stroke:#000;stroke-width:0.5}.ctr{fill:none;stroke:#000;stroke-width:0.18;'
-                 'stroke-dasharray:4 0.8 0.8 0.8}'
-                 '.t{font-family:"Noto Sans CJK JP","Hiragino Sans","Yu Gothic",sans-serif;fill:#000}')
-        return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}mm" height="{H}mm" viewBox="0 0 {W} {H}">'
-                f'<!-- source {source} --><title>{title}</title><style>{style}</style>'
-                f'<rect width="{W}" height="{H}" fill="#fff"/>' + '\n'.join(self.out) + '</svg>\n')
+        content = f'{MM:.6f} 0 0 {MM:.6f} 0 0 cm 0 G 0 g\n' + '\n'.join(self.ops) + '\n'
+        stream = zlib.compress(content.encode('ascii'), 9)
+        title_hex = (b'\xfe\xff' + title.encode('utf-16-be')).hex().upper()
+        objs = [
+            '<< /Type /Catalog /Pages 2 0 R >>',
+            '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            f'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {W * MM:.2f} {H * MM:.2f}] '
+            '/Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>',
+            None,     # content stream
+            '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>',
+            '<< /Type /Font /Subtype /Type0 /BaseFont /HeiseiKakuGo-W5-UniJIS-UCS2-H /Encoding /UniJIS-UCS2-H '
+            '/DescendantFonts [7 0 R] >>',
+            '<< /Type /Font /Subtype /CIDFontType0 /BaseFont /HeiseiKakuGo-W5 '
+            '/CIDSystemInfo << /Registry (Adobe) /Ordering (Japan1) /Supplement 2 >> /FontDescriptor 8 0 R /DW 1000 >>',
+            '<< /Type /FontDescriptor /FontName /HeiseiKakuGo-W5 /Flags 4 /FontBBox [-92 -250 1010 922] '
+            '/ItalicAngle 0 /Ascent 752 /Descent -221 /CapHeight 737 /StemV 114 >>',
+            f'<< /Title <{title_hex}> /Producer (gen/case_drawings.py) >>',
+        ]
+        out = bytearray(f'%PDF-1.4\n%source {source}\n%\xe2\xe3\xcf\xd3\n'.encode('latin-1'))
+        offsets = []
+        for i, o in enumerate(objs, 1):
+            offsets.append(len(out))
+            if o is None:
+                out += f'{i} 0 obj\n<< /Length {len(stream)} /Filter /FlateDecode >>\nstream\n'.encode() + stream + b'\nendstream\nendobj\n'
+            else:
+                out += f'{i} 0 obj\n{o}\nendobj\n'.encode()
+        xref = len(out)
+        out += f'xref\n0 {len(objs) + 1}\n0000000000 65535 f \n'.encode()
+        out += ''.join(f'{off:010d} 00000 n \n' for off in offsets).encode()
+        out += f'trailer\n<< /Size {len(objs) + 1} /Root 1 0 R /Info {len(objs)} 0 R >>\nstartxref\n{xref}\n%%EOF\n'.encode()
+        return bytes(out)
 
 
 def source_hash(path, hidden):
@@ -334,13 +408,13 @@ def source_hash(path, hidden):
 
 
 def draw(path, out_dir, hidden=True, force=False):
-    """Draw path into out_dir/<name>.svg; returns (svg path, scale), the scale None when it was up to date."""
+    """Draw path into out_dir/<name>.pdf; returns (pdf path, scale), the scale None when it was up to date."""
     name = os.path.splitext(os.path.basename(path))[0]
-    dst = os.path.join(out_dir, f'{name}.svg')
+    dst = os.path.join(out_dir, f'{name}.pdf')
     source = source_hash(path, hidden)
     if not force and os.path.exists(dst):
-        m = re.search(r'<!-- source (\w+) -->', open(dst, encoding='utf-8').read(400))
-        if m and m.group(1) == source:
+        m = re.search(rb'%source (\w+)', open(dst, 'rb').read(100))
+        if m and m.group(1).decode() == source:
             return dst, None
     tris = read_stl(path)
     verts, pairs, other = edges_of(tris)
@@ -388,7 +462,7 @@ def draw(path, out_dir, hidden=True, force=False):
     sh.projection_symbol(X + 135, Y + 10)
     sh.text(X + 135, Y + 2.5, '第三角法', size=2.4)
     os.makedirs(out_dir, exist_ok=True)
-    open(dst, 'w', encoding='utf-8').write(sh.svg(f'{name} 三面図', source))
+    open(dst, 'wb').write(sh.pdf(f'{name} 三面図', source))
     return dst, sc
 
 

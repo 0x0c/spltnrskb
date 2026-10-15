@@ -201,11 +201,13 @@ B〜F は OLED を基板の外側（壁の上）へ移すため、基板のコ�
 
 ### 三面図
 
-`case/print/` の STL は、部品ごとに三面図（第三角法：平面図・正面図・右側面図）を `case/drawings/<部品名>.svg` に用意しています。A3 横の用紙に、収まる最大の標準尺度（10:1〜1:2）で描き、全体の寸法（幅・奥行き・高さ）と表題欄を入れています。見える稜線と輪郭は実線、隠れる部分は破線（かくれ線）です。部品は STL の向きのまま描くので、台座は印刷するときの姿勢、B のプレートは上面が上です。
+`case/print/` の STL は、部品ごとに三面図（第三角法：平面図・正面図・右側面図）を `case/drawings/<部品名>.pdf` に用意しています。A3 横の用紙に、収まる最大の標準尺度（10:1〜1:2）で描き、全体の寸法（幅・奥行き・高さ）と表題欄を入れています。見える稜線と輪郭は実線、隠れる部分は破線（かくれ線）です。部品は STL の向きのまま描くので、台座は印刷するときの姿勢、B のプレートは上面が上です。
 
-![左のトレイの三面図](case/drawings/left-tray.svg)
+例：[左のトレイ](case/drawings/left-tray.pdf)、[右のプレート（B）](case/drawings/right-plate.pdf)、[9° の台座（左）](case/drawings/left-stand-9.pdf)
 
-STL を書き出すスクリプト（`make_case.py`、`foot_coupon.py`、`pin_coupon.py`、`make_enctest.py`）は、`print/` に STL を書くたびに、同じ階層の `drawings/` の三面図を作り直します（検証基板の筐体は `enctest/case/drawings/`）。各 SVG には、元の STL、`gen/case_drawings.py`、オプションのハッシュを記録しています。どれも変わっていなければ描き直しを省くので、STL の中身が同じなら時間はかかりません。描くのは `gen/case_drawings.py` です（numpy だけで動きます）。メッシュの稜線（面どうしが 35° より大きく折れる辺）と輪郭を拾い、深度バッファで見える部分と隠れる部分に分けます。フィレットは薄い段を積み重ねた形なので、段の辺は描かず、フィレットの両端の線だけを残します。STL を指定すると、その部品だけを描きます（`python3 gen/case_drawings.py case/print/left-tray.stl`、かくれ線なしは `--no-hidden`、変更がなくても描き直すときは `--force`）。
+線は拡大しても粗くならないベクトルです。日本語の文字には PDF 標準の日本語フォント（平成角ゴシック）を指定し、埋め込んでいません。表示するときは閲覧ソフトの日本語ゴシック体で置き換わります（macOS のプレビュー、Acrobat、Chrome、Firefox で表示できます）。
+
+STL を書き出すスクリプト（`make_case.py`、`foot_coupon.py`、`pin_coupon.py`、`make_enctest.py`）は、`print/` に STL を書くたびに、同じ階層の `drawings/` の三面図を作り直します（検証基板の筐体は `enctest/case/drawings/`）。各 PDF には、元の STL、`gen/case_drawings.py`、オプションのハッシュを記録しています。どれも変わっていなければ描き直しを省くので、STL の中身が同じなら時間はかかりません。描くのは `gen/case_drawings.py` です（numpy だけで動きます）。メッシュの稜線（面どうしが 35° より大きく折れる辺）と輪郭を拾い、深度バッファで見える部分と隠れる部分に分けます。フィレットは薄い段を積み重ねた形なので、段の辺は描かず、フィレットの両端の線だけを残します。STL を指定すると、その部品だけを描きます（`python3 gen/case_drawings.py case/print/left-tray.stl`、かくれ線なしは `--no-hidden`、変更がなくても描き直すときは `--force`）。
 
 ### ゴム足と台座
 
@@ -317,7 +319,7 @@ spltnrskb/
 │   ├── print/                   3D プリント用 STL
 │   │                            （<side>-tray、plate、wheel、wheel-cap、台座 stand-3〜9、
 │   │                             試し印刷 pin-coupon と foot-coupon、右だけ right-drum、drum-block、drum-bezel）
-│   ├── drawings/                print/ の部品ごとの三面図（SVG、A3）
+│   ├── drawings/                print/ の部品ごとの三面図（PDF、A3）
 │   ├── preview/                 確認用の出力
 │   │   ├── viewer.html          3D ビューア（GitHub Pages で公開）
 │   │   ├── assembly.html        組み立てガイド（GitHub Pages で公開）
