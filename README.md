@@ -199,6 +199,14 @@ B〜F は OLED を基板の外側（壁の上）へ移すため、基板のコ�
 
 組み立て手順は、同じデータを使ったインタラクティブな組み立てガイド（`case/preview/assembly.html`、公開版は [http://www.0x0c.me/spltnrskb/assembly.html](http://www.0x0c.me/spltnrskb/assembly.html)）で確認できます。手順ごとに部品が所定の位置に入るアニメーションと説明が出て、A・B・アクリル版と左右を切り替えられます。
 
+### 三面図
+
+`case/print/` の STL は、部品ごとに三面図（第三角法：平面図・正面図・右側面図）を `case/drawings/<部品名>.svg` に用意しています。A3 横の用紙に、収まる最大の標準尺度（10:1〜1:2）で描き、全体の寸法（幅・奥行き・高さ）と表題欄を入れています。見える稜線と輪郭は実線、隠れる部分は破線（かくれ線）です。部品は STL の向きのまま描くので、台座は印刷するときの姿勢、B のプレートは上面が上です。
+
+![左のトレイの三面図](case/drawings/left-tray.svg)
+
+`gen/case_drawings.py` が STL から作ります（numpy だけで動きます）。メッシュの稜線（面どうしが 35° より大きく折れる辺）と輪郭を拾い、深度バッファで見える部分と隠れる部分に分けます。フィレットは薄い段を積み重ねた形なので、段の辺は描かず、フィレットの両端の線だけを残します。STL を指定すると、その部品だけを描きます（`python3 gen/case_drawings.py case/print/left-tray.stl`、かくれ線なしは `--no-hidden`）。
+
 ### ゴム足と台座
 
 3D プリント版のトレイの底には、ゴム足（3M CS-02、直径 9.5 mm）を貼る位置を決めるくぼみ（直径 10 mm、深さ 1 mm）が 5 か所あります。くぼみはプレートのネジの座ぐりを避けているので、プレートを外すときにゴム足を剥がす必要はありません。サムホイールのある角だけは、ホイールを挟んで 2 個です。この配置で、すべてのキーがゴム足で囲まれた範囲の内側に入ります。
@@ -309,6 +317,7 @@ spltnrskb/
 │   ├── print/                   3D プリント用 STL
 │   │                            （<side>-tray、plate、wheel、wheel-cap、台座 stand-3〜9、
 │   │                             試し印刷 pin-coupon と foot-coupon、右だけ right-drum、drum-block、drum-bezel）
+│   ├── drawings/                print/ の部品ごとの三面図（SVG、A3）
 │   ├── preview/                 確認用の出力
 │   │   ├── viewer.html          3D ビューア（GitHub Pages で公開）
 │   │   ├── assembly.html        組み立てガイド（GitHub Pages で公開）
@@ -352,7 +361,7 @@ spltnrskb/
 | 基板 | `make_pcb.py`、`route.py`、`sexpr.py` | 部品の配置、Freerouting による自動配線、KiCad ファイルの読み書き |
 | 3D 出力 | `export_3d.py`、`glb_mesh.py` | ビューア用の基板メッシュ（`build/3d/`、Git の管理対象外） |
 | ファームウェア | `make_qmk.py` | `firmware/qmk/keyboards/nrsk/` |
-| 筐体 | `make_case.py`、`case_preview.py`、`case_section.py`、`case_viewer.py`、`assembly_guide.py` | `case/` 以下のすべて |
+| 筐体 | `make_case.py`、`case_preview.py`、`case_section.py`、`case_viewer.py`、`assembly_guide.py`、`case_drawings.py` | `case/` 以下のすべて |
 | 部品表 | `make_bom.py`、`bom_sources.json` | `bom/`（購入先の情報は `bom_sources.json` に手で記入） |
 | JLCPCB の実装データ | `make_jlc.py` | `fab/<side>/nrsk-<side>-jlc-bom.csv`、`fab/<side>/nrsk-<side>-jlc-cpl.csv` |
 | README の画像 | `doc_images.sh` | `docs/img/left-*.png`、`docs/img/right-*.png`、断面図 |

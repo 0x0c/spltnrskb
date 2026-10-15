@@ -1,0 +1,386 @@
+"""Three-view drawings (third-angle projection, JIS) of the printed case parts: case/drawings/<name>.svg.
+
+Each STL in case/print/ (or the STLs given on the command line) is drawn as a top view, a front view and a right
+side view on an A3 sheet, at the largest standard scale that fits, with the overall dimensions and a title block.
+Visible edges are solid lines and hidden edges dashed: the edges are the sharp edges of the mesh (faces meeting at
+more than FEATURE_DEG) and the silhouettes, and a depth buffer of the projected triangles decides which parts of
+them are seen. Needs numpy only.
+
+Model axes as in make_case.py: x to the right, y to the back (away from the typist), z up. The parts are drawn as
+they lie in the STL (stands in their print pose, the printed plate top side up).
+
+    python3 gen/case_drawings.py                      # every STL in case/print/
+    python3 gen/case_drawings.py case/print/left-tray.stl --no-hidden
+"""
+import argparse, glob, math, os, sys
+import numpy as np
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT = os.path.join(ROOT, 'case', 'drawings')
+
+FEATURE_DEG = 35.0            # faces meeting at a larger angle make a drawn edge (finer tessellation stays smooth)
+STEP = 0.4                    # mm: an edge between two faces narrower than this is a step of a stacked-slice fillet
+PX = 0.05                     # depth-buffer pixel, mm on the part
+DEPTH_EPS = 0.05              # mm: an edge this close behind the nearest surface still counts as seen
+SHEET = (420.0, 297.0)        # A3 landscape, mm
+MARGIN = 10.0
+GAP = 22.0                    # between views (room for the dimensions)
+TITLE = (150.0, 32.0)         # title block, bottom right
+SCALES = [(10, 1), (5, 1), (2, 1), (1, 1), (1, 2), (1, 5)]
+
+# view name -> (u axis, v axis, viewing direction into the scene); u to the right, v up on the sheet
+VIEWS = {
+    'top': (np.array([1.0, 0, 0]), np.array([0, 1.0, 0]), np.array([0, 0, -1.0])),
+    'front': (np.array([1.0, 0, 0]), np.array([0, 0, 1.0]), np.array([0, 1.0, 0])),
+    'right': (np.array([0, 1.0, 0]), np.array([0, 0, 1.0]), np.array([-1.0, 0, 0])),
+}
+LABELS = {'top': '平面図', 'front': '正面図', 'right': '右側面図'}
+
+
+# --- mesh --------------------------------------------------------------------------
+def read_stl(path):
+    b = open(path, 'rb').read()
+    if b[:5] == b'solid' and b'facet' in b[:400]:          # ASCII STL
+        v = [list(map(float, ln.split()[1:4])) for ln in b.decode().splitlines() if ln.strip().startswith('vertex')]
+        return np.array(v, dtype=np.float64).reshape(-1, 3, 3)
+    n = int.from_bytes(b[80:84], 'little')
+    rec = np.dtype([('n', '<3f4'), ('v', '<9f4'), ('a', '<u2')])
+    return np.frombuffer(b, dtype=rec, count=n, offset=84)['v'].astype(np.float64).reshape(-1, 3, 3)
+
+
+def edges_of(tris):
+    """Welded mesh -> vertices, (edges, normals of their two faces, step flag) of the manifold edges, other edges.
+    The step flag marks an edge whose two faces are both narrow across it (a step of the fillets make_case.py builds
+    from stacked slices): drawing those would turn a fillet into a black band, so the fillet shows by its two ends."""
+    q = np.round(tris.reshape(-1, 3) / 1e-4).astype(np.int64)
+    _, first, inv = np.unique(q, axis=0, return_index=True, return_inverse=True)
+    verts = tris.reshape(-1, 3)[first]
+    f = inv.reshape(-1, 3)
+    nrm = np.cross(tris[:, 1] - tris[:, 0], tris[:, 2] - tris[:, 0])
+    ln = np.linalg.norm(nrm, axis=1)
+    ok = ln > 1e-12
+    f, nrm, ln = f[ok], nrm[ok] / ln[ok, None], ln[ok]
+    e = np.concatenate([f[:, [0, 1]], f[:, [1, 2]], f[:, [2, 0]]])
+    fi = np.tile(np.arange(len(f)), 3)
+    width = ln[fi] / np.maximum(np.linalg.norm(verts[e[:, 0]] - verts[e[:, 1]], axis=1), 1e-12)   # face height over the edge
+    e.sort(axis=1)
+    live = e[:, 0] != e[:, 1]       # faces collapsed by the welding
+    e, fi, width = e[live], fi[live], width[live]
+    key = e[:, 0] * (len(verts) + 1) + e[:, 1]
+    order = np.argsort(key, kind='stable')
+    key, e, fi, width = key[order], e[order], fi[order], width[order]
+    uniq, start, count = np.unique(key, return_index=True, return_counts=True)
+    two = count == 2
+    s0, s1 = start[two], start[two] + 1
+    pairs = e[s0], nrm[fi[s0]], nrm[fi[s1]], (width[s0] < STEP) & (width[s1] < STEP)
+    other = e[start[~two]]
+    return verts, pairs, other
+
+
+# --- projection --------------------------------------------------------------------
+def zbuffer(p, box):
+    """Nearest depth per pixel of the projected triangles p (n, 3, 3: u, v, depth); inf where nothing is."""
+    u0, v0, w, h = box
+    z = np.full(w * h, np.inf)
+    a, b, c = p[:, 0], p[:, 1], p[:, 2]
+    area = (b[:, 0] - a[:, 0]) * (c[:, 1] - a[:, 1]) - (c[:, 0] - a[:, 0]) * (b[:, 1] - a[:, 1])
+    keep = np.abs(area) > 1e-9
+    p, a, b, c, area = p[keep], a[keep], b[keep], c[keep], area[keep]
+    # depth plane of each triangle: depth = gu * u + gv * v + g0
+    gu = ((b[:, 2] - a[:, 2]) * (c[:, 1] - a[:, 1]) - (c[:, 2] - a[:, 2]) * (b[:, 1] - a[:, 1])) / area
+    gv = ((c[:, 2] - a[:, 2]) * (b[:, 0] - a[:, 0]) - (b[:, 2] - a[:, 2]) * (c[:, 0] - a[:, 0])) / area
+    g0 = a[:, 2] - gu * a[:, 0] - gv * a[:, 1]
+    dmin, dmax = p[:, :, 2].min(axis=1), p[:, :, 2].max(axis=1)
+    # scanlines: one span per triangle and pixel row it covers
+    r0 = np.ceil((p[:, :, 1].min(axis=1) - v0) / PX - 0.5).astype(int)
+    r1 = np.floor((p[:, :, 1].max(axis=1) - v0) / PX - 0.5).astype(int)
+    rows = np.maximum(r1 - r0 + 1, 0)
+    t = np.repeat(np.arange(len(p)), rows)
+    iy = np.repeat(r0, rows) + np.arange(rows.sum()) - np.repeat(np.cumsum(rows) - rows, rows)
+    y = v0 + (iy + 0.5) * PX
+    xl, xr = np.full(len(t), np.inf), np.full(len(t), -np.inf)
+    for i, j in ((0, 1), (1, 2), (2, 0)):
+        pa, pb = p[t, i], p[t, j]
+        lo_, hi_ = np.minimum(pa[:, 1], pb[:, 1]), np.maximum(pa[:, 1], pb[:, 1])
+        on = (y >= lo_) & (y <= hi_) & (hi_ > lo_)
+        x = pa[:, 0] + (y - pa[:, 1]) * (pb[:, 0] - pa[:, 0]) / np.where(hi_ > lo_, pb[:, 1] - pa[:, 1], 1.0)
+        xl = np.where(on, np.minimum(xl, x), xl)
+        xr = np.where(on, np.maximum(xr, x), xr)
+    c0 = np.ceil((xl - u0) / PX - 0.5)
+    c1 = np.floor((xr - u0) / PX - 0.5)
+    ok = np.isfinite(c0) & np.isfinite(c1) & (c1 >= c0) & (iy >= 0) & (iy < h)
+    t, iy, c0, c1 = t[ok], iy[ok], np.clip(c0[ok], 0, w - 1).astype(int), np.clip(c1[ok], 0, w - 1).astype(int)
+    n = c1 - c0 + 1
+    # expand the spans to pixels, a few million at a time
+    ends = np.cumsum(n)
+    step = 4_000_000
+    s = 0
+    while s < len(n):
+        e = int(np.searchsorted(ends, ends[s] - n[s] + step, side='right'))
+        e = max(e, s + 1)
+        nn = n[s:e]
+        tt = np.repeat(t[s:e], nn)
+        yy = np.repeat(iy[s:e], nn)
+        xx = np.repeat(c0[s:e], nn) + np.arange(nn.sum()) - np.repeat(np.cumsum(nn) - nn, nn)
+        d = gu[tt] * (u0 + (xx + 0.5) * PX) + gv[tt] * (v0 + (yy + 0.5) * PX) + g0[tt]
+        d = np.clip(d, dmin[tt], dmax[tt])
+        np.minimum.at(z, yy * w + xx, d)
+        s = e
+    z = z.reshape(h, w)
+    # farthest surface around each pixel: an edge on a crease is compared with its own faces, not a neighbour's
+    pad = np.pad(z, 1, constant_values=np.inf)
+    zmax = z.copy()
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            np.maximum(zmax, pad[1 + dy:h + 1 + dy, 1 + dx:w + 1 + dx], out=zmax)
+    return zmax
+
+
+def view_lines(tris, verts, pairs, other, view):
+    """Visible and hidden segments (lists of ((u, v), (u, v))) of one view."""
+    U, V, D = VIEWS[view]
+    pv = np.stack([verts @ U, verts @ V, verts @ D], axis=1)
+    p = np.stack([tris @ U, tris @ V, tris @ D], axis=2)
+    u0, v0 = pv[:, 0].min() - 2 * PX, pv[:, 1].min() - 2 * PX
+    w = int(math.ceil((pv[:, 0].max() - u0) / PX)) + 3
+    h = int(math.ceil((pv[:, 1].max() - v0) / PX)) + 3
+    zmax = zbuffer(p, (u0, v0, w, h))
+    e, n1, n2, step = pairs
+    d1, d2 = n1 @ D, n2 @ D
+    sil = ((d1 < -1e-9) & (d2 > 1e-9)) | ((d1 > 1e-9) & (d2 < -1e-9))   # front face against a back face
+    sharp = np.einsum('ij,ij->i', n1, n2) < math.cos(math.radians(FEATURE_DEG))
+    sel = e[(sharp | sil) & ~step]
+    sel = np.concatenate([sel, other]) if len(other) else sel
+    vis, hid = [], []
+    for i, j in sel:
+        a, b = pv[i], pv[j]
+        L = math.hypot(b[0] - a[0], b[1] - a[1])
+        if L < 1e-6:
+            continue
+        k = max(2, int(math.ceil(L / PX)) + 1)
+        t = np.linspace(0, 1, k)
+        q = a[None] + t[:, None] * (b - a)[None]
+        ix = np.clip(((q[:, 0] - u0) / PX).astype(int), 0, w - 1)
+        iy = np.clip(((q[:, 1] - v0) / PX).astype(int), 0, h - 1)
+        seen = q[:, 2] <= zmax[iy, ix] + DEPTH_EPS
+        # runs of seen / hidden samples; a run of one sample is noise at a crossing and joins its neighbours
+        cut = np.nonzero(np.diff(seen.astype(int)))[0]
+        bounds = [0, *(cut + 1), k]
+        runs = [(bounds[r], bounds[r + 1], bool(seen[bounds[r]])) for r in range(len(bounds) - 1)]
+        merged = []
+        for r in runs:
+            if merged and (r[1] - r[0] < 3 or merged[-1][2] == r[2]):
+                merged[-1] = (merged[-1][0], r[1], merged[-1][2])
+            else:
+                merged.append(r)
+        for s0, s1, sn in merged:
+            ta, tb = t[s0], t[min(s1, k - 1)] if s1 < k else 1.0
+            seg = (tuple(a[:2] + ta * (b - a)[:2]), tuple(a[:2] + tb * (b - a)[:2]))
+            (vis if sn else hid).append(seg)
+    lo = pv[:, :2].min(axis=0)
+    hi = pv[:, :2].max(axis=0)
+    return vis, hid, lo, hi
+
+
+def chain(segs, nd=3):
+    """Join segments that share end points into polylines (smaller SVG, cleaner dashes)."""
+    def key(p):
+        return (round(p[0], nd), round(p[1], nd))
+    at = {}
+    for i, (a, b) in enumerate(segs):
+        at.setdefault(key(a), []).append(i)
+        at.setdefault(key(b), []).append(i)
+    used = [False] * len(segs)
+    lines = []
+    for i in range(len(segs)):
+        if used[i]:
+            continue
+        used[i] = True
+        line = [segs[i][0], segs[i][1]]
+        for end in (1, 0):
+            while True:
+                tip = key(line[-1] if end else line[0])
+                nxt = next((j for j in at.get(tip, ()) if not used[j]), None)
+                if nxt is None:
+                    break
+                used[nxt] = True
+                a, b = segs[nxt]
+                p = b if key(a) == tip else a
+                line.append(p) if end else line.insert(0, p)
+        lines.append(line)
+    return lines
+
+
+# --- sheet ---------------------------------------------------------------------------
+def fmt(x):
+    s = f'{x:.1f}'
+    return s[:-2] if s.endswith('.0') else s
+
+
+def scale_text(s):
+    n, d = s
+    return f'{n}:{d}'
+
+
+def layout(size):
+    """Scale and the sheet positions (lower left corner of each view, sheet mm, y up) for part extents (x, y, z)."""
+    sx, sy, sz = size
+    W, H = SHEET
+    left, top = 14.0, 14.0         # room for the dimensions left of and above the views
+    for n, d in SCALES:
+        k = n / d
+        bw, bh = sx * k + GAP + sy * k, sy * k + GAP + sz * k     # block of views
+        if left + bw + 4 <= W - 2 * MARGIN and top + bh + GAP + TITLE[1] <= H - 2 * MARGIN:
+            break
+    # centred in the sheet, above the title block (the labels under the bottom views sit in the GAP below)
+    x0 = MARGIN + left + (W - 2 * MARGIN - left - 4 - bw) / 2
+    y0 = MARGIN + TITLE[1] + GAP + (H - 2 * MARGIN - TITLE[1] - GAP - top - bh) / 2
+    pos = {'front': (x0, y0), 'top': (x0, y0 + sz * k + GAP), 'right': (x0 + sx * k + GAP, y0)}
+    return (n, d), k, pos
+
+
+class Sheet:
+    def __init__(self):
+        self.out = []
+
+    def y(self, y):                 # sheet mm (y up) -> SVG (y down)
+        return SHEET[1] - y
+
+    def poly(self, pts, cls):
+        d = 'M' + 'L'.join(f'{x:.2f},{self.y(y):.2f}' for x, y in pts)
+        self.out.append(f'<path class="{cls}" d="{d}"/>')
+
+    def paths(self, lines, cls):
+        d = ''.join('M' + 'L'.join(f'{x:.2f},{self.y(y):.2f}' for x, y in ln) for ln in lines)
+        if d:
+            self.out.append(f'<path class="{cls}" d="{d}"/>')
+
+    def text(self, x, y, s, size=3.5, anchor='middle', rot=0, cls='t'):
+        tr = f' transform="rotate({rot} {x:.2f} {self.y(y):.2f})"' if rot else ''
+        self.out.append(f'<text class="{cls}" x="{x:.2f}" y="{self.y(y):.2f}" font-size="{size}" '
+                        f'text-anchor="{anchor}"{tr}>{s}</text>')
+
+    def arrow(self, tip, direction):
+        ux, uy = direction
+        L, w = 3.0, 0.9
+        bx, by = tip[0] - ux * L, tip[1] - uy * L
+        self.out.append(f'<path class="arr" d="M{tip[0]:.2f},{self.y(tip[1]):.2f}'
+                        f'L{bx - uy * w:.2f},{self.y(by + ux * w):.2f}L{bx + uy * w:.2f},{self.y(by - ux * w):.2f}Z"/>')
+
+    def dim_h(self, xa, xb, y_edge, y_line, value):
+        """Horizontal dimension between xa and xb, drawn at y_line, extension lines from y_edge."""
+        g = math.copysign(1.5, y_line - y_edge)
+        for x in (xa, xb):
+            self.poly([(x, y_edge + g * 0.66), (x, y_line + g)], 'dim')
+        out = abs(xb - xa) < 8              # short: arrows outside, pointing in
+        e = 5 if out else 0
+        self.poly([(xa - e, y_line), (xb + e, y_line)], 'dim')
+        self.arrow((xa, y_line), (1, 0) if out else (-1, 0))
+        self.arrow((xb, y_line), (-1, 0) if out else (1, 0))
+        self.text((xa + xb) / 2, y_line + 1.2, fmt(value))
+
+    def dim_v(self, ya, yb, x_edge, x_line, value):
+        g = math.copysign(1.5, x_line - x_edge)
+        for y in (ya, yb):
+            self.poly([(x_edge + g * 0.66, y), (x_line + g, y)], 'dim')
+        out = abs(yb - ya) < 8
+        e = 5 if out else 0
+        self.poly([(x_line, ya - e), (x_line, yb + e)], 'dim')
+        self.arrow((x_line, ya), (0, 1) if out else (0, -1))
+        self.arrow((x_line, yb), (0, -1) if out else (0, 1))
+        if out:                             # beside the line, clear of the arrows
+            self.text(x_line - 1.5, (ya + yb) / 2 - 1.2, fmt(value), anchor='end')
+        else:
+            self.text(x_line - 1.2, (ya + yb) / 2, fmt(value), rot=-90)
+
+    def projection_symbol(self, x, y):
+        """Third-angle projection symbol, centred on (x, y)."""
+        self.poly([(x - 7, y - 2.5), (x - 7, y + 2.5), (x - 1, y + 4), (x - 1, y - 4), (x - 7, y - 2.5)], 'fr')
+        self.poly([(x - 8, y), (x, y)], 'ctr')
+        r1, r2 = 4.0, 2.0
+        cx = x + 6
+        for r in (r1, r2):
+            pts = [(cx + r * math.cos(a), y + r * math.sin(a)) for a in np.linspace(0, 2 * math.pi, 49)]
+            self.poly(pts, 'fr')
+        self.poly([(cx - 5, y), (cx + 5, y)], 'ctr')
+        self.poly([(cx, y - 5), (cx, y + 5)], 'ctr')
+
+    def svg(self, title):
+        W, H = SHEET
+        style = ('.v{fill:none;stroke:#000;stroke-width:0.35;stroke-linecap:round;stroke-linejoin:round}'
+                 '.h{fill:none;stroke:#000;stroke-width:0.18;stroke-dasharray:1.5 0.8}'
+                 '.dim{fill:none;stroke:#000;stroke-width:0.18}.arr{fill:#000;stroke:none}'
+                 '.fr{fill:none;stroke:#000;stroke-width:0.5}.ctr{fill:none;stroke:#000;stroke-width:0.18;'
+                 'stroke-dasharray:4 0.8 0.8 0.8}'
+                 '.t{font-family:"Noto Sans CJK JP","Hiragino Sans","Yu Gothic",sans-serif;fill:#000}')
+        return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}mm" height="{H}mm" viewBox="0 0 {W} {H}">'
+                f'<title>{title}</title><style>{style}</style>'
+                f'<rect width="{W}" height="{H}" fill="#fff"/>' + '\n'.join(self.out) + '</svg>\n')
+
+
+def draw(path, out_dir, hidden=True):
+    name = os.path.splitext(os.path.basename(path))[0]
+    tris = read_stl(path)
+    verts, pairs, other = edges_of(tris)
+    lo, hi = verts.min(axis=0), verts.max(axis=0)
+    size = hi - lo
+    sc, k, pos = layout(size)
+    sh = Sheet()
+    W, H = SHEET
+    sh.poly([(MARGIN, MARGIN), (W - MARGIN, MARGIN), (W - MARGIN, H - MARGIN), (MARGIN, H - MARGIN), (MARGIN, MARGIN)], 'fr')
+    boxes = {}
+    for view in ('top', 'front', 'right'):
+        vis, hid, vlo, vhi = view_lines(tris, verts, pairs, other, view)
+        ox, oy = pos[view]
+
+        def tx(p):
+            return (ox + (p[0] - vlo[0]) * k, oy + (p[1] - vlo[1]) * k)
+        if hidden:
+            sh.paths([[tx(p) for p in ln] for ln in chain(hid)], 'h')
+        sh.paths([[tx(p) for p in ln] for ln in chain(vis)], 'v')
+        bx0, by0 = ox, oy
+        bx1, by1 = ox + (vhi[0] - vlo[0]) * k, oy + (vhi[1] - vlo[1]) * k
+        boxes[view] = (bx0, by0, bx1, by1)
+        sh.text((bx0 + bx1) / 2, by0 - (GAP - 6 if view != 'top' else 9), LABELS[view], size=3.5)
+    # overall dimensions: width and depth on the top view, height on the front view
+    x0, y0, x1, y1 = boxes['top']
+    sh.dim_h(x0, x1, y1, y1 + 8, size[0])
+    sh.dim_v(y0, y1, x0, x0 - 8, size[1])
+    fx0, fy0, fx1, fy1 = boxes['front']
+    sh.dim_v(fy0, fy1, fx0, fx0 - 8, size[2])
+    # title block
+    tw, th = TITLE
+    X, Y = W - MARGIN - tw, MARGIN
+    sh.poly([(X, Y), (X, Y + th), (X + tw, Y + th)], 'fr')
+    for yy in (Y + th / 2,):
+        sh.poly([(X, yy), (X + tw, yy)], 'dim')
+    sh.poly([(X + 95, Y), (X + 95, Y + th / 2)], 'dim')
+    sh.poly([(X + 120, Y), (X + 120, Y + th / 2)], 'dim')
+    sh.text(X + 3, Y + th - 6.5, 'nrsk 分割キーボード v2 筐体', size=3.2, anchor='start')
+    sh.text(X + 3, Y + th / 2 + 3.5, f'部品：{name}', size=4.2, anchor='start')
+    sh.text(X + 3, Y + 9.5, f'{os.path.relpath(path, ROOT)}', size=2.6, anchor='start')
+    sh.text(X + 3, Y + 4, f'外形 {fmt(size[0])} × {fmt(size[1])} × {fmt(size[2])}　単位 mm', size=2.6, anchor='start')
+    sh.text(X + 107.5, Y + 9.5, '尺度', size=2.6)
+    sh.text(X + 107.5, Y + 3.5, scale_text(sc), size=3.8)
+    sh.projection_symbol(X + 135, Y + 10)
+    sh.text(X + 135, Y + 2.5, '第三角法', size=2.4)
+    os.makedirs(out_dir, exist_ok=True)
+    dst = os.path.join(out_dir, f'{name}.svg')
+    open(dst, 'w').write(sh.svg(f'{name} 三面図'))
+    return dst, sc
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
+    ap.add_argument('stl', nargs='*', help='STL files (default: case/print/*.stl)')
+    ap.add_argument('-o', '--out', default=OUT, help='output directory (default: case/drawings)')
+    ap.add_argument('--no-hidden', action='store_true', help='leave out the hidden (dashed) lines')
+    a = ap.parse_args()
+    paths = a.stl or sorted(glob.glob(os.path.join(ROOT, 'case', 'print', '*.stl')))
+    for p in paths:
+        dst, sc = draw(os.path.abspath(p), a.out, hidden=not a.no_hidden)
+        print(f'{os.path.relpath(dst, ROOT)}  {scale_text(sc)}')
+
+
+if __name__ == '__main__':
+    sys.exit(main())
