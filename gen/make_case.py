@@ -135,7 +135,8 @@ HUB_R = 6.0                  # wheel top lowered within this radius: clears the 
 HUB_CLEAR = 0.3              # encoder body to the lowered hub
 PIN_AF = 1.66                # hex pin across flats: tune on a test print (play vs. fit)
 PIN_ENGAGE = 2.0             # pin length inside the rotor
-PIN_CHAMFER = 0.25
+PIN_CHAMFER = 0.25           # tip: corners trimmed to AF/2 - this, over the last PIN_TIP of the pin only
+PIN_TIP = 0.4                # the full hex runs up to here below the tip, so it grips over the rest of the engagement
 STAB_CUT = (7.0, 15.4, 0.5)   # w, h, centre y offset (down) of each stabilizer housing cut-out
 STAB_X = 11.938
 # drum dial (right half, docs/specs/drum-dial.md). Local frame: origin = Alps EC10E footprint origin (rotor axis
@@ -242,6 +243,16 @@ def hexagon(af, h):
     r = af / math.sqrt(3)
     return Manifold.extrude(CrossSection([[(r * math.cos(math.radians(60 * i)), r * math.sin(math.radians(60 * i)))
                                             for i in range(6)]]), h)
+
+
+def hex_pin(af, h):
+    """Drive pin into an encoder's hex hole, z 0..h: full hex up to PIN_TIP below the tip, then a cone trims the
+    corners to af/2 - PIN_CHAMFER at the tip (a lead-in). A cone over the whole length would leave the corners
+    inside the hole's inscribed circle, and the pin would spin in the rotor."""
+    r = af / math.sqrt(3) + 0.01
+    env = (Manifold.cylinder(h - PIN_TIP, r, r, 24) +
+           Manifold.cylinder(PIN_TIP, r, af / 2 - PIN_CHAMFER, 24).translate((0, 0, h - PIN_TIP)))
+    return hexagon(af, h) ^ env
 
 
 class Half:
@@ -668,9 +679,7 @@ class Half:
         w = w - Manifold.cylinder(BORE_DEPTH, BORE_D / 2, BORE_D / 2, 48).translate((x, -y, 0))
         hub, pin_len = self.hub_top() - WHEEL_GAP, PIN_ENGAGE + HUB_CLEAR
         w = w - Manifold.cylinder(WHEEL_T, HUB_R, HUB_R, 96).translate((x, -y, hub))
-        corner = PIN_AF / math.sqrt(3)
-        pin = hexagon(PIN_AF, pin_len) ^ Manifold.cylinder(pin_len, corner, PIN_AF / 2 - PIN_CHAMFER, 24)
-        return w + pin.translate((x, -y, hub))
+        return w + hex_pin(PIN_AF, pin_len).translate((x, -y, hub))
 
     @staticmethod
     def enc_bottom():
@@ -768,9 +777,7 @@ class Half:
                + Manifold.cylinder(c, r + 0.01, r - c, 96).translate((0, 0, DRUM_W - c)))
         body = self._along_x(body ^ env)
         pin_len = DRUM_GAP - EC10_ROTOR_FACE + DRUM_PIN_ENGAGE
-        corner = PIN_AF / math.sqrt(3)
-        pin = hexagon(PIN_AF, pin_len) ^ Manifold.cylinder(pin_len, corner, PIN_AF / 2 - PIN_CHAMFER, 24)
-        pin = pin.rotate((0, -90, 0))            # tip toward -x
+        pin = hex_pin(PIN_AF, pin_len).rotate((0, -90, 0))            # tip toward -x
         d, depth = DRUM_ROUND_PIN[0], DRUM_PIN_IN + 0.3
         hole = self._along_x(Manifold.cylinder(depth + 0.01, d / 2, d / 2, 32)).translate((DRUM_W - depth, 0, 0))
         return self._daxis(body + pin - hole, DRUM_GAP)
@@ -1043,6 +1050,18 @@ def main(sides):
     print(json.dumps(report, indent=1))
 
 
+def pin_grip(af, h, start, hole_af):
+    """Length of a hex_pin (h tall, the rotor face at start) whose corners stand out past the hole's inscribed
+    circle, i.e. that drives the rotor by its shape."""
+    n, grip = 40, 0.0
+    for i in range(n):
+        z = start + (h - start) * (i + 0.5) / n
+        pts = [p for poly in hex_pin(af, h).slice(z).to_polygons() for p in poly]
+        if max(math.hypot(*p) for p in pts) > hole_af / 2 + 0.05:
+            grip += (h - start) / n
+    return grip
+
+
 def check_drum(hf):
     """Drum dial: parts clear of each other and of the plate, pin into the rotor, hood clear of the neighbours."""
     drum, enc, block, bezel = hf.drum3d(), hf.ec10e3d(), hf.drum_block3d(), hf.drum_bezel3d()
@@ -1061,6 +1080,8 @@ def check_drum(hf):
     tip = DRUM_GAP - (DRUM_GAP - EC10_ROTOR_FACE + DRUM_PIN_ENGAGE)
     assert abs((EC10_ROTOR_FACE - tip) - DRUM_PIN_ENGAGE) < 1e-9 and DRUM_PIN_ENGAGE <= EC10_HEX_DEPTH
     assert abs(float(drum.bounding_box()[0]) - (hf._dl(tip, 0)[0])) < 0.01, 'hex pin does not reach the rotor'
+    assert pin_grip(PIN_AF, DRUM_GAP - EC10_ROTOR_FACE + DRUM_PIN_ENGAGE, DRUM_GAP - EC10_ROTOR_FACE, 1.73) >= 1.0, \
+        'drum hex pin grips the rotor over less than 1 mm'
     # the bezel's footprint above the plate stays off the switch tops; the hoods stay off the keycaps
     above = bezel.trim_by_plane((0, 0, 1), PLATE_TOP_Z + 0.01).project()
     assert (above ^ hf.switch_tops()).area() < 0.01, 'bezel hits a switch top'
@@ -1168,6 +1189,7 @@ def check_wheel(hf):
     pin_top = float(wheel.bounding_box()[5])
     assert abs(pin_top - (FLOOR + hf.enc_bottom() + PIN_ENGAGE)) < 1e-6, 'pin does not reach into the rotor'
     assert pin_top < FLOOR + STANDOFF - 0.3, 'pin reaches the PCB'
+    assert pin_grip(PIN_AF, PIN_ENGAGE + HUB_CLEAR, HUB_CLEAR, ENC_HEX_AF) >= 1.4, 'wheel hex pin grips the rotor over less than 1.4 mm'
     assert FLOOR + WHEEL_GAP + WHEEL_T > FLOOR + hf.enc_bottom(), 'rim no longer overlaps the encoder (hub not needed)'
     # axle: steel pins of stock lengths, clear of the wheel, deep in its bore, clear of the hub above the bore
     for base, length in ((FLOOR, FLOOR + AXLE_UP), (BOTTOM_T, BOTTOM_T + AXLE_UP)):

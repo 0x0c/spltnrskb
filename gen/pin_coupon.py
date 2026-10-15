@@ -7,14 +7,13 @@ The raised two-digit label under each pin is the size in hundredths of a mm (66 
 
 Run with the project venv:  .venv/bin/python gen/pin_coupon.py
 """
-import math
 import os
 import sys
 
 from manifold3d import CrossSection, Manifold
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from make_case import HUB_CLEAR, OUT, PIN_AF, PIN_CHAMFER, PIN_ENGAGE, hexagon, write_stl  # noqa: E402
+from make_case import HUB_CLEAR, OUT, PIN_AF, PIN_ENGAGE, hex_pin, write_stl  # noqa: E402
 
 STEP = 0.02
 SIZES = [round(PIN_AF + STEP * i, 2) for i in range(-3, 4)]   # 1.60 ... 1.72 around PIN_AF = 1.66
@@ -52,9 +51,8 @@ def label(text, cx, y):
 
 
 def pin(af):
-    """Same as the pin in Half.wheel3d: PIN_ENGAGE + HUB_CLEAR tall, tip chamfered by PIN_CHAMFER."""
-    h = PIN_ENGAGE + HUB_CLEAR
-    return hexagon(af, h) ^ Manifold.cylinder(h, af / math.sqrt(3), af / 2 - PIN_CHAMFER, 24)
+    """Same as the pin in Half.wheel3d: PIN_ENGAGE + HUB_CLEAR tall, lead-in chamfer at the tip."""
+    return hex_pin(af, PIN_ENGAGE + HUB_CLEAR)
 
 
 def coupon():
