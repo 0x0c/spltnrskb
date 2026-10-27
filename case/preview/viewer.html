@@ -29,12 +29,25 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .gap{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
 .gap input{width:min(160px,40vw);accent-color:var(--accent)}
 .gap output{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--fg);min-width:4.5em}
+.checks{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;border:0;margin:0;padding:0 2px;font-size:13px}
+.checks label{display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap}
+.checks input{accent-color:var(--accent);margin:0}
+.checks label.off{color:var(--muted);cursor:default}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.seg{display:flex;align-items:center;gap:0}
+.seg .lbl{font-size:13px;color:var(--muted);margin-right:6px}
+.seg button{border-radius:0;margin-left:-1px}.seg button:first-of-type{border-radius:6px 0 0 6px;margin-left:0}.seg button:last-of-type{border-radius:0 6px 6px 0}
+.seg[hidden]{display:none}
 </style>
 <canvas id="view" aria-label="キーボード筐体の 3D 表示。ドラッグで回転、右ドラッグか 2 本指でパン、ホイールかピンチでズーム、ダブルクリックで視点リセット"></canvas>
 <div id="ui" class="panel">
- <button id="v-print" data-v="print" class="on">A：プリント + アクリル蓋</button><button id="v-printtop" data-v="printtop">B：全部プリント</button><button id="v-acrylic" data-v="acrylic">アクリル版</button>
+ <button id="v-print" data-v="print" class="on">A：プリント + アクリル蓋</button><button id="v-printtop" data-v="printtop">B：全部プリント</button><button id="v-acrylic" data-v="acrylic">アクリル版</button><button id="v-board" data-v="board">基板のみ</button>
  <span class="sep"></span>
- <button id="t-switch" data-t="switch" class="on">スイッチ</button><button id="t-plate" data-t="plate" class="on">プレート</button><button id="t-wheel" data-t="wheel" class="on">ダイヤル</button>
+ <fieldset id="parts" class="checks"><legend class="sr">表示する部品</legend>
+  <label><input type="checkbox" data-c="case" checked>ケース</label><label><input type="checkbox" data-c="plate" checked>プレート</label><label><input type="checkbox" data-c="board" checked>基板</label><label><input type="checkbox" data-c="switch" checked>スイッチ</label><label><input type="checkbox" data-c="wheel" checked>ダイヤル</label><label><input type="checkbox" data-c="feet" checked>ゴム足</label><label id="stand-lbl"><input type="checkbox" data-c="stand" checked>台座</label>
+ </fieldset>
+ <span class="sep"></span>
+ <span id="angles" class="seg" role="group" aria-label="台座の角度"><span class="lbl">台座</span><button data-a="0" class="on">なし</button><button data-a="3">3°</button><button data-a="6">6°</button><button data-a="9">9°</button></span>
  <button id="t-explode" data-t="explode">分解表示</button>
  <label id="gap" class="gap" hidden>間隔 <input id="gap-in" type="range" min="0" max="40" step="1" value="10" aria-label="分解表示のレイヤー間隔（mm）"> <output id="gap-out">10 mm</output></label>
  <span class="sep"></span>
@@ -45,12 +58,20 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 <div id="spec" class="panel"><div id="spec-head"><h1 id="spec-title"></h1><button id="spec-min" type="button" aria-expanded="true" aria-controls="spec-dl" aria-label="仕様を折りたたむ" title="仕様を折りたたむ">−</button></div><dl id="spec-dl"></dl></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="model-data.js"></script>
+<script src="model-data.js?v=8e69dc72d5"></script>
 <script>
 // meshes are in model-data.js (shared with assembly.html)
-const {DATA, POOL, BOARDS, SPEC} = window.NRSK;   // BOARDS: per side {pcba: {group: [[pool id, matrices]]}, switches}
-const HIDDEN = ['insert', 'plate_screw', 'pcb_screw', 'standoff', 'bottom_screw', 'case_screw', 'nut', 'axle',
-                'feet'];   // hardware is shown in the assembly guide only
+const {DATA, POOL, BOARDS, SPEC, TILT} = window.NRSK;   // BOARDS: per side {pcba: {group: [[pool id, matrices]]}, switches}
+const HIDDEN = ['insert', 'plate_screw', 'pcb_screw', 'standoff', 'bottom_screw', 'case_screw', 'nut',
+                'axle'];   // screws and the like are shown in the assembly guide only
+// each part goes with one checkbox
+const CAT = n => n.startsWith('stand') ? 'stand' : n === 'feet' ? 'feet' : (n === 'plate' || n === 'cover') ? 'plate'
+  : ['pcb', 'pcba', 'oled', 'encoder', 'drumenc'].includes(n) ? 'board' : n === 'switch' ? 'switch'
+  : (n === 'wheel' || n.startsWith('drum')) ? 'wheel' : 'case';
+// board-only view: the boards and what is soldered to them, taken from the A scene (same board height in B)
+const BOARD_ONLY = ['board', 'switch'];
+SPEC.board = {title: '基板のみ', rows: [['基板', 'FR-4 1.6 mm（左右 2 枚）'],
+  ['実装', 'スイッチ・OLED・ロータリーエンコーダー（サムホイール用 EC05E、ドラム用 EC10E）']]};
 const b64 = (s, T) => { const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new T(u.buffer); };
 const canvas = document.getElementById('view');
 const renderer = new THREE.WebGLRenderer({canvas, antialias: true}); renderer.setPixelRatio(devicePixelRatio);
@@ -68,9 +89,11 @@ ctl.mouseButtons = {LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: 
 ctl.touches = {ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN};
 scene.add(new THREE.HemisphereLight(0xffffff, 0x666666, 0.9));
 const dl = new THREE.DirectionalLight(0xffffff, 0.6); dl.position.set(200, -300, 400); scene.add(dl);
-let group = null; const state = {v: 'print', switch: true, plate: true, wheel: true, explode: false, gap: 10};
+let group = null;
+const state = {v: 'print', angle: 0, explode: false, gap: 10,
+               show: {case: true, plate: true, board: true, switch: true, wheel: true, feet: true, stand: true}};
 // exploded view: each layer rises by its level x the gap set on the slider (mm)
-const LEVEL = {tray: 0, bottom: 0, wheel: 0, wheelcap: 2, encoder: 6, frame1: 1, frame2: 2, frame3: 3, frame4: 4, pcb: 6, pcba: 6, oled: 6.5,
+const LEVEL = {stand3: -2, stand6: -2, stand9: -2, feet: -1, tray: 0, bottom: 0, wheel: 0, wheelcap: 2, encoder: 6, frame1: 1, frame2: 2, frame3: 3, frame4: 4, pcb: 6, pcba: 6, oled: 6.5,
                drumenc: 6, drumblock: 6.5, drum: 7, drumbezel: 8, plate: 9, switch: 11.5, cover: 12.5};
 const GAP = 25;   // mm between the halves
 // matte (frosted) and clear acrylic, and the half-mirror OLED cover
@@ -113,17 +136,25 @@ function place(obj) { obj.position.z = obj.userData.z0 + (state.explode ? (LEVEL
 function build() {
   if (group) scene.remove(group);
   group = new THREE.Group();
-  const halves = {left: new THREE.Group(), right: new THREE.Group()};
-  const add = (side, layer, obj, z0 = 0) => { obj.userData = {layer, z0}; place(obj); halves[side].add(obj); };
-  for (const [side, name, m, color, op] of DATA[state.v]) {
+  const halves = {left: new THREE.Group(), right: new THREE.Group()}, tilted = {};
+  // on a stand the half is turned about its front feet onto the stand (tray frame -> desk); the stand comes along
+  for (const side of ['left', 'right']) {
+    const t = tilted[side] = new THREE.Group(), p = state.angle && TILT[side][state.angle];
+    t.matrixAutoUpdate = false;
+    if (p) t.matrix.set(...p, 0, 0, 0, 1);
+    halves[side].add(t);
+  }
+  const add = (side, layer, obj, z0 = 0) => { obj.userData = {layer, z0}; place(obj); tilted[side].add(obj); };
+  const boardOnly = state.v === 'board';
+  for (const [side, name, m, color, op] of DATA[boardOnly ? 'print' : state.v]) {
     if (HIDDEN.includes(name)) continue;
-    const key = name.startsWith('drum') ? 'wheel' : name;   // the wheel toggle shows / hides the drum dial too
-    if (!state[key] && (key === 'switch' || key === 'plate' || key === 'wheel')) continue;
-    if (name === 'pcba') {
-      add(side, 'pcba', board(Object.values(BOARDS[side].pcba).flat()), m);
-      if (state.switch) add(side, 'switch', board(Object.values(BOARDS[side].switches).flat()), m);
+    if (name === 'pcba') {         // KiCad's board, with the switches as their own checkbox
+      if (state.show.board) add(side, 'pcba', board(Object.values(BOARDS[side].pcba).flat()), m);
+      if (state.show.switch) add(side, 'switch', board(Object.values(BOARDS[side].switches).flat()), m);
       continue;
     }
+    const c = CAT(name);
+    if (!state.show[c] || (boardOnly && !BOARD_ONLY.includes(c)) || (c === 'stand' && name !== `stand${state.angle}`)) continue;
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(b64(m.v, Float32Array), 3));
     g.setIndex(new THREE.BufferAttribute(b64(m.i, Uint32Array), 1));
@@ -133,21 +164,37 @@ function build() {
     add(side, name, new THREE.Mesh(g, mat));
   }
   group.add(halves.left, halves.right);
-  group.userData.halves = halves;
+  group.userData.halves = halves; group.userData.tilted = tilted;
   scene.add(group); layout(); spec();
+}
+// world box including each instance of the KiCad boards (Box3.setFromObject in r128 skips instance matrices)
+function bounds(obj) {
+  obj.updateWorldMatrix(true, true);
+  const box = new THREE.Box3(), b = new THREE.Box3(), m = new THREE.Matrix4();
+  obj.traverse(o => {
+    if (!o.geometry) return;
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    const n = o.isInstancedMesh ? o.count : 1;
+    for (let i = 0; i < n; i++) {
+      if (o.isInstancedMesh) o.getMatrixAt(i, m); else m.identity();
+      box.union(b.copy(o.geometry.boundingBox).applyMatrix4(m.premultiply(o.matrixWorld)));
+    }
+  });
+  return box;
 }
 // side by side on wide screens, stacked on tall (phone) screens
 function layout() {
   const {left, right} = group.userData.halves;
   right.position.set(0, 0, 0);
-  const lb = new THREE.Box3().setFromObject(left), rb = new THREE.Box3().setFromObject(right);
+  const lb = bounds(left), rb = bounds(right);
   if (cam.aspect >= 1) right.position.set(lb.max.x + GAP - rb.min.x, lb.max.y - rb.max.y, 0);
   else right.position.set(lb.min.x - rb.min.x, lb.min.y - GAP - rb.max.y, 0);
 }
 function fit() {
   // place the camera on a fixed viewing direction and find the closest distance at which all
   // eight corners of the model's bounding box stay inside the frame (with a margin)
-  const box = new THREE.Box3().setFromObject(group);
+  const box = bounds(group);
+  if (box.isEmpty()) return;               // every checkbox off
   const c = box.getCenter(new THREE.Vector3());
   const corners = [];
   for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) corners.push(new THREE.Vector3(x, y, z));
@@ -174,22 +221,42 @@ function onResize() {
   const wide = cam.aspect >= 1;
   if (wide !== lastWide) { lastWide = wide; layout(); fit(); }
 }
+// stands exist for the printed trays only; the stand checkbox only matters with an angle chosen
+function standUI() {
+  const printed = state.v === 'print' || state.v === 'printtop';
+  if (!printed) state.angle = 0;
+  document.getElementById('angles').hidden = !printed;
+  document.querySelectorAll('[data-a]').forEach(x => x.classList.toggle('on', +x.dataset.a === state.angle));
+  const lbl = document.getElementById('stand-lbl'), box = lbl.querySelector('input');
+  lbl.hidden = !printed; box.disabled = !state.angle; lbl.classList.toggle('off', !state.angle);
+  lbl.title = state.angle ? '' : '台座の角度を選ぶと表示できます';
+  // the board-only view leaves the case, plate, dials and feet out whatever their checkboxes say
+  document.querySelectorAll('[data-c]').forEach(x => {
+    if (!BOARD_ONLY.includes(x.dataset.c) && x.dataset.c !== 'stand') x.disabled = state.v === 'board'; x.parentElement.classList.toggle('off', x.disabled);
+  });
+}
 document.querySelectorAll('button[data-v], button[data-t]').forEach(b => b.addEventListener('click', () => {
-  if (b.dataset.v) { state.v = b.dataset.v; document.querySelectorAll('[data-v]').forEach(x => x.classList.toggle('on', x === b)); }
+  if (b.dataset.v) { state.v = b.dataset.v; document.querySelectorAll('[data-v]').forEach(x => x.classList.toggle('on', x === b)); standUI(); }
   else { state[b.dataset.t] = !state[b.dataset.t]; b.classList.toggle('on', state[b.dataset.t]); }
   if (b.dataset.t === 'explode') document.getElementById('gap').hidden = !state.explode;
   build(); if (b.dataset.v || b.dataset.t === 'explode') fit();
 }));
+document.querySelectorAll('[data-a]').forEach(b => b.addEventListener('click', () => {
+  state.angle = +b.dataset.a; standUI(); build(); fit();
+}));
+document.querySelectorAll('[data-c]').forEach(box => box.addEventListener('change', () => {
+  state.show[box.dataset.c] = box.checked; build();
+}));
 const gapIn = document.getElementById('gap-in'), gapOut = document.getElementById('gap-out');
 gapIn.addEventListener('input', () => {
   state.gap = +gapIn.value; gapOut.textContent = `${state.gap} mm`;
-  for (const h of Object.values(group.userData.halves)) h.children.forEach(place);
+  for (const t of Object.values(group.userData.tilted)) t.children.forEach(place);
 });
 gapIn.addEventListener('change', fit);   // refit once the slider is released
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', bg);
 new MutationObserver(bg).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
 addEventListener('resize', onResize);
-bg(); resize(); build(); lastWide = cam.aspect >= 1; fit();
+bg(); resize(); standUI(); build(); lastWide = cam.aspect >= 1; fit();
 canvas.addEventListener('dblclick', fit);
 document.getElementById('t-reset').addEventListener('click', fit);
 // spec card collapses to its title line so it stays out of the way of the model; remembered per viewer

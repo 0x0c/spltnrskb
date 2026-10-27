@@ -3,7 +3,8 @@
     python3 gen/views_page.py [keyboard|enctest ...]     (default: both)
 
 keyboard -> docs/views.html: the finished keyboard, A and B. The model, the studio lighting and the floor shadows come
-  from gen/export_web3d.sh (docs/3d/), made from the same Blender scene as the renders; the close-ups below the viewer
+  from gen/export_web3d.sh (docs/3d/), made from the same Blender scene as the renders, flat on the desk and on each
+  tilt stand (<a|b>-stand<deg>.glb); the close-ups below the viewer
   are the A / B renders of gen/render_compare.sh (whole board, OLED, left wheel) and gen/render_details.sh
   (docs/img/details/<shot>-<variant>.jpg).
 enctest -> docs/enctest-views.html: the encoder test kit (docs/encoder-test-board.md). The model and its floor shadow
@@ -44,7 +45,10 @@ DETAILS = [
     ('内側の角とケーブル', shot('detail')),
     ('USB-C × 2', shot('ports')),
     ('USB-C × 2・ケーブルなし', shot('ports-nocable')),
+    ('台座 9°・側面', shot('profile-stand9')),
+    ('台座 9°・背面', shot('back-stand9')),
 ]
+STANDS = (3, 6, 9)       # tilt stand angles with a model in docs/3d (make_case.STAND_ANGLES)
 
 
 def enctest_points():
@@ -79,6 +83,8 @@ def pages():
             presets=[['斜め前', -8, 34, 0.98, 62], ['打鍵する位置', -10, 37, 0.52, 40], ['正面', 0, 8, 0.85, 62],
                      ['右', 90, 22, 0.85, 62], ['背面', 180, 28, 0.85, 62], ['左', 270, 22, 0.85, 62],
                      ['真上', 0, 89.9, 0.95, 62]],
+            # tilt stands with a model of every variant ('3d/<v>-stand<deg>.glb'); none: no stand toggle
+            stands=[d for d in STANDS if all(os.path.exists(os.path.join(DOCS, '3d', f'{v}-stand{d}.glb')) for v in 'ab')],
             details=DETAILS),
         'enctest': dict(
             out='enctest-views.html', title='nrsk Encoder Test Views', h1='エンコーダー検証基板 デザイン確認',
@@ -88,7 +94,7 @@ def pages():
             link=['views.html', '← キーボード本体'],
             variants=[['p', '3D プリント', '']],
             model='3d/enctest.glb', shadow='3d/shadow-enctest{s}.jpg', shadowSize=0.3,
-            parts=[['plate', 'プレート', 'plate', '-noplate'], ['tray', 'トレイ', 'tray', '-notray']],
+            parts=[['plate', 'プレート', 'plate', '-noplate'], ['tray', 'トレイ', 'tray', '-notray']], stands=[],
             target=[0, 0.006, 0], minDistance=0.04, maxDistance=0.8, fStop=16, store='nrsk-enctest-views3d',
             presets=[['斜め前', -30, 34, 0.24, 62], ['正面', 0, 10, 0.22, 62], ['右', 90, 18, 0.2, 62],
                      ['背面', 180, 24, 0.22, 62], ['左', 270, 18, 0.2, 62], ['真上', 0, 89.9, 0.24, 62],
@@ -165,6 +171,7 @@ button:focus-visible,.stage canvas:focus-visible{outline:2px solid var(--accent)
 .chip:hover{border-color:var(--muted)}
 .toggles{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
 .toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;user-select:none}
+.toggle[hidden]{display:none}
 .toggle input{accent-color:var(--accent);width:16px;height:16px;margin:0}
 .toggle select{font:inherit;font-size:13px;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
 .hint{font-size:12px;color:var(--muted);margin:0}
@@ -221,6 +228,8 @@ body:has(.lb[open]){overflow:hidden}
         <label class="toggle">サンプル数 <select id="spp"></select></label>
         <label class="toggle"><input type="checkbox" id="dof"> ボケ</label>
         <span class="toggles" id="parts"></span>
+        <label class="toggle" id="stand-box"><input type="checkbox" id="stand"> 台座</label>
+        <label class="toggle" id="deg-box">角度 <select id="deg" aria-label="台座の角度"></select></label>
         <button class="chip" id="full">全画面</button>
       </div>
     </div>
@@ -270,7 +279,7 @@ const TARGET = new THREE.Vector3(...DATA.target);
 const PRESETS = DATA.presets;
 const $ = id => document.getElementById(id);
 // path tracing is off by default (it keeps the GPU busy); the checkbox turns it on. Every part is shown at first
-const state = {v: DATA.variants[0][0], pt: false, dof: true, spp: 64, spin: false};
+const state = {v: DATA.variants[0][0], pt: false, dof: true, spp: 64, spin: false, stand: false, deg: 9};
 for (const p of PARTS) state[p.id] = true;
 try { Object.assign(state, JSON.parse(localStorage.getItem(DATA.store) || '{}')); } catch (e) {}
 if (!V_NAME[state.v]) state.v = DATA.variants[0][0];
@@ -326,14 +335,17 @@ let dirty = true, ready = false, sceneSet = false;
 // them; parts with no shadow of their own keep the full one
 const shadowSuffix = () => PARTS.filter(p => p.shadow && !state[p.id]).map(p => p.shadow).join('');
 const shadowFiles = () => PARTS.filter(p => p.shadow).reduce((files, p) => files.concat(files.map(f => f + p.shadow)), ['']);
-function shadowKey() { return state.v + shadowSuffix(); }
+// a model per variant, flat on the desk or with both halves on a tilt stand
+const STANDS = DATA.stands || [];
+function modelKey() { return `${state.v}${state.stand && STANDS.includes(state.deg) ? `-stand${state.deg}` : ''}`; }
+function shadowKey() { return modelKey() + shadowSuffix(); }
 
 // what is not shown is taken out of the scene, not hidden: the path tracer would still trace hidden meshes
 const partObjs = {};
 function applyScene() {
-  for (const [v, root] of Object.entries(models)) {
-    if (v === state.v) scene.add(root); else scene.remove(root);
-    for (const p of PARTS) for (const o of partObjs[v][p.id]) { if (state[p.id]) root.add(o); else root.remove(o); }
+  for (const [k, root] of Object.entries(models)) {
+    if (k === modelKey()) scene.add(root); else scene.remove(root);
+    for (const p of PARTS) for (const o of partObjs[k][p.id]) { if (state[p.id]) root.add(o); else root.remove(o); }
   }
   // the baked shadow only in the raster view: the path tracer would darken the floor twice
   floorMat.aoMap = state.pt ? null : floorTex[shadowKey()] || null;
@@ -442,6 +454,9 @@ function renderToggles() {
   document.querySelectorAll('#variants button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === state.v));
   $('spin').checked = state.spin; $('pt').checked = state.pt; $('dof').checked = state.dof;
   document.querySelectorAll('#parts input').forEach(i => { i.checked = state[i.dataset.part]; });
+  if (!STANDS.includes(state.deg)) state.deg = STANDS[STANDS.length - 1];
+  $('stand-box').hidden = $('deg-box').hidden = !STANDS.length;
+  $('stand').checked = state.stand; $('deg').value = state.deg; $('deg').disabled = !state.stand;
   if (!SPP.includes(state.spp)) state.spp = 64;
   $('spp').value = state.spp;
   $('dof').disabled = $('spp').disabled = !state.pt;
@@ -449,7 +464,7 @@ function renderToggles() {
 }
 document.querySelectorAll('#variants button').forEach(b => b.addEventListener('click', async () => {
   state.v = b.dataset.v; save(); renderToggles(); renderDetails();
-  await load(state.v); applyScene();
+  await load(modelKey()); applyScene();
 }));
 $('spin').addEventListener('change', e => { state.spin = e.target.checked; spinWait = 0; save(); });
 $('pt').addEventListener('change', e => { state.pt = e.target.checked; save(); renderToggles(); applyScene(); });
@@ -459,6 +474,10 @@ $('dof').addEventListener('change', e => { state.dof = e.target.checked; save();
 document.querySelectorAll('#parts input').forEach(i => i.addEventListener('change', e => {
   state[i.dataset.part] = e.target.checked; save(); applyScene();
 }));
+$('deg').innerHTML = STANDS.map(d => `<option value="${d}">${d}°</option>`).join('');
+const restand = async () => { save(); renderToggles(); await load(modelKey()); applyScene(); };
+$('stand').addEventListener('change', e => { state.stand = e.target.checked; restand(); });
+$('deg').addEventListener('change', e => { state.deg = +e.target.value; restand(); });
 $('full').addEventListener('click', () => {
   if (document.fullscreenElement) document.exitFullscreen();
   else $('stage').requestFullscreen?.();
@@ -469,7 +488,7 @@ const draco = new DRACOLoader().setDecoderPath('{THREE}/examples/jsm/libs/draco/
 const gltf = new GLTFLoader().setDRACOLoader(draco);
 const texLoader = new THREE.TextureLoader();
 const pending = {};
-function load(v) {
+function load(v) {          // v: a model key (modelKey()), in place of {v} in the model and shadow file names
   return pending[v] ??= Promise.all([
     gltf.loadAsync(DATA.model.replace('{v}', v), e => {
       if (!ready && e.total) $('loading').textContent = `読み込んでいます… ${Math.round(100 * e.loaded / e.total)}%`;
@@ -495,7 +514,8 @@ async function start() {
   const env = await new HDRLoader().loadAsync('3d/studio.hdr');
   env.mapping = THREE.EquirectangularReflectionMapping;
   scene.environment = env;
-  await load(state.v);
+  renderToggles();
+  await load(modelKey());
   applyScene();
   ready = true;
   $('loading').hidden = true;

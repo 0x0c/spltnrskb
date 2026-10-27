@@ -32,7 +32,7 @@ v2 では Pro Micro などのマイコンボードをやめ、RP2040 と QSPI Fl
 
 ![A と B の比較](docs/img/render-compare-ab.jpg)
 
-A と B は http://www.0x0c.me/spltnrskb/views.html で、3D のまま好きな角度から見られます。ドラッグで回転、ホイールかピンチで拡大します。「自動回転」をオンにすると、ゆっくり回り続けます（触っている間は止まり、手を離して 3 秒ほどで再開します）。形状、材質、照明は Blender のレンダリングと同じです。基板は、KiCad から書き出した実装済みのものです（`gen/export_3d.py` で `build/3d/` に作る）。「パストレース」をオンにすると、手を止めている間、ブラウザでパストレーシング（three-gpu-pathtracer）が進み、写真のような画が得られます。GPU を使い続けるので、最初はオフです。オンのときの自動回転は、選んだサンプル数まで描いてから 30° ずつ回ります。ボケとケーブルも表示を切り替えられます。手元で開くときは `python3 -m http.server -d docs` で [docs/views.html](docs/views.html) を配信してください。ページの下には寄りの画像（打鍵する位置から、背面、側面、角、キーキャップ、ホイール、ドラム式ダイヤル、差込口。ケーブルを抜いた全体・背面・差込口も）が並び、クリックすると拡大します。3D 表示のモデル・照明・床の影は `gen/export_web3d.sh`（4 分ほど）で、寄りの画像は `gen/render_details.sh`（1 枚 3 分ほど）で作り直せます。
+A と B は http://www.0x0c.me/spltnrskb/views.html で、3D のまま好きな角度から見られます。ドラッグで回転、ホイールかピンチで拡大します。「自動回転」をオンにすると、ゆっくり回り続けます（触っている間は止まり、手を離して 3 秒ほどで再開します）。形状、材質、照明は Blender のレンダリングと同じです。基板は、KiCad から書き出した実装済みのものです（`gen/export_3d.py` で `build/3d/` に作る）。「パストレース」をオンにすると、手を止めている間、ブラウザでパストレーシング（three-gpu-pathtracer）が進み、写真のような画が得られます。GPU を使い続けるので、最初はオフです。オンのときの自動回転は、選んだサンプル数まで描いてから 30° ずつ回ります。ボケとケーブル、台座（3°、6°、9°）も表示を切り替えられます。手元で開くときは `python3 -m http.server -d docs` で [docs/views.html](docs/views.html) を配信してください。ページの下には寄りの画像（打鍵する位置から、背面、側面、角、キーキャップ、ホイール、ドラム式ダイヤル、差込口。ケーブルを抜いた全体・背面・差込口も）が並び、クリックすると拡大します。台座に載せた姿も、側面と背面の 2 枚があります。3D 表示のモデル・照明・床の影は `gen/export_web3d.sh`（4 分ほど）で、寄りの画像は `gen/render_details.sh`（1 枚 3 分ほど）で作り直せます。
 
 ## 回路
 
@@ -144,7 +144,7 @@ RP2040 の GPIO は 30 本あるので、シリアル通信 1 本、左右判定
 
 ### OLED の高さ・角度の比較
 
-検討段階の記録です（採用したのは、上に書いたプレートと面一のハーフミラーのカバーです）。画像は当時の基板・筐体の形で描いています。
+検討段階の記録です（採用したのは、上に書いたプレートと面一のハーフミラーのカバーです）。画像は今の基板・筐体の形で描き直しています。台座の位置は外形から計算し、壁の上に収まるように置いています。
 キーキャップに隠れにくい OLED の付け方を、高さ 0〜13 mm の 4 案（A〜D）と傾斜 2 案（E・F）で比べました。
 座った目線と寄りのレンダリングを、取り付け方式ごとに [docs/img/render-grid.jpg](docs/img/render-grid.jpg) にまとめています。
 台座の形状は `gen/oled_variants.py`、レンダリングは `gen/render_all.sh` で作り直せます。デフォルトは確認用のプレビュー（長辺 1200 px、数分）で、`FINAL=1 ./gen/render_all.sh` とすると高画質（長辺 2400 px）で出力します。
@@ -195,8 +195,29 @@ B〜F は OLED を基板の外側（壁の上）へ移すため、基板のコ�
 `case/preview/viewer.html` は組み立て状態を回して見られる 3D ビューアです。http://www.0x0c.me/spltnrskb/ で公開しています（`.github/workflows/pages.yml`）。
 基板は KiCad の 3D プレビューと同じ部品実装済みの姿で表示します（`gen/export_3d.py` で KiCad から書き出し、`gen/glb_mesh.py` でブラウザ向けに軽量化）。
 「分解表示」をオンにすると、スライダーでレイヤーどうしの間隔を 0〜40 mm で変えられます。
+「台座」で角度（なし、3°、6°、9°）を選ぶと、台座に載せて傾けた姿になります。ケース、プレート、基板、スイッチ、ダイヤル、ゴム足、台座は、チェックボックスでそれぞれ表示と非表示を切り替えられます。
 
 組み立て手順は、同じデータを使ったインタラクティブな組み立てガイド（`case/preview/assembly.html`、公開版は [http://www.0x0c.me/spltnrskb/assembly.html](http://www.0x0c.me/spltnrskb/assembly.html)）で確認できます。手順ごとに部品が所定の位置に入るアニメーションと説明が出て、A・B・アクリル版と左右を切り替えられます。
+
+### 三面図
+
+`case/print/` の STL は、部品ごとに三面図（第三角法：平面図・正面図・右側面図）を `case/drawings/<部品名>.pdf` に用意しています。A3 横の用紙に、収まる最大の標準尺度（10:1〜1:2）で描き、全体の寸法（幅・奥行き・高さ）と表題欄を入れています。見える稜線と輪郭は実線、隠れる部分は破線（かくれ線）です。部品は STL の向きのまま描くので、台座は印刷するときの姿勢、B のプレートは上面が上です。
+
+例：[左のトレイ](case/drawings/left-tray.pdf)、[右のプレート（B）](case/drawings/right-plate.pdf)、[9° の台座（左）](case/drawings/left-stand-9.pdf)
+
+線は拡大しても粗くならないベクトルです。日本語の文字には PDF 標準の日本語フォント（平成角ゴシック）を指定し、埋め込んでいません。表示するときは閲覧ソフトの日本語ゴシック体で置き換わります（macOS のプレビュー、Acrobat、Chrome、Firefox で表示できます）。
+
+STL を書き出すスクリプト（`make_case.py`、`foot_coupon.py`、`pin_coupon.py`、`make_enctest.py`）は、`print/` に STL を書くたびに、同じ階層の `drawings/` の三面図を作り直します（検証基板の筐体は `enctest/case/drawings/`）。各 PDF には、元の STL、`gen/case_drawings.py`、オプションのハッシュを記録しています。どれも変わっていなければ描き直しを省くので、STL の中身が同じなら時間はかかりません。描くのは `gen/case_drawings.py` です（numpy だけで動きます）。メッシュの稜線（面どうしが 35° より大きく折れる辺）と輪郭を拾い、深度バッファで見える部分と隠れる部分に分けます。フィレットは薄い段を積み重ねた形なので、段の辺は描かず、フィレットの両端の線だけを残します。STL を指定すると、その部品だけを描きます（`python3 gen/case_drawings.py case/print/left-tray.stl`、かくれ線なしは `--no-hidden`、変更がなくても描き直すときは `--force`）。
+
+### ゴム足と台座
+
+3D プリント版のトレイの底には、ゴム足（3M CS-02、直径 9.5 mm）を貼る位置を決めるくぼみ（直径 10 mm、深さ 1 mm）が 5 か所あります。くぼみはプレートのネジの座ぐりを避けているので、プレートを外すときにゴム足を剥がす必要はありません。サムホイールのある角だけは、ホイールを挟んで 2 個です。この配置で、すべてのキーがゴム足で囲まれた範囲の内側に入ります。
+
+奥を持ち上げたいときは、3D プリントの台座（`case/print/<side>-stand-3.stl`、`-6`、`-9`）に載せます。台座は奥の辺と両側の辺に沿った U 字で、上面のくぼみに奥の 3 つのゴム足が収まり、手前の 2 つのゴム足は机に載ります。ネジは使わず、角度を変えるときは台座を取り替えます。9° の台座の高さは 22.9 mm です。
+
+![台座に載せた左半分（9°）](docs/img/tilt-study/U-back.jpg)
+
+傾け方は、トレイに付ける脚 3 案（磁石式、折りたたみ式、ねじ込み式）と台座 2 案（全周、奥の U 字）をモデルにして比べ、U 字の台座に決めました。比較の画像は [docs/img/tilt-study/sheet.jpg](docs/img/tilt-study/sheet.jpg)、表は [docs/img/tilt-study/table.md](docs/img/tilt-study/table.md)、経緯は [docs/specs/case-feet-tilt.md](docs/specs/case-feet-tilt.md) にあります。くぼみのはめあいは印刷機によって変わるので、トレイの前に `case/print/foot-coupon.stl` を印刷して確かめてください（手順は [docs/ordering.md](docs/ordering.md) の 7 章）。
 
 ## 部品表（BOM）
 
@@ -296,8 +317,9 @@ spltnrskb/
 │   ├── laser/                   アクリル版のレーザーカット用 DXF と SVG
 │   │                            （<side>-plate、frame1〜4、bottom、oled-cover）
 │   ├── print/                   3D プリント用 STL
-│   │                            （<side>-tray、plate、wheel、wheel-cap、六角ピンの試し印刷 pin-coupon、
-│   │                             右だけ right-drum、drum-block、drum-bezel）
+│   │                            （<side>-tray、plate、wheel、wheel-cap、台座 stand-3〜9、
+│   │                             試し印刷 pin-coupon と foot-coupon、右だけ right-drum、drum-block、drum-bezel）
+│   ├── drawings/                print/ の部品ごとの三面図（PDF、A3）
 │   ├── preview/                 確認用の出力
 │   │   ├── viewer.html          3D ビューア（GitHub Pages で公開）
 │   │   ├── assembly.html        組み立てガイド（GitHub Pages で公開）
@@ -314,7 +336,7 @@ spltnrskb/
 ├── docs/pre-order-checklist.md  発注前の確認事項（検査結果、残るリスク、注文の順番）
 ├── docs/thumbwheel-check.md     サムホイールと OLED の実機確認の手順
 ├── docs/encoder-test-board.md  2 つのエンコーダーだけを載せた検証基板（RP2040-Zero を差し込む）
-├── enctest/                     検証基板の KiCad プロジェクトとケース（enctest/case/）
+├── enctest/                     検証基板の KiCad プロジェクトとケース（enctest/case/、三面図は enctest/case/drawings/）
 ├── docs/views.html              A と B を 3D で見比べるページ
 ├── docs/enctest-views.html      検証基板を 3D で見るページ
 ├── docs/3d/                     3D 表示のページのモデル（GLB）、照明（HDR）、床の影
@@ -324,6 +346,7 @@ spltnrskb/
 │   ├── details/                 A と B の寄りの画像（docs/views.html 用）
 │   ├── port-slide.png           基板を差込口のトンネルへ入れる手順の断面図
 │   ├── oled-study/              OLED の高さ・角度の比較レンダリング
+│   ├── tilt-study/              チルト脚と台座の比較レンダリングと表
 │   ├── dial-study/              サムホイールの比較レンダリング
 │   └── encoder-study/           サムホイールの読み取り方式の比較（AS5600 とエンコーダーの断面）
 ├── gen/                         生成スクリプト（下表）
@@ -341,7 +364,7 @@ spltnrskb/
 | 基板 | `make_pcb.py`、`route.py`、`sexpr.py` | 部品の配置、Freerouting による自動配線、KiCad ファイルの読み書き |
 | 3D 出力 | `export_3d.py`、`glb_mesh.py` | ビューア用の基板メッシュ（`build/3d/`、Git の管理対象外） |
 | ファームウェア | `make_qmk.py` | `firmware/qmk/keyboards/nrsk/` |
-| 筐体 | `make_case.py`、`case_preview.py`、`case_section.py`、`case_viewer.py`、`assembly_guide.py` | `case/` 以下のすべて |
+| 筐体 | `make_case.py`、`case_preview.py`、`case_section.py`、`case_viewer.py`、`assembly_guide.py`、`case_drawings.py`（`make_case.py` から呼ばれる） | `case/` 以下のすべて |
 | 部品表 | `make_bom.py`、`bom_sources.json` | `bom/`（購入先の情報は `bom_sources.json` に手で記入） |
 | JLCPCB の実装データ | `make_jlc.py` | `fab/<side>/nrsk-<side>-jlc-bom.csv`、`fab/<side>/nrsk-<side>-jlc-cpl.csv` |
 | README の画像 | `doc_images.sh` | `docs/img/left-*.png`、`docs/img/right-*.png`、断面図 |
@@ -353,6 +376,8 @@ spltnrskb/
 - A と B の比較画像、差込口、基板の差し込み手順の断面図：`render_compare.sh`、`compare_ab.py`、`port_slide.py`
 - OLED と開口の比較検討：`oled_variants.py`、`oled_study.sh`、`oled_sheet.py`、`port_variants.py`
 - 六角ピンの試し印刷：`pin_coupon.py`（`case/print/pin-coupon.stl`。使い方は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）
+- ゴム足のくぼみの試し印刷：`foot_coupon.py`（`case/print/foot-coupon.stl`。使い方は [docs/ordering.md](docs/ordering.md) の 7 章）
+- チルト脚と台座の比較検討：`tilt_variants.py`、`tilt_stands.py`、`render_tilt.py`、`tilt_sheet.py`、`tilt_study.sh`。台座そのものは `make_case.py` が作ります
 - エンコーダーの検証基板：`build_enctest.sh`、`make_enctest.py`、`render_enctest.py`（使い方は [docs/encoder-test-board.md](docs/encoder-test-board.md)）
 
 KLE を編集した場合は `./build.sh` を実行すると、回路図、基板、配線、ERC/DRC、製造データ、筐体、BOM、QMK 定義をすべて作り直します。

@@ -577,5 +577,14 @@
    "price": "¥329 / 50 本",
    "note": "LCSC に該当品なし"
   }
+ ],
+ "チルト台座（3°、6°、9°）": [
+  {
+   "mpn": "case/print/<side>-stand-<deg>.stl",
+   "shop": "自作（3D プリント）",
+   "url": "",
+   "price": "",
+   "note": "LCSC に該当品なし（自作の 3D プリント部品）"
+  }
  ]
 }
