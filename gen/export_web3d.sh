@@ -5,10 +5,23 @@
 #   docs/3d/studio.hdr                   the studio lighting as an equirectangular HDR
 #   docs/3d/shadow-<a|b>[-nocable].jpg   the floor shadow (ambient occlusion map of the floor)
 # then gen/views_page.py writes docs/views.html.
+#   ./gen/export_web3d.sh enctest        the encoder test kit's page instead (docs/enctest-views.html, gen/render_enctest.py):
+#   docs/3d/enctest.glb, docs/3d/shadow-enctest[-noplate][-notray].jpg (lit by the studio.hdr above)
 set -e
 cd "$(dirname "$0")/.."
 OUT=docs/3d
 mkdir -p "$OUT"
+if [ "$1" = enctest ]; then
+  blender -b -P gen/render_enctest.py -- --web "glb:$OUT/enctest.glb" > /dev/null 2>&1 || { echo "failed: glb"; exit 1; }
+  for hide in "" plate tray plate,tray; do
+    suffix=$(echo "$hide" | sed -e 's/plate/-noplate/' -e 's/tray/-notray/' -e 's/,//')
+    blender -b -P gen/render_enctest.py -- --samples 128 --web "shadow:$OUT/shadow-enctest$suffix.jpg" ${hide:+--hide $hide} \
+      > /dev/null 2>&1 || { echo "failed: shadow $hide"; exit 1; }
+  done
+  ls -la "$OUT"/*enctest*
+  python3 gen/views_page.py enctest
+  exit 0
+fi
 # the boards with their parts come from KiCad (gen/export_3d.py, part of build.sh); without them a plain green slab
 [ -f build/3d/left-pcba.glb ] || echo "build/3d/*-pcba.glb missing: run gen/export_3d.py (see build.sh) to show the parts"
 run() { blender -b -P gen/render_blender.py -- "$@" > /dev/null 2>&1 || { echo "failed: $*"; exit 1; }; }
@@ -24,4 +37,4 @@ for variant in a b; do
   echo "exported $variant"
 done
 ls -la "$OUT"
-python3 gen/views_page.py
+python3 gen/views_page.py keyboard

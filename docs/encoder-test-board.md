@@ -6,6 +6,8 @@
 
 ![右上の角から横に出るサムホイール](img/enctest-wheel.png)
 
+http://www.0x0c.me/spltnrskb/enctest-views.html では、組み立てた検証キットを 3D のまま好きな角度から見られます。操作はキーボードの 3D 表示（`docs/views.html`）と同じで、ドラッグで回転し、ホイールかピンチで拡大します。プレートとトレイは表示を切り替えられ、外すと基板とその裏の RP2040-Zero が見えます。視点のボタンには、全体の向きのほかに「ホイールの角」と「USB-C」があります。手元で開くときは `python3 -m http.server -d docs` で [docs/enctest-views.html](enctest-views.html) を配信します。
+
 ## キーボードと同じところ、違うところ
 
 基板の座標は右半分の基板のものをそのまま使います。2 つのエンコーダー、ドラムの軸受けブロックの穴、ホイールの中心は、キーボードとまったく同じ位置に来ます。ケースは同じ生成スクリプト（`gen/make_case.py`）で作るので、壁の厚さ、基板とプレートの高さ、ホイールの開口と軸、プレートのドラムの穴もキーボードと同じです。
@@ -136,4 +138,4 @@ JLCPCB の部品実装で 3 つの部品を載せた場合は、手順 1 と 2 �
 ./gen/build_enctest.sh
 ```
 
-次のものをまとめて作ります：回路図、基板、自動配線、ERC と DRC、製造用のファイル（`fab/enctest/`）、ケースの部品（`enctest/case/`）。基板とケースは右半分の `right/case_data.json` から位置を読むので、右半分の基板を作り直したときは先に `./build.sh right` を実行します。組み立てた状態の画像は `blender -b -P gen/render_enctest.py` で作り直せます。
+次のものをまとめて作ります：回路図、基板、自動配線、ERC と DRC、製造用のファイル（`fab/enctest/`）、ケースの部品（`enctest/case/`）。基板とケースは右半分の `right/case_data.json` から位置を読むので、右半分の基板を作り直したときは先に `./build.sh right` を実行します。組み立てた状態の画像（全体、ホイールの角、ドラム、USB-C）は `blender -b -P gen/render_enctest.py` で作り直せます。3D 表示のモデルと床の影は `./gen/export_web3d.sh enctest`（4 分ほど）で作り直します。ページだけなら `python3 gen/views_page.py enctest` で書き出せます。
