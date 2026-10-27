@@ -9,6 +9,8 @@ on:
       - case/preview/model-data.js
       - docs/img/render-hero.png
       - docs/views.html
+      - docs/enctest-views.html
+      - docs/img/enctest*.png
       - docs/3d/**
       - docs/img/details/**
       - .github/workflows/pages.yml
@@ -47,8 +49,9 @@ jobs:
           wrap case/preview/viewer.html | sed 's#href="../../docs/views.html"#href="views.html"#' > _site/index.html
           wrap case/preview/assembly.html > _site/assembly.html
           wrap docs/views.html > _site/views.html
-          # the close-up renders views.html shows, at the same relative paths, and its 3D model and lighting
-          grep -oE 'img/[^"]+\.(png|jpg)' docs/views.html | sort -u | while read -r f; do
+          wrap docs/enctest-views.html > _site/enctest-views.html
+          # the close-up renders the pages show, at the same relative paths, and their 3D models and lighting
+          grep -ohE 'img/[^"]+\.(png|jpg)' docs/views.html docs/enctest-views.html | sort -u | while read -r f; do
             mkdir -p "_site/$(dirname "$f")" && cp "docs/$f" "_site/$f"
           done
           cp -r docs/3d _site/3d

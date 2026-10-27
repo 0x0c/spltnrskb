@@ -19,7 +19,7 @@ v2 では Pro Micro などのマイコンボードをやめ、RP2040 と QSPI Fl
 | 表示 | 0.91 インチ OLED（128×32）を左右に 1 枚ずつ、プレートと面一のハーフミラーアクリルのカバー付き。高さは増えない |
 | ホイール | 左上と右上の角にサムホイール（ロータリーエンコーダー Alps EC05E1220401 で読み取り、1 回転 12 クリック）。高さは増えない |
 | ドラム | 右半分の上段、F12 の右の空きに、手前と奥へ転がすドラム式ダイヤル（ロータリーエンコーダー Alps EC10E1220505 で読み取り、1 回転 24 クリック）。縦スクロールを送る。高さは増えない |
-| 3D ビューア | http://www.0x0c.me/spltnrskb/ 、組み立てガイドは http://www.0x0c.me/spltnrskb/assembly.html 、写実的な 3D 表示は http://www.0x0c.me/spltnrskb/views.html （GitHub Pages、`main` への Push で自動更新） |
+| 3D ビューア | http://www.0x0c.me/spltnrskb/ 、組み立てガイドは http://www.0x0c.me/spltnrskb/assembly.html 、写実的な 3D 表示は http://www.0x0c.me/spltnrskb/views.html 、エンコーダーの検証基板の 3D 表示は http://www.0x0c.me/spltnrskb/enctest-views.html （GitHub Pages、`main` への Push で自動更新） |
 
 基板の表と裏です（KiCad の 3D 表示）。裏面は裏から見た向きなので、左右が反転して見えます。
 
@@ -338,7 +338,8 @@ spltnrskb/
 ├── docs/encoder-test-board.md  2 つのエンコーダーだけを載せた検証基板（RP2040-Zero を差し込む）
 ├── enctest/                     検証基板の KiCad プロジェクトとケース（enctest/case/、三面図は enctest/case/drawings/）
 ├── docs/views.html              A と B を 3D で見比べるページ
-├── docs/3d/                     docs/views.html のモデル（GLB）、照明（HDR）、床の影
+├── docs/enctest-views.html      検証基板を 3D で見るページ
+├── docs/3d/                     3D 表示のページのモデル（GLB）、照明（HDR）、床の影
 ├── docs/img/                    README の画像
 │   ├── left-*.png, right-*.png  基板の 3D 表示と重ね合わせ図
 │   ├── render-*                 Blender による完成イメージ
