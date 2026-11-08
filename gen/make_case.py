@@ -1265,7 +1265,8 @@ def check_tilt(hf):
         assert (m ^ tray).volume() < 1e-3, f'{deg} deg stand hits the tray'
         assert all((m ^ pl).volume() < 1e-3 for pl in hf.plugs3d()), f'{deg} deg stand hits a plug'
         b = w.bounding_box()
-        assert b[3] - b[0] <= BED and b[4] - b[1] <= BED and abs(b[2]) < 1e-6, f'{deg} deg stand off the bed'
+        # 1e-4: a stand read from a (float32) STL sits on the bed within ~1e-5 mm
+        assert b[3] - b[0] <= BED and b[4] - b[1] <= BED and abs(b[2]) < 1e-4, f'{deg} deg stand off the bed'
 
 
 def check_closed(hf, layers):

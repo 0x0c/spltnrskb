@@ -77,6 +77,7 @@ def build(side):
     x0, y0, x1, y1, r = hf.pcb
     (wx, wy), wr = hf.wheel_xy()
     out = dict(version=VERSION, side=side, inner_right=hf.inner_right, params=params(),
+               port_skin=r6(d.get('port_skin', 0.8)),
                pcb=box(*hf.pcb[:4], r),
                inner=box(x0 - mc.CLEAR, y0 - mc.CLEAR, x1 + mc.CLEAR, y1 + mc.CLEAR, r + mc.CLEAR),
                outer_box=box(*hf.outer_box),

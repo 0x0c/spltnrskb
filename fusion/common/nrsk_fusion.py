@@ -160,8 +160,14 @@ def largest_profile(sketch):
 
 
 def extrude(comp, profile, dist_mm, op, bodies=None, taper_deg=0.0, start_mm=None):
-    """Extrude profile by dist_mm (positive = +z) with operation op (adsk.fusion.FeatureOperations)."""
+    """Extrude profile (or a list of profiles) by dist_mm along the sketch plane's normal (+z for planes parallel to
+    XY; negative = the other way) with operation op (adsk.fusion.FeatureOperations)."""
     feats = comp.features.extrudeFeatures
+    if isinstance(profile, (list, tuple)):
+        coll = adsk.core.ObjectCollection.create()
+        for pr in profile:
+            coll.add(pr)
+        profile = coll
     inp = feats.createInput(profile, op)
     direction = adsk.fusion.ExtentDirections.PositiveExtentDirection if dist_mm >= 0 else \
         adsk.fusion.ExtentDirections.NegativeExtentDirection
@@ -240,3 +246,34 @@ def polygon_model(sketch, pts):
     for a, b in zip(out, out[1:] + out[:1]):
         sketch.geometricConstraints.addCoincident(a.endSketchPoint, b.startSketchPoint)
     return out
+
+
+def plane_y(comp, y):
+    """A construction plane parallel to XZ at model y (mm), and the extrude sign that points toward +y."""
+    for d in (y, -y):
+        inp = comp.constructionPlanes.createInput()
+        inp.setByOffset(comp.xZConstructionPlane, val(d))
+        plane = comp.constructionPlanes.add(inp)
+        g = plane.geometry
+        if abs(g.origin.y * 10 - y) < 1e-6 or abs(y) < 1e-9:
+            return plane, (1 if g.normal.y > 0 else -1)
+        plane.deleteMe()
+    raise RuntimeError(f'no plane at y = {y}')
+
+
+def stadium_xz(sketch, xc, zc, w, h, y):
+    """Closed slot (straight sides, round ends) in the plane y = const: w wide along x, h tall along z."""
+    r = h / 2
+    sp = lambda x, z: sketch.modelToSketchSpace(pt(x, y, z))   # noqa: E731
+    lines, arcs = sketch.sketchCurves.sketchLines, sketch.sketchCurves.sketchArcs
+    a, b = xc - w / 2 + r, xc + w / 2 - r
+    bot = lines.addByTwoPoints(sp(a, zc - r), sp(b, zc - r))
+    top = lines.addByTwoPoints(sp(b, zc + r), sp(a, zc + r))
+    arcs.addByThreePoints(bot.endSketchPoint, sp(b + r, zc), top.startSketchPoint)
+    arcs.addByThreePoints(top.endSketchPoint, sp(a - r, zc), bot.startSketchPoint)
+
+
+def hexagon_pts(x, y, corner):
+    """Corners of a regular hexagon round (x, y), the first on +x (as manifold's 6-segment cylinder)."""
+    import math
+    return [(x + corner * math.cos(math.radians(60 * i)), y + corner * math.sin(math.radians(60 * i))) for i in range(6)]

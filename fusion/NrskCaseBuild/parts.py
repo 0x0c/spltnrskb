@@ -175,8 +175,118 @@ def stand(deg):
     return build
 
 
+def tray(comp, inp, log):
+    """Half.tray(): the printed tray. Outer block with the rounded bottom (TRAY_FILLET) and top (TRAY_TOP_FILLET)
+    edges, the cavity, PCB bosses with pilot holes, case screws from below (clearance hole, counterbore, pocket and
+    nut trap at the wall top), the wheel opening with the cap's tiers taken out, the post the wheel turns on, the
+    step under the OLED cover, the USB-C tunnels and openings, the reset hole and the foot recesses."""
+    p = inp['params']
+    wall_top, z1, z_l = _heights(p)
+    z_pcb = p['FLOOR'] + p['STANDOFF']
+    (wx, wy), wr = inp['wheel']['xy'], inp['wheel']['r']
+    rc = wr + p['WHEEL_CUT']
+    xy = comp.xYConstructionPlane
+
+    def sketch(plane, name):
+        sk = comp.sketches.add(plane)
+        sk.name = name
+        return sk
+
+    def circles(plane, name, pts, d):
+        sk = sketch(plane, name)
+        for q in pts:
+            nf.circle(sk, *q, d)
+        return list(sk.profiles)
+
+    # block, rounded edges, cavity
+    sk = sketch(xy, 'outline')
+    nf.rounded_rect(sk, inp['outer_box'])
+    body = nf.extrude(comp, sk.profiles.item(0), wall_top, NEW).bodies.item(0)
+    body.name = 'tray'
+    nf.fillet(comp, list(nf.face_at_z(body, 0).edges), p['TRAY_FILLET'])
+    nf.fillet(comp, list(nf.face_at_z(body, wall_top).edges), p['TRAY_TOP_FILLET'])
+    floor = nf.plane_at(comp, p['FLOOR'])
+    floor.name = 'floor'
+    sk = sketch(floor, 'cavity')
+    nf.rounded_rect(sk, inp['inner'])
+    nf.extrude(comp, sk.profiles.item(0), wall_top, CUT, [body])
+
+    # PCB bosses and their pilot holes (0.6 mm of floor left under them)
+    holes = [h['xy'] for h in inp['pcb_holes']]
+    nf.extrude(comp, circles(floor, 'bosses', holes, p['BOSS_D']), p['STANDOFF'], JOIN, [body])
+    pilot = nf.plane_at(comp, 0.6)
+    pilot.name = 'pilot bottom'
+    nf.extrude(comp, circles(pilot, 'pilot holes', holes, p['PILOT_D']), p['STANDOFF'] + p['FLOOR'] - 0.6, CUT, [body])
+
+    # case screws from below (cuts from the bottom face take the depth as it is: the code starts them 0.01 below)
+    screws = [q['xy'] for q in inp['screws']]
+    nf.extrude(comp, circles(xy, 'screw holes', screws, p['SCREW_D']), wall_top + 0.02, CUT, [body])
+    nf.extrude(comp, circles(xy, 'counterbores', screws, p['SCREW_CB'][0]), p['SCREW_CB'][1], CUT, [body])
+    pk = nf.plane_at(comp, wall_top - p['BOSS_POCKET'][1])
+    pk.name = 'boss pockets'
+    nf.extrude(comp, circles(pk, 'boss pockets', screws, p['BOSS_POCKET'][0]), p['BOSS_POCKET'][1] + 0.01, CUT, [body])
+    nt = nf.plane_at(comp, wall_top - p['BOSS_POCKET'][1] - p['NUT_TRAP'][1])
+    nt.name = 'nut traps'
+    sk = sketch(nt, 'nut traps')
+    for x, y in screws:
+        nf.polygon(sk, nf.hexagon_pts(x, y, p['NUT_TRAP'][0] / math.sqrt(3)))
+    nf.extrude(comp, list(sk.profiles), p['NUT_TRAP'][1] + 0.01, CUT, [body])
+
+    # wheel opening, and the cap's tiers (the cap is a part of its own)
+    wz0 = p['FLOOR'] + p['WHEEL_GAP']
+    wo = nf.plane_at(comp, wz0 - 0.3)
+    wo.name = 'wheel opening'
+    nf.extrude(comp, circles(wo, 'wheel opening', [(wx, wy)], 2 * rc), p['WHEEL_T'] + 0.7, CUT, [body])
+    t1 = nf.plane_at(comp, z1)
+    t1.name = 'cap bottom'
+    nf.extrude(comp, circles(t1, 'cap lower tier', [(wx, wy)], 2 * rc), z_l - z1, CUT, [body])
+    t2 = nf.plane_at(comp, z_l)
+    t2.name = 'cap ledge'
+    nf.extrude(comp, circles(t2, 'cap shoulder', [(wx, wy)], 2 * (rc + p['CAP_SHOULDER'])), p['CAP_LEDGE'] + 0.1,
+               CUT, [body])
+
+    # step for the thicker OLED cover
+    if 'oled' in inp:
+        cp = nf.plane_at(comp, wall_top - p['WALL_POCKET'])
+        cp.name = 'cover step'
+        sk = sketch(cp, 'cover step')
+        nf.rounded_rect(sk, nf.offset_box(inp['oled']['cover'], p['COVER_FIT']))
+        nf.extrude(comp, nf.smallest_profile(sk), p['WALL_POCKET'] + 0.01, CUT, [body])
+
+    # USB-C: tunnel for the tongue and the connector (closed above, PORT_LIFT of headroom), opening through the skin
+    zt = z_pcb + p['PCB_T'] + p['CHANNEL_CLR'] + p['PORT_LIFT']
+    depth = inp['port_skin'] + 1.0
+    y_out = inp['outer_box']['y1']
+    for sl in inp['slots']:
+        if sl['edge'] != 'top':
+            raise NotImplementedError(f"{sl['id']}: only ports on the top edge")
+        zp = sl['z_bottom'] - 0.2
+        tp = nf.plane_at(comp, zp)
+        tp.name = f"{sl['name']} tunnel"
+        sk = sketch(tp, f"{sl['name']} tunnel")
+        for poly in sl['chan']:
+            nf.polygon(sk, [tuple(q) for q in poly])
+        nf.extrude(comp, list(sk.profiles), zt - zp, CUT, [body])
+        plane, sign = nf.plane_y(comp, y_out - depth)
+        plane.name = f"{sl['name']} opening"
+        sk = sketch(plane, f"{sl['name']} opening")
+        nf.stadium_xz(sk, sl['along'], sl['z_centre'], sl['width'], sl['height'], y_out - depth)
+        nf.extrude(comp, sk.profiles.item(0), sign * (depth + 1), CUT, [body])
+
+    # wheel post, reset hole, foot recesses
+    nf.extrude(comp, circles(floor, 'wheel post', [(wx, wy)], p['POST_D']), p['WHEEL_GAP'] + p['BORE_DEPTH'] - 0.3,
+               JOIN, [body])
+    if 'reset' in inp:
+        nf.extrude(comp, circles(xy, 'reset', [inp['reset']['xy']], p['RESET_D']), p['FLOOR'] + 0.02, CUT, [body])
+    feet = [f['xy'] for f in inp['feet']]
+    nf.extrude(comp, circles(xy, 'foot recesses', feet, p['FOOT_D']), p['FOOT_DEPTH'], CUT, [body])
+    log(f"tray: wall top {wall_top:.2f}, {len(holes)} bosses, {len(screws)} screws, {len(inp['slots'])} ports, "
+        f"{len(feet)} feet")
+
+
 # part name (the exported STL) -> builder; the build makes them in this order
 BUILDERS = {
+    'tray': tray,
     'wheel': wheel,
     'wheel-cap': wheel_cap,
     'stand-3': stand(3),

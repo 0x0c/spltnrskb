@@ -173,6 +173,7 @@
   "BEZEL_FILLET": 1.2,
   "BEZEL_FLAT": 0.8
  },
+ "port_skin": 0.8,
  "pcb": {
   "x0": -3.0,
   "y0": -117.3,
