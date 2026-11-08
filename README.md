@@ -365,7 +365,7 @@ spltnrskb/
 - OLED と開口の比較検討：`oled_variants.py`、`oled_study.sh`、`oled_sheet.py`、`port_variants.py`
 - 六角ピンの試し印刷：`pin_coupon.py`（`case/print/pin-coupon.stl`。使い方は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）
 - ゴム足のくぼみの試し印刷：`foot_coupon.py`（`case/print/foot-coupon.stl`。使い方は [docs/ordering.md](docs/ordering.md) の 7 章）
-- チルト脚と台座の比較検討：`tilt_variants.py`、`tilt_stands.py`、`render_tilt.py`、`tilt_sheet.py`、`tilt_study.sh`。台座そのものは `make_case.py` が作ります
+- チルト脚と台座の比較検討：`tilt_variants.py`、`render_tilt.py`、`tilt_sheet.py`。台座そのものは Fusion の設計にあります。比較に使った全周の台座のモデル（`tilt_stands.py`）と一括の実行（`tilt_study.sh`）は、筐体を Fusion へ移した際に削除しました。どちらも、移す前のコミット `7e1b2cc` で動きます
 - エンコーダーの検証基板：`build_enctest.sh`、`make_enctest.py`、`render_enctest.py`（使い方は [docs/encoder-test-board.md](docs/encoder-test-board.md)）
 
 KLE を編集した場合は `./build.sh` を実行すると、回路図、基板、配線、ERC/DRC、製造データ、筐体、BOM、QMK 定義をすべて作り直します。
