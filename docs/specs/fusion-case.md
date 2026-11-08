@@ -173,17 +173,17 @@ Claude は computer use で Fusion を操作する。スクリプトは「ユー
 
 ## 5. 作業手順
 
-| # | やること | 触るファイル | 完了条件 | 前提 |
-|---|---|---|---|---|
-| 1 | Fusion をインストールしてサインインし、`fusion/` のフォルダを「スクリプトとアドイン」に登録する。Claude が computer use で Fusion を操作できることを確かめる | なし | 空のスクリプトを画面操作で実行し、ログファイルが書き出される | — |
-| 2 | `gen/fusion_input.py` を作り、`input.json` を左右で書き出す | `gen/fusion_input.py`、`case/fusion/<side>/input.json` | 3 章の表のキーがすべてあり、`id` が重複しない。`Half` の値と一致することを確かめるテストが通る | — |
-| 3 | `make_case.py` に `source` と STL の読み込みを足し、`gen/fusion_diff.py` を作る。最初の部品としてホイールを `NrskCaseBuild` で作って書き出し、比べる。近似の誤差を測って部品ごとの閾値を決める | `gen/make_case.py`、`gen/fusion_diff.py`、`fusion/common/`、`fusion/NrskCaseBuild/`、`fusion/NrskCaseExport/` | `NRSK_CASE_SOURCE=code` で今と同じ出力になる（`case/` の差分がない）。ホイールが閾値に収まり、閾値を仕様書に書き戻す | 1、2 |
-| 4 | ホイールのキャップと台座 3 種を組み立てスクリプトに足す | `fusion/NrskCaseBuild/` | 左右の 4 部品が閾値に収まる | 3 |
-| 5 | トレイを組み立てスクリプトに足す（壁、床、ボス、ポートのトンネル、ネジの座ぐりとナットのトラップ、ゴム足のくぼみ、ホイールの開口、OLED のカバーの下の段、底と上の縁のフィレット） | `fusion/NrskCaseBuild/` | 左右のトレイが閾値に収まる。`source=fusion` で `make_case.py` の干渉チェックが全部通る | 3 |
-| 6 | プリントのプレートを組み立てスクリプトに足す | `fusion/NrskCaseBuild/` | 左右のプレートが閾値に収まり、干渉チェックが通る | 5 |
-| 7 | ドラム、軸受けブロック、ベゼルを右の組み立てスクリプトに足す。ドラムのローレット（ねじれ角 30°、溝 36 本）はねじれのある掃引で作る | `fusion/NrskCaseBuild/` | 右の 3 部品が閾値に収まり、`check_drum()` が通る | 3 |
-| 8 | `NrskCaseSync` を作る | `fusion/NrskCaseSync/`、`fusion/common/` | `input.json` のネジ 1 本の座標とパラメータ 1 つを変えて同期すると、Fusion の形が追従し、`fusion_diff.py` が `source=code` の同じ変更と閾値内で一致する。ネジを 1 本足した `input.json` では差分を報告して止まる | 4、5、6、7 |
-| 9 | 編集期間に切り替える。`nrsk.phase = edit` を付け、`.f3d` と STL をコミットする。ホイール、キャップ、台座、ドラム一式の生成コードを削除し、`make_enctest.py` を 3 章のとおりに直す | `gen/make_case.py`、`gen/make_enctest.py`、`case/fusion/`、`case/print/`、`case/preview/` | `NrskCaseBuild` が止まる。`build.sh` の筐体の部分と `gen/build_enctest.sh` が通り、`case/print/` と `enctest/case/` の STL が手順 8 の時点から閾値内で変わらない | 8 |
-| 10 | 比較検討用スクリプトの扱いを決めて片づける。動かなくなったものは削除し、移行前のコミットで動かす旨を README に書く | `gen/tilt_variants.py` ほか、`README.md` | 残ったスクリプトがすべて実行できる | 9 |
-| 11 | ドキュメントを更新する。README の筐体の節とファイル構成に、Fusion の設計の場所、基板を変えたときの手順（`fusion_input.py`、同期、書き出し、`make_case.py`）、定数を書き戻す約束を書く | `README.md` | README の手順だけで、基板を変えた後の筐体の更新ができる | 9 |
-| 12 | GUI での編集を 1 つ試す。トレイの底のフィレットの半径を Fusion で変え、書き出し、ビューアで確かめる | `case/fusion/`、`case/print/`、`case/preview/` | 変えた形がビューアに表示され、干渉チェックが通る | 11 |
+| # | やること | 触るファイル | 完了条件 | 前提 | 状態 |
+|---|---|---|---|---|---|
+| 1 | Fusion をインストールしてサインインし、`fusion/` のフォルダを「スクリプトとアドイン」に登録する。Claude が computer use で Fusion を操作できることを確かめる | なし | 空のスクリプトを画面操作で実行し、ログファイルが書き出される | — | 未 |
+| 2 | `gen/fusion_input.py` を作り、`input.json` を左右で書き出す | `gen/fusion_input.py`、`case/fusion/<side>/input.json` | 3 章の表のキーがすべてあり、`id` が重複しない。`Half` の値と一致することを確かめるテストが通る | — | 済 |
+| 3 | `make_case.py` に `source` と STL の読み込みを足し、`gen/fusion_diff.py` を作る。最初の部品としてホイールを `NrskCaseBuild` で作って書き出し、比べる。近似の誤差を測って部品ごとの閾値を決める | `gen/make_case.py`、`gen/fusion_diff.py`、`fusion/common/`、`fusion/NrskCaseBuild/`、`fusion/NrskCaseExport/` | `NRSK_CASE_SOURCE=code` で今と同じ出力になる（`case/` の差分がない）。ホイールが閾値に収まり、閾値を仕様書に書き戻す | 1、2 | 未 |
+| 4 | ホイールのキャップと台座 3 種を組み立てスクリプトに足す | `fusion/NrskCaseBuild/` | 左右の 4 部品が閾値に収まる | 3 | 未 |
+| 5 | トレイを組み立てスクリプトに足す（壁、床、ボス、ポートのトンネル、ネジの座ぐりとナットのトラップ、ゴム足のくぼみ、ホイールの開口、OLED のカバーの下の段、底と上の縁のフィレット） | `fusion/NrskCaseBuild/` | 左右のトレイが閾値に収まる。`source=fusion` で `make_case.py` の干渉チェックが全部通る | 3 | 未 |
+| 6 | プリントのプレートを組み立てスクリプトに足す | `fusion/NrskCaseBuild/` | 左右のプレートが閾値に収まり、干渉チェックが通る | 5 | 未 |
+| 7 | ドラム、軸受けブロック、ベゼルを右の組み立てスクリプトに足す。ドラムのローレット（ねじれ角 30°、溝 36 本）はねじれのある掃引で作る | `fusion/NrskCaseBuild/` | 右の 3 部品が閾値に収まり、`check_drum()` が通る | 3 | 未 |
+| 8 | `NrskCaseSync` を作る | `fusion/NrskCaseSync/`、`fusion/common/` | `input.json` のネジ 1 本の座標とパラメータ 1 つを変えて同期すると、Fusion の形が追従し、`fusion_diff.py` が `source=code` の同じ変更と閾値内で一致する。ネジを 1 本足した `input.json` では差分を報告して止まる | 4、5、6、7 | 未 |
+| 9 | 編集期間に切り替える。`nrsk.phase = edit` を付け、`.f3d` と STL をコミットする。ホイール、キャップ、台座、ドラム一式の生成コードを削除し、`make_enctest.py` を 3 章のとおりに直す | `gen/make_case.py`、`gen/make_enctest.py`、`case/fusion/`、`case/print/`、`case/preview/` | `NrskCaseBuild` が止まる。`build.sh` の筐体の部分と `gen/build_enctest.sh` が通り、`case/print/` と `enctest/case/` の STL が手順 8 の時点から閾値内で変わらない | 8 | 未 |
+| 10 | 比較検討用スクリプトの扱いを決めて片づける。動かなくなったものは削除し、移行前のコミットで動かす旨を README に書く | `gen/tilt_variants.py` ほか、`README.md` | 残ったスクリプトがすべて実行できる | 9 | 未 |
+| 11 | ドキュメントを更新する。README の筐体の節とファイル構成に、Fusion の設計の場所、基板を変えたときの手順（`fusion_input.py`、同期、書き出し、`make_case.py`）、定数を書き戻す約束を書く | `README.md` | README の手順だけで、基板を変えた後の筐体の更新ができる | 9 | 未 |
+| 12 | GUI での編集を 1 つ試す。トレイの底のフィレットの半径を Fusion で変え、書き出し、ビューアで確かめる | `case/fusion/`、`case/print/`、`case/preview/` | 変えた形がビューアに表示され、干渉チェックが通る | 11 | 未 |
