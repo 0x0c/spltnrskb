@@ -277,3 +277,87 @@ def hexagon_pts(x, y, corner):
     """Corners of a regular hexagon round (x, y), the first on +x (as manifold's 6-segment cylinder)."""
     import math
     return [(x + corner * math.cos(math.radians(60 * i)), y + corner * math.sin(math.radians(60 * i))) for i in range(6)]
+
+
+def plane_x(comp, x):
+    """A construction plane parallel to YZ at model x (mm), and the extrude sign that points toward +x."""
+    for d in (x, -x):
+        inp = comp.constructionPlanes.createInput()
+        inp.setByOffset(comp.yZConstructionPlane, val(d))
+        plane = comp.constructionPlanes.add(inp)
+        g = plane.geometry
+        if abs(g.origin.x * 10 - x) < 1e-6 or abs(x) < 1e-9:
+            return plane, (1 if g.normal.x > 0 else -1)
+        plane.deleteMe()
+    raise RuntimeError(f'no plane at x = {x}')
+
+
+def polygon3(sketch, pts):
+    """Closed polygon through model points (x, y, z) on any sketch plane (alias kept short for the builders)."""
+    return polygon_model(sketch, pts)
+
+
+def circle3(sketch, centre, d):
+    """Circle round a model point on any sketch plane."""
+    return sketch.sketchCurves.sketchCircles.addByCenterRadius(sketch.modelToSketchSpace(pt(*centre)), cm(d / 2))
+
+
+def spline3(sketch, pts):
+    coll = adsk.core.ObjectCollection.create()
+    for q in pts:
+        coll.add(sketch.modelToSketchSpace(pt(*q)))
+    s = sketch.sketchCurves.sketchFittedSplines.add(coll)
+    s.isClosed = True
+    return s
+
+
+def box(comp, x0, x1, y0, y1, z0, z1, name=None):
+    """A new box body (model mm)."""
+    plane = plane_at(comp, z0)
+    sk = comp.sketches.add(plane)
+    if name:
+        sk.name = name
+    polygon(sk, [(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
+    b = extrude(comp, sk.profiles.item(0), z1 - z0, adsk.fusion.FeatureOperations.NewBodyFeatureOperation).bodies.item(0)
+    if name:
+        b.name = name
+    return b
+
+
+def edges_where(body, pred, tol=1e-3):
+    """Edges whose bounding box (mm: x0, y0, z0, x1, y1, z1) satisfies pred(bb, close) with close(a, b) = |a-b| < tol."""
+    def close(a, b):
+        return abs(a - b) < tol
+    out = []
+    for e in body.edges:
+        bb = e.boundingBox
+        v = (bb.minPoint.x * 10, bb.minPoint.y * 10, bb.minPoint.z * 10, bb.maxPoint.x * 10, bb.maxPoint.y * 10, bb.maxPoint.z * 10)
+        if pred(v, close):
+            out.append(e)
+    return out
+
+
+def rounded_box(comp, x0, x1, y0, y1, z0, z1, r, far_end, name=None):
+    """Box rounded to r on the two top edges along x, the top edge of the far end and the far end's two vertical
+    edges (far_end = -1: the end at x0, +1: at x1); the bottom and the other end stay sharp. make_case's
+    _dbox_rounded (a hull of spheres, posts and a flat slab), as fillets."""
+    b = box(comp, x0, x1, y0, y1, z0, z1, name)
+    xf = x0 if far_end < 0 else x1
+
+    def pick(v, close):
+        bx0, by0, bz0, bx1, by1, bz1 = v
+        along_x_top = close(bz0, z1) and close(bz1, z1) and close(by0, by1) and (close(by0, y0) or close(by0, y1))
+        far_top = close(bz0, z1) and close(bz1, z1) and close(bx0, xf) and close(bx1, xf)
+        far_vert = close(bx0, xf) and close(bx1, xf) and close(by0, by1) and (close(by0, y0) or close(by0, y1))
+        return along_x_top or far_top or far_vert
+    edges = edges_where(b, pick)
+    if len(edges) != 5:
+        raise RuntimeError(f'rounded_box {name}: {len(edges)} edges to round, expected 5')
+    feats = comp.features.filletFeatures
+    inp = feats.createInput()
+    coll = adsk.core.ObjectCollection.create()
+    for e in edges:
+        coll.add(e)
+    inp.edgeSetInputs.addConstantRadiusEdgeSet(coll, val(r), False)
+    feats.add(inp)
+    return comp.bRepBodies.item(comp.bRepBodies.count - 1) if b is None else b

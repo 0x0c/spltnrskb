@@ -45,6 +45,12 @@ def polys(cs):
     return [[[r6(x), r6(y)] for x, y in p] for p in cs.to_polygons()]
 
 
+def cs_box(cs, r):
+    """A rounded rectangle given as a CrossSection (model frame) -> {x0, y0, x1, y1, r}."""
+    x0, y0, x1, y1 = map(float, cs.bounds())
+    return dict(x0=r6(x0), y0=r6(y0), x1=r6(x1), y1=r6(y1), r=r6(r))
+
+
 def params():
     """make_case's module constants that shape the parts: numbers and tuples of numbers."""
     out = {}
@@ -108,6 +114,8 @@ def build(side):
                            opening=polys(hf.drum_opening()), bezel_outline=polys(hf.bezel_outline()),
                            plate_hole=polys(hf.bezel_outline(mc.BEZEL_FIT)), ledge=polys(hf.bezel_ledge()),
                            web_cut=polys(hf.bezel_outline(mc.BEZEL_LEDGE + 0.5)),
+                           bezel_box=cs_box(hf.bezel_outline(), mc.BEZEL_R),
+                           ledge_box=cs_box(hf.bezel_outline(mc.BEZEL_LEDGE), mc.BEZEL_R + mc.BEZEL_LEDGE),
                            hood_ends=[r6(hx0), r6(hx1)], block_x=[r6(bx0), r6(bx1)],
                            drum_d=r6(mc.DRUM_D), drum_gap=r6(mc.DRUM_GAP), drum_w=r6(mc.DRUM_W))
     return hf, out

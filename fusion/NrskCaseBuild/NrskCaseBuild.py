@@ -86,6 +86,8 @@ def body(app, design, log):
     root = design.rootComponent
     made = []
     for name, build in parts.BUILDERS.items():
+        if name in parts.DRUM_PARTS and 'drum' not in inp:
+            continue
         occ = root.occurrences.addNewComponent(adsk.core.Matrix3D.create())
         comp = occ.component
         comp.name = name

@@ -361,6 +361,176 @@ def plate(comp, inp, log):
     log(f"plate: {len(inp['keys'])} keys, {len(screws)} bosses, web {p['RIB_T']} under")
 
 
+TWIST_SIGN = 1      # Fusion's sweep twist against manifold's (counter-clockwise about +x seen from +x)
+
+
+def _drum_frame(inp):
+    """Drum dial local frame -> model: origin, and L(x, y) = (Ox + x, Oy - y) (local y is board y)."""
+    ox, oy = inp['drum']['origin']
+    return ox, oy, (lambda x, y=0.0: (ox + x, oy - y))
+
+
+def drum(comp, inp, log):
+    """Half.drum3d(): the knurled drum (36 rounded grooves, helix angle DRUM_HELIX) with chamfered ends, a hex pin
+    into the EC10E rotor on the encoder side and a round pin into the bearing block on the other. z above the PCB
+    top; the axis runs along +x, EC10_AXIS high, DRUM_GAP from the encoder face."""
+    p, d = inp['params'], inp['drum']
+    ox, oy, L = _drum_frame(inp)
+    za, r = p['EC10_AXIS'], d['drum_d'] / 2
+    xs, xe = ox + p['DRUM_GAP'], ox + p['DRUM_GAP'] + p['DRUM_W']
+    grooves, gd = int(p['DRUM_GROOVES']), p['DRUM_GROOVE_DEPTH']
+
+    # profile on the encoder-side face: local (u, v) of the code's cross-section -> model (y = oy + v, z = za - u)
+    start, sgn = nf.plane_x(comp, xs)
+    start.name = 'drum start'
+    sk = comp.sketches.add(start)
+    sk.name = 'grooves'
+    pts = []
+    for i in range(grooves * 6):
+        a = 2 * math.pi * i / (grooves * 6)
+        rr = r - gd * (1 - math.cos(grooves * a)) / 2
+        pts.append((xs, oy + rr * math.sin(a), za - rr * math.cos(a)))
+    nf.spline3(sk, pts)
+    axis_plane, _ = nf.plane_y(comp, oy)
+    axis_plane.name = 'drum axis'
+    sk2 = comp.sketches.add(axis_plane)
+    sk2.name = 'drum path'
+    line = sk2.sketchCurves.sketchLines.addByTwoPoints(sk2.modelToSketchSpace(nf.pt(xs, oy, za)),
+                                                       sk2.modelToSketchSpace(nf.pt(xe, oy, za)))
+    twist = math.degrees(p['DRUM_W'] * math.tan(math.radians(p['DRUM_HELIX'])) / r)
+    sweeps = comp.features.sweepFeatures
+    si = sweeps.createInput(nf.largest_profile(sk), comp.features.createPath(line), NEW)
+    si.twistAngle = adsk.core.ValueInput.createByString(f'{TWIST_SIGN * twist} deg')
+    body = sweeps.add(si).bodies.item(0)
+    body.name = 'drum'
+
+    # chamfered ends: intersect with a revolved envelope
+    c = p['DRUM_CHAMFER']
+    sk3 = comp.sketches.add(axis_plane)
+    sk3.name = 'drum envelope'
+    env_lines = nf.polygon3(sk3, [(xs, oy, za), (xs, oy, za + r - c), (xs + c, oy, za + r + 0.01),
+                                  (xe - c, oy, za + r + 0.01), (xe, oy, za + r - c), (xe, oy, za)])
+    revs = comp.features.revolveFeatures
+    ri = revs.createInput(sk3.profiles.item(0), env_lines[-1], NEW)
+    ri.setAngleExtent(False, adsk.core.ValueInput.createByString('360 deg'))
+    env = revs.add(ri).bodies.item(0)
+    nf.combine(comp, body, [env], INTERSECT)
+
+    # hex pin toward the encoder (a corner up), chamfered by a cone to AF/2 - PIN_CHAMFER at the tip
+    pin_len = p['DRUM_GAP'] - p['EC10_ROTOR_FACE'] + p['DRUM_PIN_ENGAGE']
+    af = p['PIN_AF']
+    corner = af / math.sqrt(3)
+    sk4 = comp.sketches.add(start)
+    sk4.name = 'hex pin'
+    nf.polygon3(sk4, [(xs, oy + corner * math.sin(math.radians(60 * i)), za + corner * math.cos(math.radians(60 * i)))
+                      for i in range(6)])
+    pin = nf.extrude(comp, sk4.profiles.item(0), -sgn * pin_len, NEW).bodies.item(0)
+    sk5 = comp.sketches.add(start)
+    sk5.name = 'hex pin chamfer'
+    nf.circle3(sk5, (xs, oy, za), 2 * corner)
+    taper = -math.degrees(math.atan((corner - (af / 2 - p['PIN_CHAMFER'])) / pin_len))
+    nf.extrude(comp, sk5.profiles.item(0), -sgn * pin_len, INTERSECT, [pin], taper_deg=taper)
+    nf.combine(comp, body, [pin], JOIN)
+
+    # round pin into the block
+    end, sgn2 = nf.plane_x(comp, xe)
+    end.name = 'drum end'
+    sk6 = comp.sketches.add(end)
+    sk6.name = 'round pin'
+    nf.circle3(sk6, (xe, oy, za), p['DRUM_ROUND_PIN'][0])
+    nf.extrude(comp, sk6.profiles.item(0), sgn2 * p['DRUM_ROUND_PIN'][1], JOIN, [body])
+    log(f'drum: x {xs:.3f} .. {xe:.3f}, axis z {za}, twist {TWIST_SIGN * twist:.2f} deg, hex pin {pin_len:.2f}')
+
+
+def drum_block(comp, inp, log):
+    """Half.drum_block3d(): bearing block on the PCB. Top and far end rounded to BLOCK_R; a U slot open upward round
+    the drum's round pin with a narrowed snap-in mouth; two pegs into the PCB's holes. z = 0 is the PCB top."""
+    p, d = inp['params'], inp['drum']
+    ox, oy, L = _drum_frame(inp)
+    bx0, bx1 = d['block_x']
+    hw = p['BLOCK_HALF_W']
+    body = nf.rounded_box(comp, ox + bx0, ox + bx1, oy - hw, oy + hw, 0, p['BLOCK_TOP'], p['BLOCK_R'], 1, 'drum block')
+    slot_x1 = ox + p['DRUM_GAP'] + p['DRUM_W'] + p['DRUM_ROUND_PIN'][1] + 0.3
+    sp, sgn = nf.plane_x(comp, ox + bx0 - 0.1)
+    sp.name = 'slot start'
+    sk = comp.sketches.add(sp)
+    sk.name = 'slot'
+    nf.circle3(sk, (ox + bx0 - 0.1, oy, p['EC10_AXIS']), 2 * p['BLOCK_SLOT_R'])
+    nf.extrude(comp, sk.profiles.item(0), sgn * (slot_x1 - (ox + bx0 - 0.1)), CUT, [body])
+    mouth = nf.box(comp, ox + bx0 - 0.1, slot_x1, oy - p['BLOCK_LIP'] / 2, oy + p['BLOCK_LIP'] / 2, p['EC10_AXIS'],
+                   p['BLOCK_TOP'] + 0.1, 'mouth')
+    nf.combine(comp, body, [mouth], CUT)
+    sk = comp.sketches.add(comp.xYConstructionPlane)
+    sk.name = 'pegs'
+    for peg in d['pegs']:
+        nf.circle(sk, *peg['xy'], p['BLOCK_PEG'][0])
+    nf.extrude(comp, list(sk.profiles), -p['BLOCK_PEG'][1], JOIN, [body])
+    log(f'drum block: x {ox + bx0:.3f} .. {ox + bx1:.3f}, slot to {slot_x1:.3f}')
+
+
+def drum_bezel(comp, inp, log):
+    """Half.drum_bezel3d(): the flange flush in the plate hole with a ledge under the plate, a hood over the encoder
+    (its far wall a leg down to the PCB) and one over the block, both open toward the drum, through-cuts under the
+    hoods and the drum, and a BEZEL_FILLET round the hoods' feet on the flange. z = 0 is the PCB top."""
+    p, d = inp['params'], inp['drum']
+    ox, oy, L = _drum_frame(inp)
+    zl, z0, z1 = p['PLATE_GAP'] - p['BEZEL_LEDGE_T'], p['PLATE_GAP'], p['PLATE_GAP'] + p['PLATE_T']
+
+    pl = nf.plane_at(comp, z0)
+    pl.name = 'flange bottom'
+    sk = comp.sketches.add(pl)
+    sk.name = 'flange'
+    nf.rounded_rect(sk, d['bezel_box'])
+    body = nf.extrude(comp, sk.profiles.item(0), z1 - z0, NEW).bodies.item(0)
+    body.name = 'drum bezel'
+    ll = nf.plane_at(comp, zl)
+    ll.name = 'ledge bottom'
+    sk = comp.sketches.add(ll)
+    sk.name = 'ledge'
+    nf.rounded_rect(sk, d['ledge_box'])
+    ledge = nf.extrude(comp, sk.profiles.item(0), p['BEZEL_LEDGE_T'], NEW).bodies.item(0)
+    sk = comp.sketches.add(ll)
+    sk.name = 'ledge notches'
+    for h in inp['pcb_holes']:
+        nf.circle(sk, *h['xy'], p['BOSS_D'] + 2.0)
+    nf.extrude(comp, list(sk.profiles), p['BEZEL_LEDGE_T'] + 0.1, CUT, [ledge])
+    nf.combine(comp, body, [ledge], JOIN)
+
+    w, c = p['BEZEL_WALL'], p['BEZEL_CLEAR']
+    ex0, ey, etop = p['EC10_BRACKET'][0] - c, p['EC10_BODY'][3] + c, p['EC10_BODY'][4] + c
+    outer = nf.rounded_box(comp, ox + ex0 - w, ox + 0.2, oy - ey - w, oy + ey + w, z0, etop + w, p['HOOD_OUT_R'], -1,
+                           'encoder hood')
+    inner = nf.rounded_box(comp, ox + ex0, ox + 0.3, oy - ey, oy + ey, z0 - 0.1, etop, p['HOOD_IN_R'], -1, 'encoder hood in')
+    nf.combine(comp, outer, [inner], CUT)
+    nf.combine(comp, body, [outer], JOIN)
+    leg = nf.box(comp, ox + ex0 - w, ox + ex0, oy - p['BEZEL_LEG_HW'], oy + p['BEZEL_LEG_HW'], 0, zl + 0.01, 'leg')
+    nf.combine(comp, body, [leg], JOIN)
+    bx0, bx1 = d['block_x']
+    bend = d['hood_ends'][1]
+    outer = nf.rounded_box(comp, ox + bx0 - 0.1, ox + bend, oy - ey - w, oy + ey + w, z0, etop + w, p['HOOD_OUT_R'], 1,
+                           'block hood')
+    inner = nf.rounded_box(comp, ox + bx0 - 0.2, ox + bx1 + c, oy - ey, oy + ey, z0 - 0.1, p['BLOCK_TOP'],
+                           p['HOOD_IN_R'], 1, 'block hood in')
+    nf.combine(comp, outer, [inner], CUT)
+    nf.combine(comp, body, [outer], JOIN)
+
+    rr = d['drum_d'] / 2
+    cuts = [nf.box(comp, ox + 0.2, ox + bx0 - 0.1, oy - rr - 0.2, oy + rr + 0.2, zl - 0.1, z1 + 0.1, 'drum gap'),
+            nf.box(comp, ox + ex0, ox + 0.3, oy - ey, oy + ey, zl - 0.1, z1 + 0.1, 'under encoder hood'),
+            nf.box(comp, ox + bx0 - 0.2, ox + bx1 + c, oy - ey, oy + ey, zl - 0.1, z1 + 0.1, 'under block hood')]
+    nf.combine(comp, body, cuts, CUT)
+
+    # fillet where the hoods stand on the flange: edges in the flange top next to a face that rises above it
+    def foot(e):
+        bb = e.boundingBox
+        if abs(bb.minPoint.z * 10 - z1) > 1e-3 or abs(bb.maxPoint.z * 10 - z1) > 1e-3:
+            return False
+        return any(f.boundingBox.maxPoint.z * 10 > z1 + 0.5 for f in e.faces)
+    edges = [e for e in body.edges if foot(e)]
+    nf.fillet(comp, edges, p['BEZEL_FILLET'])
+    log(f'drum bezel: flange z {z0} .. {z1}, ledge from {zl}, {len(edges)} hood foot edges filleted')
+
+
 # part name (the exported STL) -> builder; the build makes them in this order
 BUILDERS = {
     'tray': tray,
@@ -370,4 +540,8 @@ BUILDERS = {
     'stand-3': stand(3),
     'stand-6': stand(6),
     'stand-9': stand(9),
+    'drum': drum,
+    'drum-block': drum_block,
+    'drum-bezel': drum_bezel,
 }
+DRUM_PARTS = {'drum', 'drum-block', 'drum-bezel'}     # only for a half with the drum dial (input.json 'drum')

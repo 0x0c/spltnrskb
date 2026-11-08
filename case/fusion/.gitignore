@@ -1,2 +1,4 @@
 # logs written by the Fusion scripts
 *.log
+# fusion_diff.py: parts over the threshold
+*/diff/
