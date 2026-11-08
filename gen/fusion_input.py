@@ -107,6 +107,7 @@ def build(side):
                            pegs=points('peg', d['drum']['pegs']),
                            opening=polys(hf.drum_opening()), bezel_outline=polys(hf.bezel_outline()),
                            plate_hole=polys(hf.bezel_outline(mc.BEZEL_FIT)), ledge=polys(hf.bezel_ledge()),
+                           web_cut=polys(hf.bezel_outline(mc.BEZEL_LEDGE + 0.5)),
                            hood_ends=[r6(hx0), r6(hx1)], block_x=[r6(bx0), r6(bx1)],
                            drum_d=r6(mc.DRUM_D), drum_gap=r6(mc.DRUM_GAP), drum_w=r6(mc.DRUM_W))
     return hf, out

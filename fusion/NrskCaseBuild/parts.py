@@ -284,9 +284,87 @@ def tray(comp, inp, log):
         f"{len(feet)} feet")
 
 
+def plate(comp, inp, log):
+    """Half.plate3d_printed(): the all-printed switch plate, printed upside down. The 1.5 mm plate (top outer edge
+    rounded by PLATE_FILLET; switch, stabilizer, OLED cover and drum bezel holes; no screw holes on top) on a RIB_T
+    web that fills the cavity except round the switches, the stabilizers, the cover, the PCB screw heads and the drum
+    bezel's ledge; bosses for heat-set inserts under the case screws. z = 0 is the plate's bottom face.
+    The code also opens the web by 0.4 mm (drops slivers, rounds its convex corners); that changes ~0.03 % of the
+    volume and is left out here."""
+    p = inp['params']
+    xy = comp.xYConstructionPlane
+    pt_ = p['PLATE_T']
+
+    def sketch(plane, name):
+        sk = comp.sketches.add(plane)
+        sk.name = name
+        return sk
+
+    def square(sk, x, y, hw, hh):
+        nf.polygon(sk, [(x - hw, y - hh), (x + hw, y - hh), (x + hw, y + hh), (x - hw, y + hh)])
+
+    # the plate
+    sk = sketch(xy, 'outline')
+    nf.rounded_rect(sk, inp['outer_box'])
+    body = nf.extrude(comp, sk.profiles.item(0), pt_, NEW).bodies.item(0)
+    body.name = 'plate'
+    nf.fillet(comp, list(nf.face_at_z(body, pt_).edges), p['PLATE_FILLET'])
+    sk = sketch(xy, 'switch cut-outs')
+    w, hh, dy = p['STAB_CUT']
+    for k in inp['keys']:
+        x, y = k['xy']
+        square(sk, x, y, p['SWITCH_CUT'] / 2, p['SWITCH_CUT'] / 2)
+        if k['w'] >= 2:                   # stabilizer housings (board y down: dy below the key = -dy here)
+            for sx in (-1, 1):
+                square(sk, x + sx * p['STAB_X'], y - dy, w / 2, hh / 2)
+    if 'oled' in inp:
+        nf.rounded_rect(sk, nf.offset_box(inp['oled']['cover'], p['COVER_FIT']))
+    if 'drum' in inp:
+        for poly in inp['drum']['plate_hole']:
+            nf.polygon(sk, [tuple(q) for q in poly])
+    nf.extrude(comp, list(sk.profiles), pt_ + 0.1, CUT, [body])
+
+    # the web under it
+    bottom = nf.plane_at(comp, -p['RIB_T'] - 0.1)
+    bottom.name = 'web cuts'
+    sk = sketch(xy, 'web')
+    nf.rounded_rect(sk, nf.offset_box(inp['inner'], -0.3))
+    web = nf.extrude(comp, sk.profiles.item(0), -p['RIB_T'], NEW).bodies.item(0)
+    sk = sketch(bottom, 'web cuts')
+    g = p['SWITCH_CUT'] / 2 + 0.6
+    for k in inp['keys']:
+        x, y = k['xy']
+        square(sk, x, y, g, g)
+        if k['w'] >= 2:
+            for sx in (-1, 1):
+                square(sk, x + sx * p['STAB_X'], y - dy, w / 2 + 1.0, hh / 2 + 1.0)
+    if 'oled' in inp:
+        nf.rounded_rect(sk, nf.offset_box(inp['oled']['cover'], 1.0))
+    for h in inp['pcb_holes']:
+        nf.circle(sk, *h['xy'], p['BOSS_D'] + 2.0)
+    if 'drum' in inp:
+        for poly in inp['drum']['web_cut']:
+            nf.polygon(sk, [tuple(q) for q in poly])
+    nf.extrude(comp, list(sk.profiles), p['RIB_T'] + 0.2, CUT, [web])
+    nf.combine(comp, body, [b for b in comp.bRepBodies if b != body], JOIN)
+
+    # bosses with heat-set inserts under the case screws (the screws come from below)
+    screws = [q['xy'] for q in inp['screws']]
+    sk = sketch(xy, 'plate bosses')
+    for q in screws:
+        nf.circle(sk, *q, p['PLATE_BOSS'][0])
+    nf.extrude(comp, list(sk.profiles), -p['PLATE_BOSS'][1], JOIN, [body])
+    sk = sketch(xy, 'inserts')
+    for q in screws:
+        nf.circle(sk, *q, p['INSERT_D'])
+    nf.extrude(comp, list(sk.profiles), -(p['PLATE_BOSS'][1] + 0.01), CUT, [body])
+    log(f"plate: {len(inp['keys'])} keys, {len(screws)} bosses, web {p['RIB_T']} under")
+
+
 # part name (the exported STL) -> builder; the build makes them in this order
 BUILDERS = {
     'tray': tray,
+    'plate': plate,
     'wheel': wheel,
     'wheel-cap': wheel_cap,
     'stand-3': stand(3),
