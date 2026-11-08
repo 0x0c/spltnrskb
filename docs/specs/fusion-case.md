@@ -1,6 +1,6 @@
 # 3D プリント部品の設計の Fusion への移行
 
-> ステータス: ドラフト
+> ステータス: 実装完了
 > 対象: 新規の `fusion/`、新規の `gen/fusion_input.py`、新規の `gen/fusion_diff.py`、`gen/make_case.py`、`gen/make_enctest.py`、`case/fusion/`、`build.sh`、`README.md`
 > 関連: [README の筐体の節](../../README.md#筐体)、[ゴム足のくぼみとチルト台座](case-feet-tilt.md)
 
@@ -187,4 +187,4 @@ Claude は computer use で Fusion を操作する。スクリプトは「ユー
 | 9 | 編集期間に切り替える。`nrsk.phase = edit` を付け、`.f3d` と STL をコミットする。ホイール、キャップ、台座、ドラム一式の生成コードを削除し、`make_enctest.py` を 3 章のとおりに直す | `gen/make_case.py`、`gen/make_enctest.py`、`case/fusion/`、`case/print/`、`case/preview/` | `NrskCaseBuild` が止まる。`build.sh` の筐体の部分と `gen/build_enctest.sh` が通り、`case/print/` と `enctest/case/` の STL が手順 8 の時点から閾値内で変わらない | 8 | 済 |
 | 10 | 比較検討用スクリプトの扱いを決めて片づける。動かなくなったものは削除し、移行前のコミットで動かす旨を README に書く | `gen/tilt_variants.py` ほか、`README.md` | 残ったスクリプトがすべて実行できる | 9 | 済 |
 | 11 | ドキュメントを更新する。README の筐体の節とファイル構成に、Fusion の設計の場所、基板を変えたときの手順（`fusion_input.py`、同期、書き出し、`make_case.py`）、定数を書き戻す約束を書く | `README.md` | README の手順だけで、基板を変えた後の筐体の更新ができる | 9 | 済 |
-| 12 | GUI での編集を 1 つ試す。トレイの底のフィレットの半径を Fusion で変え、書き出し、ビューアで確かめる | `case/fusion/`、`case/print/`、`case/preview/` | 変えた形がビューアに表示され、干渉チェックが通る | 11 | 未 |
+| 12 | GUI での編集を 1 つ試す。トレイの底のフィレットの半径を Fusion で変え、書き出し、ビューアで確かめる | `case/fusion/`、`case/print/`、`case/preview/` | 変えた形がビューアに表示され、干渉チェックが通る | 11 | 済 |
