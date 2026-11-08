@@ -82,13 +82,14 @@ venv の Python で動く新しいスクリプトで、`Half(side)` を作り、
 
 ### Fusion 側のスクリプト（`fusion/`）
 
-リポジトリの `fusion/` に、Fusion のスクリプトを 3 本置く。`fusion/link.sh` が各スクリプトのフォルダを Fusion のデフォルトのスクリプトフォルダへシンボリックリンクし、Fusion の「スクリプトとアドイン」の一覧に載せる。スクリプトはリンクを解決してリポジトリの位置を求める。3 本に分けるのは、再現期間の後に組み立てを誤って実行し、GUI の編集を上書きする事故を防ぐためである。
+リポジトリの `fusion/` に、Fusion のスクリプトを置く。`fusion/link.sh` が各スクリプトのフォルダを Fusion のデフォルトのスクリプトフォルダへシンボリックリンクし、Fusion の「スクリプトとアドイン」の一覧に載せる。スクリプトはリンクを解決してリポジトリの位置を求める。3 本に分けるのは、再現期間の後に組み立てを誤って実行し、GUI の編集を上書きする事故を防ぐためである。
 
 | スクリプト | 役目 | 実行してよい時期 |
 |---|---|---|
 | `fusion/NrskCaseBuild/` | 空の設計に、全部品のパラメータ、スケッチ、フィーチャーを組み立て、使った入力を設計の属性に保存する | 再現期間のみ。設計に属性 `nrsk.phase = edit` が付いていたら何もせず止まる |
 | `fusion/NrskCaseSync/` | `input.json` を、設計に保存した前回の入力と比べ、変わったユーザーパラメータの値を書き換え、id の付いたスケッチの曲線を動かし、設計を計算し直す。要素の増減や自動で追えない変更があれば、何も変えずに違いを報告して止まる | いつでも |
 | `fusion/NrskCaseExport/` | 各部品を STL（精細度は高）で `case/fusion/<side>/` に書き出し、設計を `case/fusion/nrsk-<side>-case.f3d` に書き出す | いつでも |
+| `fusion/NrskCaseFreeze/` | 設計に属性 `nrsk.phase = edit` を付けて保存し、編集期間に切り替える | 再現期間の終わりに 1 度 |
 
 3 本は共通の処理（`input.json` の読み込み、cm への換算、属性の扱い）を `fusion/common/nrsk_fusion.py` から読む。点の要素を描くスケッチの曲線には Fusion の属性（`nrsk.id`）で `input.json` の `id` を付け、同期スクリプトはこの属性で曲線を探す。寸法が `make_case.py` の定数 1 つで決まる押し出しの距離と円の直径は、ユーザーパラメータの式（`BOSS_D`、`BOSS_D + 2 mm` など）で与える。
 
@@ -111,7 +112,7 @@ Fusion は、今の `Half` のメソッドが返す形と同じ座標系で、�
 
 `Half` に形の出どころを表す属性 `source` を足す。`side` が `left` か `right` なら `fusion`、それ以外（検証基板）なら `code` とする。環境変数 `NRSK_CASE_SOURCE=code` を与えると、キーボードでも今のコードで作る（再現の比較と、移行前の形の確認に使う）。
 
-`source` が `fusion` のとき、上の表のメソッドは `case/fusion/<side>/<part>.stl` を読み込み、頂点を溶接して `Manifold` にして返す。STL がない、または `Manifold` の状態が `NoError` でないときは例外で止める。読み込みは `Half` の中でキャッシュする。`stand(deg, ring=True)` と `lift` を与えた呼び出しは Fusion に対応する形がないので、`source` が `fusion` なら例外で止める。
+`source` が `fusion` のとき、上の表のメソッドは `case/fusion/<side>/<part>.stl` を読み込み、頂点を溶接して `Manifold` にして返す。Fusion のメッシュは曲面を細かく分割する（トレイで 20 万面）ため、読み込むときに 0.005 mm の範囲で間引く（体積の変化は 0.02％）。ドラム一式は間引かない。ベゼルのフードがブロックに接していて、間引くと `check_drum()` が食い込みとして検出するためである。STL がない、または `Manifold` の状態が `NoError` でないときは例外で止める。読み込みは `Half` の中でキャッシュする。`stand(deg, ring=True)` と `lift` を与えた呼び出しは Fusion に対応する形がないので、`source` が `fusion` なら例外で止める。
 
 この差し替えで、次の処理は Fusion の形に対して今のまま動く。
 
@@ -183,7 +184,7 @@ Claude は computer use で Fusion を操作する。スクリプトは「ユー
 | 6 | プリントのプレートを組み立てスクリプトに足す | `fusion/NrskCaseBuild/` | 左右のプレートが閾値に収まり、干渉チェックが通る | 5 | 済 |
 | 7 | ドラム、軸受けブロック、ベゼルを右の組み立てスクリプトに足す。ドラムのローレット（ねじれ角 30°、溝 36 本）はねじれのある掃引で作る | `fusion/NrskCaseBuild/` | 右の 3 部品が閾値に収まり、`check_drum()` が通る | 3 | 済 |
 | 8 | `NrskCaseSync` を作る | `fusion/NrskCaseSync/`、`fusion/common/` | `input.json` のネジ 1 本の座標とパラメータ 1 つを変えて同期すると、Fusion の形が追従し、`fusion_diff.py` が `source=code` の同じ変更と閾値内で一致する。ネジを 1 本足した `input.json` では差分を報告して止まる | 4、5、6、7 | 済 |
-| 9 | 編集期間に切り替える。`nrsk.phase = edit` を付け、`.f3d` と STL をコミットする。ホイール、キャップ、台座、ドラム一式の生成コードを削除し、`make_enctest.py` を 3 章のとおりに直す | `gen/make_case.py`、`gen/make_enctest.py`、`case/fusion/`、`case/print/`、`case/preview/` | `NrskCaseBuild` が止まる。`build.sh` の筐体の部分と `gen/build_enctest.sh` が通り、`case/print/` と `enctest/case/` の STL が手順 8 の時点から閾値内で変わらない | 8 | 未 |
+| 9 | 編集期間に切り替える。`nrsk.phase = edit` を付け、`.f3d` と STL をコミットする。ホイール、キャップ、台座、ドラム一式の生成コードを削除し、`make_enctest.py` を 3 章のとおりに直す | `gen/make_case.py`、`gen/make_enctest.py`、`case/fusion/`、`case/print/`、`case/preview/` | `NrskCaseBuild` が止まる。`build.sh` の筐体の部分と `gen/build_enctest.sh` が通り、`case/print/` と `enctest/case/` の STL が手順 8 の時点から閾値内で変わらない | 8 | 済 |
 | 10 | 比較検討用スクリプトの扱いを決めて片づける。動かなくなったものは削除し、移行前のコミットで動かす旨を README に書く | `gen/tilt_variants.py` ほか、`README.md` | 残ったスクリプトがすべて実行できる | 9 | 未 |
 | 11 | ドキュメントを更新する。README の筐体の節とファイル構成に、Fusion の設計の場所、基板を変えたときの手順（`fusion_input.py`、同期、書き出し、`make_case.py`）、定数を書き戻す約束を書く | `README.md` | README の手順だけで、基板を変えた後の筐体の更新ができる | 9 | 未 |
 | 12 | GUI での編集を 1 つ試す。トレイの底のフィレットの半径を Fusion で変え、書き出し、ビューアで確かめる | `case/fusion/`、`case/print/`、`case/preview/` | 変えた形がビューアに表示され、干渉チェックが通る | 11 | 未 |

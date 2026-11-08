@@ -1,7 +1,9 @@
 """Compare the parts the Fusion designs exported (case/fusion/<side>/*.stl) with the ones make_case.py builds.
 
-For every part with an exported STL: volumes, the symmetric difference, its ratio to the code part's volume and the
-largest shift of the bounding box. A part over its threshold writes the difference to case/fusion/<side>/diff/ so the
+Since the switch to Fusion (step 9) the code builds only the tray, the plate and the wheel cap (the encoder test board
+needs them); the other parts are only in Fusion and are listed as such. For every part with an exported STL and a code
+build: volumes, the symmetric difference, its ratio to the code part's volume and the largest shift of the bounding
+box. A part over its threshold writes the difference to case/fusion/<side>/diff/ so the
 place that differs can be looked at. docs/specs/fusion-case.md, "再現の検証".
 
 Run with the project venv:  .venv/bin/python gen/fusion_diff.py [left] [right] [--part wheel ...]
@@ -37,7 +39,12 @@ def compare(side, only=None):
         if not os.path.exists(os.path.join(FUSION_DIR, side, f'{name}.stl')):
             rows.append((name, None))
             continue
-        a, b = build(), fusion.fusion_part(name)
+        try:
+            a = build()
+        except NotImplementedError:          # the code no longer builds it (Fusion is the source since step 9)
+            rows.append((name, 'code'))
+            continue
+        b = fusion.fusion_part(name)
         diff = a - b + (b - a)
         sym = diff.volume()
         ratio = sym / a.volume()
@@ -63,8 +70,8 @@ def main():
         rows, f = compare(side, args.part)
         failed |= f
         for name, r in rows:
-            if r is None:
-                print(f'{side:6} {name:11} {"(no Fusion export)":>48}')
+            if r is None or r == 'code':
+                print(f'{side:6} {name:11} {"(no Fusion export)" if r is None else "(only in Fusion)":>48}')
                 continue
             vc, vf, sym, ratio, bbox, ok = r
             print(f"{side:6} {name:11} {vc:10.2f} {vf:10.2f} {sym:9.3f} {ratio * 100:7.3f}% {bbox:8.4f}"
