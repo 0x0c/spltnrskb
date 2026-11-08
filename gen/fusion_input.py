@@ -95,6 +95,10 @@ def build(side):
                wheel=dict(id='wheel', xy=pt(wx, wy), r=r6(wr)))
     if 'reset' in d:
         out['reset'] = dict(id='reset', xy=pt(*d['reset']))
+    wall_top = mc.FLOOR + mc.STANDOFF + mc.PCB_T + mc.PLATE_GAP
+    z_l = wall_top - mc.CAP_LEDGE
+    out['cap_key'] = dict(slot=polys(hf.cap_key_footprint()), lug=polys(hf.cap_key_footprint(-mc.CAP_FIT)),
+                          slot_z=r6(z_l - mc.CAP_KEY[2]), lug_z=r6(z_l - mc.CAP_KEY[2] + mc.CAP_FIT), top_z=r6(z_l))
     if hf.window_box is not None:
         (cx0, cy0, cx1, cy1), corner = hf.cover_box()
         out['oled'] = dict(window=box(*hf.window_box),
