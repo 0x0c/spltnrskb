@@ -199,11 +199,33 @@ B〜F は OLED を基板の外側（壁の上）へ移すため、基板のコ�
 
 組み立て手順は、同じデータを使ったインタラクティブな組み立てガイド（`case/preview/assembly.html`、公開版は [http://www.0x0c.me/spltnrskb/assembly.html](http://www.0x0c.me/spltnrskb/assembly.html)）で確認できます。手順ごとに部品が所定の位置に入るアニメーションと説明が出て、A・B・アクリル版と左右を切り替えられます。
 
+### Fusion の設計と、基板を変えたときの更新
+
+3D プリントの部品の形は、Autodesk Fusion の設計 `nrsk-left-case` と `nrsk-right-case`（Hybrid Design）が正です。対象はトレイ、B のプレート、ホイール、ホイールのキャップ、台座、ドラム式ダイヤル一式です。形を変えるときは、Fusion の GUI で編集します。リポジトリには、節目ごとに書き出した設計（`case/fusion/nrsk-<side>-case.f3d`）と部品ごとの STL（`case/fusion/<side>/`）を置いています。`gen/make_case.py` はその STL を読み込み、干渉チェックをしてから `case/print/` と `case/preview/` へ書き出します。アクリル版と、検証基板のトレイとプレートは、従来どおり `make_case.py` が作ります。
+
+寸法の定数の正は `make_case.py` です。Fusion のユーザーパラメータは同じ名前で、同期のたびに `make_case.py` の値で上書きされます。Fusion で値を変えて決めたら、`make_case.py` にも書き戻してください。
+
+Fusion のスクリプトは `fusion/` にあります。`fusion/link.sh` を 1 度実行すると、Fusion の「ユーティリティ」タブの「アドイン」から開く「スクリプトとアドイン」の一覧に載ります。
+
+- `NrskCaseSync`：基板から来る寸法を Fusion の設計に反映します。
+- `NrskCaseExport`：部品ごとの STL と `.f3d` を `case/fusion/` に書き出します。
+- `NrskCaseBuild` と `NrskCaseFreeze`：設計を最初に組み立てるときだけ使います。今の設計は凍結してあり、`NrskCaseBuild` は実行を拒みます。
+
+基板を作り直したときは、次の順に筐体を更新します。
+
+1. `./build.sh` で基板を作り直します。`<side>/case_data.json` が新しくなります。
+2. `.venv/bin/python gen/fusion_input.py` で、Fusion 向けの入力（`case/fusion/<side>/input.json`）を作ります。
+3. Fusion で `nrsk-<side>-case` を開き、`NrskCaseSync` を実行します。`make_case.py` の定数の値が追従します。ネジ、基板の穴、ゴム足、キー、ドラムのピン、リセットの穴の位置も追従します。要素の増減や、外形、差込口、ホイールの位置などの変更は自動では追えません。そのときは何も変えずに違いを表示して止まります。GUI で直してから実行し直してください。
+4. `NrskCaseExport` を実行します。
+5. `.venv/bin/python gen/make_case.py` を実行して、干渉チェックを通します。続けて `build.sh` の筐体の段の残り（`case_preview.py`、`case_section.py`、`case_viewer.py`、`assembly_guide.py`）を実行します。`./build.sh` を実行し直してもかまいません。
+
+移行の経緯と検討した代替案は [docs/specs/fusion-case.md](docs/specs/fusion-case.md) にあります。
+
 ### ゴム足と台座
 
 3D プリント版のトレイの底には、ゴム足（3M CS-02、直径 9.5 mm）を貼る位置を決めるくぼみ（直径 10 mm、深さ 1 mm）が 5 か所あります。くぼみはプレートのネジの座ぐりを避けているので、プレートを外すときにゴム足を剥がす必要はありません。サムホイールのある角だけは、ホイールを挟んで 2 個です。この配置で、すべてのキーがゴム足で囲まれた範囲の内側に入ります。
 
-奥を持ち上げたいときは、3D プリントの台座（`case/print/<side>-stand-3.stl`、`-6`、`-9`）に載せます。台座は奥の辺と両側の辺に沿った U 字で、上面のくぼみに奥の 3 つのゴム足が収まり、手前の 2 つのゴム足は机に載ります。ネジは使わず、角度を変えるときは台座を取り替えます。9° の台座の高さは 22.9 mm です。
+奥を持ち上げたいときは、3D プリントの台座（`case/print/<side>-stand-3.stl`、`-6`、`-9`）に載せます。台座は奥の辺と両側の辺に沿った U 字で、上面のくぼみに奥の 3 つのゴム足が収まり、手前の 2 つのゴム足は机に載ります。ネジは使わず、角度を変えるときは台座を取り替えます。9° の台座の高さは 22.8 mm です。
 
 ![台座に載せた左半分（9°）](docs/img/tilt-study/U-back.jpg)
 
@@ -317,6 +339,8 @@ spltnrskb/
 │   │   ├── case-section.png     組み立て状態の断面図
 │   │   ├── oled-variants/       OLED の高さ・角度の比較用モデル
 │   │   └── port-variants/       USB-C と TRRS の開口の比較用モデル（左右接続が TRRS だったころのもの）
+│   ├── fusion/                  Fusion の設計の書き出し（nrsk-<side>-case.f3d）と、<side>/ に部品ごとの
+│   │                            STL と Fusion への入力 input.json
 │   └── case_report.json         筐体の寸法とネジの本数（BOM とビューアが読む）
 ├── bom/                         左右と筐体を合わせた部品表（CSV と Markdown）
 ├── firmware/qmk/keyboards/nrsk/ QMK のキーボード定義と既定のキーマップ
@@ -338,6 +362,7 @@ spltnrskb/
 │   ├── dial-study/              サムホイールの比較レンダリング
 │   └── encoder-study/           サムホイールの読み取り方式の比較（AS5600 とエンコーダーの断面）
 ├── gen/                         生成スクリプト（下表）
+├── fusion/                      Fusion のスクリプト（NrskCaseSync、NrskCaseExport ほか）と登録用の link.sh
 ├── build.sh                     一括再生成
 ├── .github/workflows/pages.yml  3D ビューアと組み立てガイドを GitHub Pages へ公開
 └── tools/, .venv/               Freerouting、取得した 3D モデル、Python 仮想環境（Git の管理対象外）
@@ -352,7 +377,7 @@ spltnrskb/
 | 基板 | `make_pcb.py`、`route.py`、`sexpr.py` | 部品の配置、Freerouting による自動配線、KiCad ファイルの読み書き |
 | 3D 出力 | `export_3d.py`、`glb_mesh.py` | ビューア用の基板メッシュ（`build/3d/`、Git の管理対象外） |
 | ファームウェア | `make_qmk.py` | `firmware/qmk/keyboards/nrsk/` |
-| 筐体 | `make_case.py`、`case_preview.py`、`case_section.py`、`case_viewer.py`、`assembly_guide.py` | `case/` 以下のすべて |
+| 筐体 | `make_case.py`、`case_preview.py`、`case_section.py`、`case_viewer.py`、`assembly_guide.py` | `case/` 以下のすべて（3D プリントの部品は `case/fusion/` の STL から） |
 | 部品表 | `make_bom.py`、`bom_sources.json` | `bom/`（購入先の情報は `bom_sources.json` に手で記入） |
 | JLCPCB の実装データ | `make_jlc.py` | `fab/<side>/nrsk-<side>-jlc-bom.csv`、`fab/<side>/nrsk-<side>-jlc-cpl.csv` |
 | README の画像 | `doc_images.sh` | `docs/img/left-*.png`、`docs/img/right-*.png`、断面図 |
@@ -366,6 +391,7 @@ spltnrskb/
 - 六角ピンの試し印刷：`pin_coupon.py`（`case/print/pin-coupon.stl`。使い方は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）
 - ゴム足のくぼみの試し印刷：`foot_coupon.py`（`case/print/foot-coupon.stl`。使い方は [docs/ordering.md](docs/ordering.md) の 7 章）
 - チルト脚と台座の比較検討：`tilt_variants.py`、`render_tilt.py`、`tilt_sheet.py`。台座そのものは Fusion の設計にあります。比較に使った全周の台座のモデル（`tilt_stands.py`）と一括の実行（`tilt_study.sh`）は、筐体を Fusion へ移した際に削除しました。どちらも、移す前のコミット `7e1b2cc` で動きます
+- Fusion の設計：`fusion_input.py`（Fusion への入力）、`fusion_diff.py`（Fusion の部品と `make_case.py` のトレイとプレートの比較）。手順は「Fusion の設計と、基板を変えたときの更新」の節
 - エンコーダーの検証基板：`build_enctest.sh`、`make_enctest.py`、`render_enctest.py`（使い方は [docs/encoder-test-board.md](docs/encoder-test-board.md)）
 
 KLE を編集した場合は `./build.sh` を実行すると、回路図、基板、配線、ERC/DRC、製造データ、筐体、BOM、QMK 定義をすべて作り直します。
