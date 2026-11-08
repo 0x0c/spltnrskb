@@ -18,22 +18,13 @@ import adsk.fusion  # noqa: E402
 import nrsk_fusion  # noqa: E402
 import parts  # noqa: E402
 
-COUNTS = {'WHEEL_KNURLS', 'N_FRAMES', 'DRUM_GROOVES'}     # plain numbers, not lengths
-ANGLES = {'DRUM_HELIX', 'STAND_ANGLES'}
-
-
 def parameters(design, params, log):
     """make_case's constants as user parameters (tuples as NAME_0, NAME_1, ...)."""
     up = design.userParameters
-    n = 0
-    for name, v in params.items():
-        values = v if isinstance(v, list) else [v]
-        for i, x in enumerate(values):
-            pname = name if not isinstance(v, list) else f'{name}_{i}'
-            unit = '' if name in COUNTS else 'deg' if name in ANGLES else 'mm'
-            up.add(pname, adsk.core.ValueInput.createByString(f'{x} {unit}'.strip()), unit, 'make_case.py')
-            n += 1
-    log(f'{n} user parameters')
+    values = nrsk_fusion.parameter_values(params)
+    for pname, (x, unit) in values.items():
+        up.add(pname, adsk.core.ValueInput.createByString(f'{x} {unit}'.strip()), unit, 'make_case.py')
+    log(f'{len(values)} user parameters')
 
 
 def clear(design, log):
@@ -95,6 +86,7 @@ def body(app, design, log):
         build(comp, inp, log)
         made.append(name)
     nf.set_attr(design, 'phase', 'reproduce')
+    nf.store_input(design, inp)
     log('built: ' + ', '.join(made))
     save(app, side, log)
     return f'{side}: built {", ".join(made)}'

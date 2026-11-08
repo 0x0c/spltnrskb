@@ -127,11 +127,23 @@ def plane_at(comp, z):
     return comp.constructionPlanes.add(inp)
 
 
-def circle(sketch, x, y, d):
-    return sketch.sketchCurves.sketchCircles.addByCenterRadius(pt(x, y), cm(d / 2))
+def tag(entity, ident):
+    """Mark a sketch entity with the input.json id it was drawn for: NrskCaseSync moves it when that item moves."""
+    if ident:
+        set_attr(entity, 'id', ident)
 
 
-def polygon(sketch, pts):
+def circle(sketch, x, y, d, ident=None, expr=None):
+    """Circle of diameter d (mm) round (x, y); expr makes the diameter a dimension driven by user parameters."""
+    c = sketch.sketchCurves.sketchCircles.addByCenterRadius(pt(x, y), cm(d / 2))
+    tag(c, ident)
+    if expr:
+        dim = sketch.sketchDimensions.addDiameterDimension(c, pt(x + d, y + d))
+        dim.parameter.expression = expr
+    return c
+
+
+def polygon(sketch, pts, ident=None):
     lines = sketch.sketchCurves.sketchLines
     out = []
     for i, (x, y) in enumerate(pts):
@@ -139,6 +151,8 @@ def polygon(sketch, pts):
         out.append(lines.addByTwoPoints(pt(x, y), pt(x1, y1)))
     for a, b in zip(out, out[1:] + out[:1]):          # one closed loop: connect the shared corners
         sketch.geometricConstraints.addCoincident(a.endSketchPoint, b.startSketchPoint)
+    for ln in out:
+        tag(ln, ident)
     return out
 
 
@@ -159,9 +173,10 @@ def largest_profile(sketch):
     return max(sketch.profiles, key=lambda p: p.areaProperties().area)
 
 
-def extrude(comp, profile, dist_mm, op, bodies=None, taper_deg=0.0, start_mm=None):
+def extrude(comp, profile, dist_mm, op, bodies=None, taper_deg=0.0, start_mm=None, expr=None):
     """Extrude profile (or a list of profiles) by dist_mm along the sketch plane's normal (+z for planes parallel to
-    XY; negative = the other way) with operation op (adsk.fusion.FeatureOperations)."""
+    XY; negative = the other way) with operation op (adsk.fusion.FeatureOperations). expr gives the distance as an
+    expression of user parameters (its value is |dist_mm|; the sign of dist_mm still sets the direction)."""
     feats = comp.features.extrudeFeatures
     if isinstance(profile, (list, tuple)):
         coll = adsk.core.ObjectCollection.create()
@@ -171,7 +186,8 @@ def extrude(comp, profile, dist_mm, op, bodies=None, taper_deg=0.0, start_mm=Non
     inp = feats.createInput(profile, op)
     direction = adsk.fusion.ExtentDirections.PositiveExtentDirection if dist_mm >= 0 else \
         adsk.fusion.ExtentDirections.NegativeExtentDirection
-    extent = adsk.fusion.DistanceExtentDefinition.create(val(abs(dist_mm)))
+    extent = adsk.fusion.DistanceExtentDefinition.create(
+        adsk.core.ValueInput.createByString(expr) if expr else val(abs(dist_mm)))
     inp.setOneSideExtent(extent, direction, adsk.core.ValueInput.createByString(f'{taper_deg} deg'))
     if start_mm is not None:
         inp.startExtent = adsk.fusion.OffsetStartDefinition.create(val(start_mm))
@@ -360,4 +376,34 @@ def rounded_box(comp, x0, x1, y0, y1, z0, z1, r, far_end, name=None):
         coll.add(e)
     inp.edgeSetInputs.addConstantRadiusEdgeSet(coll, val(r), False)
     feats.add(inp)
-    return comp.bRepBodies.item(comp.bRepBodies.count - 1) if b is None else b
+    return b
+
+
+# --- user parameters (make_case's constants) and the input the design was built from -------------------
+COUNTS = {'WHEEL_KNURLS', 'N_FRAMES', 'DRUM_GROOVES'}     # plain numbers, not lengths
+ANGLES = {'DRUM_HELIX', 'STAND_ANGLES'}
+
+
+def parameter_values(params):
+    """input.json params -> {user parameter name: (value, unit)}; tuples become NAME_0, NAME_1, ..."""
+    out = {}
+    for name, v in params.items():
+        unit = '' if name in COUNTS else 'deg' if name in ANGLES else 'mm'
+        if isinstance(v, list):
+            for i, x in enumerate(v):
+                out[f'{name}_{i}'] = (x, unit)
+        else:
+            out[name] = (v, unit)
+    return out
+
+
+def store_input(design, inp):
+    """Keep the input the design now matches (NrskCaseSync compares the next input.json with it)."""
+    set_attr(design, 'input', json.dumps(inp, separators=(',', ':')))
+
+
+def stored_input(design):
+    v = get_attr(design, 'input')
+    if v is None:
+        raise RuntimeError('this design has no stored input: build it with NrskCaseBuild first')
+    return json.loads(v)

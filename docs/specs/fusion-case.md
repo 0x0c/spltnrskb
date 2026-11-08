@@ -12,7 +12,7 @@
 
 - **Fusion の設計**：左右で 1 つずつ、`nrsk-left-case` と `nrsk-right-case` の 2 つの設計がある。設計の種類は Hybrid Design にする。Fusion の Part Design は 1 つの設計に 1 つのコンポーネントしか持てない。設計の中は部品ごとのコンポーネントに分かれ、各部品は履歴（タイムライン）を持つ。寸法はユーザーパラメータ（`FLOOR`、`WALL`、`STANDOFF` など、`make_case.py` の定数と同じ名前）として設計の中に並び、GUI で値を変えると形が追従する。右の設計にだけドラムダイヤルの 3 部品がある。
 - **形の編集**：開発者は Fusion の GUI でフィレットの形や曲面、見た目の細部を直接編集する。正は Fusion のクラウド上の設計で、節目ごとに `.f3d` を書き出してリポジトリにコミットする。
-- **基板の変更への追従**：`case_data.json` が変わったら、`gen/fusion_input.py` で Fusion 向けの入力を作り直し、Fusion で同期スクリプトを実行する。同期スクリプトが書き換えるのは、ユーザーパラメータと参照スケッチだけである。参照スケッチは、基板の外形、穴、キー、コネクタ、OLED、ホイールの位置を受け持つ。GUI で足したフィーチャーは参照スケッチにぶら下がっているので、形はそれに追従する。穴やキーの数が変わったときは、同期スクリプトはどの要素が増減したかを報告して止まり、開発者が GUI で直す。
+- **基板の変更への追従**：`case_data.json` が変わったら、`gen/fusion_input.py` で Fusion 向けの入力を作り直し、Fusion で同期スクリプトを実行する。同期スクリプトが自動で追従させるのは 2 種類である。1 つ目は `make_case.py` の定数（ユーザーパラメータ）の値で、2 つ目はネジ、基板の穴、ゴム足、キー、ドラムのピン、リセットの穴の位置である。位置は、組み立てのときに各要素の id を付けたスケッチの曲線を動かして変える。要素の増減や、外形、ポート、OLED のカバー、ホイール、台座の切り方、ドラムダイヤルの位置の変更は自動では追えない。そのときは何も変えずに違いを報告して止まり、開発者が GUI で直す。
 - **書き出し**：Fusion の書き出しスクリプトが、各部品の STL を `case/fusion/<side>/` に書き出す。`gen/make_case.py` はその STL を読み込み、今と同じ干渉チェックを通す。そのうえで、今と同じ `case/print/` と `case/preview/` の STL と `case_report.json` を書き出す。ビューア、組み立てガイド、レンダー、BOM は今のまま動く。
 - **再現の検証**：移行の途中では、`gen/fusion_diff.py` が Fusion の STL と今のコードの形を部品ごとに比べ、体積の差と外接箱のずれを表にして出す。全部品が閾値に収まったら GUI での編集に切り替える。
 - **Fusion の操作**：Fusion の起動、スクリプトの実行、結果の確認は、Claude が画面操作（computer use）で行う。開発者が手で実行してもよい。
@@ -86,11 +86,11 @@ venv の Python で動く新しいスクリプトで、`Half(side)` を作り、
 
 | スクリプト | 役目 | 実行してよい時期 |
 |---|---|---|
-| `fusion/NrskCaseBuild/` | 空の設計に、全部品のパラメータ、参照スケッチ、フィーチャーを組み立てる | 再現期間のみ。設計に属性 `nrsk.phase = edit` が付いていたら何もせず止まる |
-| `fusion/NrskCaseSync/` | `input.json` を読み、ユーザーパラメータと参照スケッチの座標を書き換える。要素の数や `id` が合わなければ差分を報告して止まる | いつでも |
+| `fusion/NrskCaseBuild/` | 空の設計に、全部品のパラメータ、スケッチ、フィーチャーを組み立て、使った入力を設計の属性に保存する | 再現期間のみ。設計に属性 `nrsk.phase = edit` が付いていたら何もせず止まる |
+| `fusion/NrskCaseSync/` | `input.json` を、設計に保存した前回の入力と比べ、変わったユーザーパラメータの値を書き換え、id の付いたスケッチの曲線を動かし、設計を計算し直す。要素の増減や自動で追えない変更があれば、何も変えずに違いを報告して止まる | いつでも |
 | `fusion/NrskCaseExport/` | 各部品を STL（精細度は高）で `case/fusion/<side>/` に書き出し、設計を `case/fusion/nrsk-<side>-case.f3d` に書き出す | いつでも |
 
-3 本は共通の処理（`input.json` の読み込み、cm への換算、参照スケッチの命名規則）を `fusion/common/nrsk_fusion.py` から読む。参照スケッチの要素には Fusion の属性（`nrsk.id`）で `input.json` の `id` を付け、同期スクリプトはこの属性で要素を探す。
+3 本は共通の処理（`input.json` の読み込み、cm への換算、属性の扱い）を `fusion/common/nrsk_fusion.py` から読む。点の要素を描くスケッチの曲線には Fusion の属性（`nrsk.id`）で `input.json` の `id` を付け、同期スクリプトはこの属性で曲線を探す。寸法が `make_case.py` の定数 1 つで決まる押し出しの距離と円の直径は、ユーザーパラメータの式（`BOSS_D`、`BOSS_D + 2 mm` など）で与える。
 
 ### 部品と書き出す STL
 
@@ -182,7 +182,7 @@ Claude は computer use で Fusion を操作する。スクリプトは「ユー
 | 5 | トレイを組み立てスクリプトに足す（壁、床、ボス、ポートのトンネル、ネジの座ぐりとナットのトラップ、ゴム足のくぼみ、ホイールの開口、OLED のカバーの下の段、底と上の縁のフィレット） | `fusion/NrskCaseBuild/` | 左右のトレイが閾値に収まる。`source=fusion` で `make_case.py` の干渉チェックが全部通る | 3 | 済 |
 | 6 | プリントのプレートを組み立てスクリプトに足す | `fusion/NrskCaseBuild/` | 左右のプレートが閾値に収まり、干渉チェックが通る | 5 | 済 |
 | 7 | ドラム、軸受けブロック、ベゼルを右の組み立てスクリプトに足す。ドラムのローレット（ねじれ角 30°、溝 36 本）はねじれのある掃引で作る | `fusion/NrskCaseBuild/` | 右の 3 部品が閾値に収まり、`check_drum()` が通る | 3 | 済 |
-| 8 | `NrskCaseSync` を作る | `fusion/NrskCaseSync/`、`fusion/common/` | `input.json` のネジ 1 本の座標とパラメータ 1 つを変えて同期すると、Fusion の形が追従し、`fusion_diff.py` が `source=code` の同じ変更と閾値内で一致する。ネジを 1 本足した `input.json` では差分を報告して止まる | 4、5、6、7 | 未 |
+| 8 | `NrskCaseSync` を作る | `fusion/NrskCaseSync/`、`fusion/common/` | `input.json` のネジ 1 本の座標とパラメータ 1 つを変えて同期すると、Fusion の形が追従し、`fusion_diff.py` が `source=code` の同じ変更と閾値内で一致する。ネジを 1 本足した `input.json` では差分を報告して止まる | 4、5、6、7 | 済 |
 | 9 | 編集期間に切り替える。`nrsk.phase = edit` を付け、`.f3d` と STL をコミットする。ホイール、キャップ、台座、ドラム一式の生成コードを削除し、`make_enctest.py` を 3 章のとおりに直す | `gen/make_case.py`、`gen/make_enctest.py`、`case/fusion/`、`case/print/`、`case/preview/` | `NrskCaseBuild` が止まる。`build.sh` の筐体の部分と `gen/build_enctest.sh` が通り、`case/print/` と `enctest/case/` の STL が手順 8 の時点から閾値内で変わらない | 8 | 未 |
 | 10 | 比較検討用スクリプトの扱いを決めて片づける。動かなくなったものは削除し、移行前のコミットで動かす旨を README に書く | `gen/tilt_variants.py` ほか、`README.md` | 残ったスクリプトがすべて実行できる | 9 | 未 |
 | 11 | ドキュメントを更新する。README の筐体の節とファイル構成に、Fusion の設計の場所、基板を変えたときの手順（`fusion_input.py`、同期、書き出し、`make_case.py`）、定数を書き戻す約束を書く | `README.md` | README の手順だけで、基板を変えた後の筐体の更新ができる | 9 | 未 |

@@ -35,14 +35,14 @@ def wheel(comp, inp, log):
         rr = r - depth * (1 - math.cos(teeth * a)) / 2
         pts.append((x + rr * math.cos(a), y + rr * math.sin(a)))
     nf.closed_spline(sk, pts)
-    body = nf.extrude(comp, nf.largest_profile(sk), t, NEW).bodies.item(0)
+    body = nf.extrude(comp, nf.largest_profile(sk), t, NEW, expr='WHEEL_T').bodies.item(0)
     body.name = 'wheel'
 
     # axle bore from below
     sk = comp.sketches.add(comp.xYConstructionPlane)
     sk.name = 'bore'
-    nf.circle(sk, x, y, p['BORE_D'])
-    nf.extrude(comp, sk.profiles.item(0), p['BORE_DEPTH'], CUT, [body])
+    nf.circle(sk, x, y, p['BORE_D'], expr='BORE_D')
+    nf.extrude(comp, sk.profiles.item(0), p['BORE_DEPTH'], CUT, [body], expr='BORE_DEPTH')
 
     # hub: the top lowered within HUB_R (Half.hub_top() - WHEEL_GAP above the wheel bottom)
     hub = p['STANDOFF'] - p['ENC_H'] - p['HUB_CLEAR'] - p['WHEEL_GAP']
@@ -168,9 +168,8 @@ def stand(deg):
         sk = comp.sketches.add(fp)
         sk.name = 'pockets'
         for fid in st['feet']:
-            nf.circle(sk, *feet[fid], p['STAND_POCKET'][0])
-        for pr in sk.profiles:
-            nf.extrude(comp, pr, p['STAND_POCKET'][1] + 0.01, CUT, [body])
+            nf.circle(sk, *feet[fid], p['STAND_POCKET'][0], ident=fid, expr='STAND_POCKET_0')
+        nf.extrude(comp, list(sk.profiles), p['STAND_POCKET'][1] + 0.01, CUT, [body], expr='STAND_POCKET_1 + 0.01 mm')
         log(f'stand {deg}: top {top:.2f}, desk s {s:.4f} c {c:.4f} t {t:.3f}, pockets {", ".join(st["feet"])}')
     return build
 
@@ -192,10 +191,12 @@ def tray(comp, inp, log):
         sk.name = name
         return sk
 
-    def circles(plane, name, pts, d):
+    def circles(plane, name, items, d, expr=None):
+        """items: input.json entries ({id, xy}) or bare (x, y) points."""
         sk = sketch(plane, name)
-        for q in pts:
-            nf.circle(sk, *q, d)
+        for it in items:
+            xy, ident = (it['xy'], it['id']) if isinstance(it, dict) else (it, None)
+            nf.circle(sk, *xy, d, ident=ident, expr=expr)
         return list(sk.profiles)
 
     # block, rounded edges, cavity
@@ -212,24 +213,25 @@ def tray(comp, inp, log):
     nf.extrude(comp, sk.profiles.item(0), wall_top, CUT, [body])
 
     # PCB bosses and their pilot holes (0.6 mm of floor left under them)
-    holes = [h['xy'] for h in inp['pcb_holes']]
-    nf.extrude(comp, circles(floor, 'bosses', holes, p['BOSS_D']), p['STANDOFF'], JOIN, [body])
+    holes = inp['pcb_holes']
+    nf.extrude(comp, circles(floor, 'bosses', holes, p['BOSS_D'], 'BOSS_D'), p['STANDOFF'], JOIN, [body], expr='STANDOFF')
     pilot = nf.plane_at(comp, 0.6)
     pilot.name = 'pilot bottom'
-    nf.extrude(comp, circles(pilot, 'pilot holes', holes, p['PILOT_D']), p['STANDOFF'] + p['FLOOR'] - 0.6, CUT, [body])
+    nf.extrude(comp, circles(pilot, 'pilot holes', holes, p['PILOT_D'], 'PILOT_D'), p['STANDOFF'] + p['FLOOR'] - 0.6, CUT, [body])
 
     # case screws from below (cuts from the bottom face take the depth as it is: the code starts them 0.01 below)
-    screws = [q['xy'] for q in inp['screws']]
-    nf.extrude(comp, circles(xy, 'screw holes', screws, p['SCREW_D']), wall_top + 0.02, CUT, [body])
-    nf.extrude(comp, circles(xy, 'counterbores', screws, p['SCREW_CB'][0]), p['SCREW_CB'][1], CUT, [body])
+    screws = inp['screws']
+    nf.extrude(comp, circles(xy, 'screw holes', screws, p['SCREW_D'], 'SCREW_D'), wall_top + 0.02, CUT, [body])
+    nf.extrude(comp, circles(xy, 'counterbores', screws, p['SCREW_CB'][0], 'SCREW_CB_0'), p['SCREW_CB'][1], CUT, [body],
+               expr='SCREW_CB_1')
     pk = nf.plane_at(comp, wall_top - p['BOSS_POCKET'][1])
     pk.name = 'boss pockets'
-    nf.extrude(comp, circles(pk, 'boss pockets', screws, p['BOSS_POCKET'][0]), p['BOSS_POCKET'][1] + 0.01, CUT, [body])
+    nf.extrude(comp, circles(pk, 'boss pockets', screws, p['BOSS_POCKET'][0], 'BOSS_POCKET_0'), p['BOSS_POCKET'][1] + 0.01, CUT, [body])
     nt = nf.plane_at(comp, wall_top - p['BOSS_POCKET'][1] - p['NUT_TRAP'][1])
     nt.name = 'nut traps'
     sk = sketch(nt, 'nut traps')
-    for x, y in screws:
-        nf.polygon(sk, nf.hexagon_pts(x, y, p['NUT_TRAP'][0] / math.sqrt(3)))
+    for q in screws:
+        nf.polygon(sk, nf.hexagon_pts(*q['xy'], p['NUT_TRAP'][0] / math.sqrt(3)), ident=q['id'])
     nf.extrude(comp, list(sk.profiles), p['NUT_TRAP'][1] + 0.01, CUT, [body])
 
     # wheel opening, and the cap's tiers (the cap is a part of its own)
@@ -274,12 +276,13 @@ def tray(comp, inp, log):
         nf.extrude(comp, sk.profiles.item(0), sign * (depth + 1), CUT, [body])
 
     # wheel post, reset hole, foot recesses
-    nf.extrude(comp, circles(floor, 'wheel post', [(wx, wy)], p['POST_D']), p['WHEEL_GAP'] + p['BORE_DEPTH'] - 0.3,
-               JOIN, [body])
+    nf.extrude(comp, circles(floor, 'wheel post', [(wx, wy)], p['POST_D'], 'POST_D'),
+               p['WHEEL_GAP'] + p['BORE_DEPTH'] - 0.3, JOIN, [body])
     if 'reset' in inp:
-        nf.extrude(comp, circles(xy, 'reset', [inp['reset']['xy']], p['RESET_D']), p['FLOOR'] + 0.02, CUT, [body])
-    feet = [f['xy'] for f in inp['feet']]
-    nf.extrude(comp, circles(xy, 'foot recesses', feet, p['FOOT_D']), p['FOOT_DEPTH'], CUT, [body])
+        nf.extrude(comp, circles(xy, 'reset', [inp['reset']], p['RESET_D'], 'RESET_D'), p['FLOOR'] + 0.02, CUT, [body])
+    feet = inp['feet']
+    nf.extrude(comp, circles(xy, 'foot recesses', feet, p['FOOT_D'], 'FOOT_D'), p['FOOT_DEPTH'], CUT, [body],
+               expr='FOOT_DEPTH')
     log(f"tray: wall top {wall_top:.2f}, {len(holes)} bosses, {len(screws)} screws, {len(inp['slots'])} ports, "
         f"{len(feet)} feet")
 
@@ -300,23 +303,23 @@ def plate(comp, inp, log):
         sk.name = name
         return sk
 
-    def square(sk, x, y, hw, hh):
-        nf.polygon(sk, [(x - hw, y - hh), (x + hw, y - hh), (x + hw, y + hh), (x - hw, y + hh)])
+    def square(sk, x, y, hw, hh, ident):
+        nf.polygon(sk, [(x - hw, y - hh), (x + hw, y - hh), (x + hw, y + hh), (x - hw, y + hh)], ident=ident)
 
     # the plate
     sk = sketch(xy, 'outline')
     nf.rounded_rect(sk, inp['outer_box'])
-    body = nf.extrude(comp, sk.profiles.item(0), pt_, NEW).bodies.item(0)
+    body = nf.extrude(comp, sk.profiles.item(0), pt_, NEW, expr='PLATE_T').bodies.item(0)
     body.name = 'plate'
     nf.fillet(comp, list(nf.face_at_z(body, pt_).edges), p['PLATE_FILLET'])
     sk = sketch(xy, 'switch cut-outs')
     w, hh, dy = p['STAB_CUT']
     for k in inp['keys']:
         x, y = k['xy']
-        square(sk, x, y, p['SWITCH_CUT'] / 2, p['SWITCH_CUT'] / 2)
+        square(sk, x, y, p['SWITCH_CUT'] / 2, p['SWITCH_CUT'] / 2, k['id'])
         if k['w'] >= 2:                   # stabilizer housings (board y down: dy below the key = -dy here)
             for sx in (-1, 1):
-                square(sk, x + sx * p['STAB_X'], y - dy, w / 2, hh / 2)
+                square(sk, x + sx * p['STAB_X'], y - dy, w / 2, hh / 2, k['id'])
     if 'oled' in inp:
         nf.rounded_rect(sk, nf.offset_box(inp['oled']['cover'], p['COVER_FIT']))
     if 'drum' in inp:
@@ -329,19 +332,19 @@ def plate(comp, inp, log):
     bottom.name = 'web cuts'
     sk = sketch(xy, 'web')
     nf.rounded_rect(sk, nf.offset_box(inp['inner'], -0.3))
-    web = nf.extrude(comp, sk.profiles.item(0), -p['RIB_T'], NEW).bodies.item(0)
+    web = nf.extrude(comp, sk.profiles.item(0), -p['RIB_T'], NEW, expr='RIB_T').bodies.item(0)
     sk = sketch(bottom, 'web cuts')
     g = p['SWITCH_CUT'] / 2 + 0.6
     for k in inp['keys']:
         x, y = k['xy']
-        square(sk, x, y, g, g)
+        square(sk, x, y, g, g, k['id'])
         if k['w'] >= 2:
             for sx in (-1, 1):
-                square(sk, x + sx * p['STAB_X'], y - dy, w / 2 + 1.0, hh / 2 + 1.0)
+                square(sk, x + sx * p['STAB_X'], y - dy, w / 2 + 1.0, hh / 2 + 1.0, k['id'])
     if 'oled' in inp:
         nf.rounded_rect(sk, nf.offset_box(inp['oled']['cover'], 1.0))
     for h in inp['pcb_holes']:
-        nf.circle(sk, *h['xy'], p['BOSS_D'] + 2.0)
+        nf.circle(sk, *h['xy'], p['BOSS_D'] + 2.0, ident=h['id'], expr='BOSS_D + 2 mm')
     if 'drum' in inp:
         for poly in inp['drum']['web_cut']:
             nf.polygon(sk, [tuple(q) for q in poly])
@@ -349,15 +352,15 @@ def plate(comp, inp, log):
     nf.combine(comp, body, [b for b in comp.bRepBodies if b != body], JOIN)
 
     # bosses with heat-set inserts under the case screws (the screws come from below)
-    screws = [q['xy'] for q in inp['screws']]
+    screws = inp['screws']
     sk = sketch(xy, 'plate bosses')
     for q in screws:
-        nf.circle(sk, *q, p['PLATE_BOSS'][0])
-    nf.extrude(comp, list(sk.profiles), -p['PLATE_BOSS'][1], JOIN, [body])
+        nf.circle(sk, *q['xy'], p['PLATE_BOSS'][0], ident=q['id'], expr='PLATE_BOSS_0')
+    nf.extrude(comp, list(sk.profiles), -p['PLATE_BOSS'][1], JOIN, [body], expr='PLATE_BOSS_1')
     sk = sketch(xy, 'inserts')
     for q in screws:
-        nf.circle(sk, *q, p['INSERT_D'])
-    nf.extrude(comp, list(sk.profiles), -(p['PLATE_BOSS'][1] + 0.01), CUT, [body])
+        nf.circle(sk, *q['xy'], p['INSERT_D'], ident=q['id'], expr='INSERT_D')
+    nf.extrude(comp, list(sk.profiles), -(p['PLATE_BOSS'][1] + 0.01), CUT, [body], expr='PLATE_BOSS_1 + 0.01 mm')
     log(f"plate: {len(inp['keys'])} keys, {len(screws)} bosses, web {p['RIB_T']} under")
 
 
@@ -463,8 +466,8 @@ def drum_block(comp, inp, log):
     sk = comp.sketches.add(comp.xYConstructionPlane)
     sk.name = 'pegs'
     for peg in d['pegs']:
-        nf.circle(sk, *peg['xy'], p['BLOCK_PEG'][0])
-    nf.extrude(comp, list(sk.profiles), -p['BLOCK_PEG'][1], JOIN, [body])
+        nf.circle(sk, *peg['xy'], p['BLOCK_PEG'][0], ident=peg['id'], expr='BLOCK_PEG_0')
+    nf.extrude(comp, list(sk.profiles), -p['BLOCK_PEG'][1], JOIN, [body], expr='BLOCK_PEG_1')
     log(f'drum block: x {ox + bx0:.3f} .. {ox + bx1:.3f}, slot to {slot_x1:.3f}')
 
 
@@ -492,7 +495,7 @@ def drum_bezel(comp, inp, log):
     sk = comp.sketches.add(ll)
     sk.name = 'ledge notches'
     for h in inp['pcb_holes']:
-        nf.circle(sk, *h['xy'], p['BOSS_D'] + 2.0)
+        nf.circle(sk, *h['xy'], p['BOSS_D'] + 2.0, ident=h['id'], expr='BOSS_D + 2 mm')
     nf.extrude(comp, list(sk.profiles), p['BEZEL_LEDGE_T'] + 0.1, CUT, [ledge])
     nf.combine(comp, body, [ledge], JOIN)
 
