@@ -10,7 +10,7 @@
 
 ### 完成後の振る舞い
 
-- **Fusion の設計**：左右で 1 つずつ、`nrsk-left-case` と `nrsk-right-case` の 2 つの設計がある。設計の中は部品ごとのコンポーネントに分かれ、各部品は履歴（タイムライン）を持つ。寸法はユーザーパラメータ（`FLOOR`、`WALL`、`STANDOFF` など、`make_case.py` の定数と同じ名前）として設計の中に並び、GUI で値を変えると形が追従する。右の設計にだけドラムダイヤルの 3 部品がある。
+- **Fusion の設計**：左右で 1 つずつ、`nrsk-left-case` と `nrsk-right-case` の 2 つの設計がある。設計の種類は Hybrid Design にする。Fusion の Part Design は 1 つの設計に 1 つのコンポーネントしか持てない。設計の中は部品ごとのコンポーネントに分かれ、各部品は履歴（タイムライン）を持つ。寸法はユーザーパラメータ（`FLOOR`、`WALL`、`STANDOFF` など、`make_case.py` の定数と同じ名前）として設計の中に並び、GUI で値を変えると形が追従する。右の設計にだけドラムダイヤルの 3 部品がある。
 - **形の編集**：開発者は Fusion の GUI でフィレットの形や曲面、見た目の細部を直接編集する。正は Fusion のクラウド上の設計で、節目ごとに `.f3d` を書き出してリポジトリにコミットする。
 - **基板の変更への追従**：`case_data.json` が変わったら、`gen/fusion_input.py` で Fusion 向けの入力を作り直し、Fusion で同期スクリプトを実行する。同期スクリプトが書き換えるのは、ユーザーパラメータと参照スケッチだけである。参照スケッチは、基板の外形、穴、キー、コネクタ、OLED、ホイールの位置を受け持つ。GUI で足したフィーチャーは参照スケッチにぶら下がっているので、形はそれに追従する。穴やキーの数が変わったときは、同期スクリプトはどの要素が増減したかを報告して止まり、開発者が GUI で直す。
 - **書き出し**：Fusion の書き出しスクリプトが、各部品の STL を `case/fusion/<side>/` に書き出す。`gen/make_case.py` はその STL を読み込み、今と同じ干渉チェックを通す。そのうえで、今と同じ `case/print/` と `case/preview/` の STL と `case_report.json` を書き出す。ビューア、組み立てガイド、レンダー、BOM は今のまま動く。
@@ -134,7 +134,7 @@ Fusion は、今の `Half` のメソッドが返す形と同じ座標系で、�
 | `ratio` | `sym_diff / vol_code` |
 | `bbox_dz` | 外接箱の 6 つの座標のずれの最大値（mm） |
 
-合格の閾値は、`ratio` が 0.5％以下、`bbox_dz` が 0.05 mm 以下を出発点とする。今のコードの円は 96 分割（`gen/make_case.py:29`）、底の丸めは 8 段の近似なので、正確なフィレットと円を持つ Fusion の形とは、その近似の分だけ必ず差が出る。ステップ 3 で最初の部品を比べたときに近似の誤差の大きさを測り、部品ごとの閾値を決め直す。閾値を超えた部品は、差の大きい場所がわかるよう、対称差の STL を `case/fusion/<side>/diff/` に書き出す。
+合格の閾値は、`ratio` が 0.5％以下、`bbox_dz` が 0.05 mm 以下を出発点とする。今のコードの円は 96 分割（`gen/make_case.py:29`）、底の丸めは 8 段の近似なので、正確なフィレットと円を持つ Fusion の形とは、その近似の分だけ必ず差が出る。ステップ 3 で最初の部品のホイールを比べたところ、`ratio` は 0.056％、`bbox_dz` は 0 mm だった。差は今のコードの近似（歯の形の折れ線、48 角形の穴、24 角形のピンの円錐）から来ており、閾値の 9 分の 1 に収まる。そのため閾値は出発点のまま据え置き、フィレットの近似が大きいトレイと台座でもう一度確かめる。閾値を超えた部品は、差の大きい場所がわかるよう、対称差の STL を `case/fusion/<side>/diff/` に書き出す。
 
 ### パラメータの持ち方
 
@@ -177,7 +177,7 @@ Claude は computer use で Fusion を操作する。スクリプトは「ユー
 |---|---|---|---|---|---|
 | 1 | Fusion をインストールしてサインインし、`fusion/` のフォルダを「スクリプトとアドイン」に登録する。Claude が computer use で Fusion を操作できることを確かめる | なし | 空のスクリプトを画面操作で実行し、ログファイルが書き出される | — | 済 |
 | 2 | `gen/fusion_input.py` を作り、`input.json` を左右で書き出す | `gen/fusion_input.py`、`case/fusion/<side>/input.json` | 3 章の表のキーがすべてあり、`id` が重複しない。`Half` の値と一致することを確かめるテストが通る | — | 済 |
-| 3 | `make_case.py` に `source` と STL の読み込みを足し、`gen/fusion_diff.py` を作る。最初の部品としてホイールを `NrskCaseBuild` で作って書き出し、比べる。近似の誤差を測って部品ごとの閾値を決める | `gen/make_case.py`、`gen/fusion_diff.py`、`fusion/common/`、`fusion/NrskCaseBuild/`、`fusion/NrskCaseExport/` | `NRSK_CASE_SOURCE=code` で今と同じ出力になる（`case/` の差分がない）。ホイールが閾値に収まり、閾値を仕様書に書き戻す | 1、2 | 未 |
+| 3 | `make_case.py` に `source` と STL の読み込みを足し、`gen/fusion_diff.py` を作る。最初の部品としてホイールを `NrskCaseBuild` で作って書き出し、比べる。近似の誤差を測って部品ごとの閾値を決める | `gen/make_case.py`、`gen/fusion_diff.py`、`fusion/common/`、`fusion/NrskCaseBuild/`、`fusion/NrskCaseExport/` | `NRSK_CASE_SOURCE=code` で今と同じ出力になる（`case/` の差分がない）。ホイールが閾値に収まり、閾値を仕様書に書き戻す | 1、2 | 済 |
 | 4 | ホイールのキャップと台座 3 種を組み立てスクリプトに足す | `fusion/NrskCaseBuild/` | 左右の 4 部品が閾値に収まる | 3 | 未 |
 | 5 | トレイを組み立てスクリプトに足す（壁、床、ボス、ポートのトンネル、ネジの座ぐりとナットのトラップ、ゴム足のくぼみ、ホイールの開口、OLED のカバーの下の段、底と上の縁のフィレット） | `fusion/NrskCaseBuild/` | 左右のトレイが閾値に収まる。`source=fusion` で `make_case.py` の干渉チェックが全部通る | 3 | 未 |
 | 6 | プリントのプレートを組み立てスクリプトに足す | `fusion/NrskCaseBuild/` | 左右のプレートが閾値に収まり、干渉チェックが通る | 5 | 未 |

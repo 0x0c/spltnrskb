@@ -168,6 +168,12 @@ HOOD_IN_R = 0.8                       # both hoods: inner radius of the top corn
 HOOD_OUT_R = BLOCK_R + BEZEL_CLEAR + BEZEL_WALL   # both hoods: outer radius (2.3), concentric with the block's corners
 BEZEL_FILLET = 1.2                    # concave fillet where each hood meets the flange
 BEZEL_FLAT = 0.8                      # flat flange left beyond the fillet's foot at the short ends
+# Fusion (docs/specs/fusion-case.md): the parts the Fusion designs make, by Half method -> exported STL name
+FUSION_SIDES = ('left', 'right')
+FUSION_DIR = os.path.join(OUT, 'fusion')
+DEFAULT_SOURCE = 'code'      # 'fusion' once every part is reproduced (step 9)
+FUSION_PARTS = {'tray': 'tray', 'plate3d_printed': 'plate', 'wheel3d': 'wheel', 'wheel_cap': 'wheel-cap',
+                'drum3d': 'drum', 'drum_block3d': 'drum-block', 'drum_bezel3d': 'drum-bezel'}
 
 
 def cs_poly(pts):
@@ -241,9 +247,16 @@ def hexagon(af, h):
 
 
 class Half:
-    def __init__(self, side):
+    def __init__(self, side, source=None):
         self.d = json.load(open(os.path.join(ROOT, side, 'case_data.json')))
         self.side = side
+        # where the 3D printed parts come from (docs/specs/fusion-case.md): 'fusion' = the STLs the Fusion design
+        # exported to case/fusion/<side>/, 'code' = built here. Only the keyboard halves have a Fusion design.
+        if side not in FUSION_SIDES:
+            self.source = 'code'
+        else:
+            self.source = source or os.environ.get('NRSK_CASE_SOURCE') or DEFAULT_SOURCE
+        assert self.source in ('code', 'fusion'), self.source
         o = self.d['outline']
         self.pcb = (o['x0'], o['y0'], o['x1'], o['y1'], o['r'])
         x0, y0, x1, y1, r = self.pcb
@@ -918,6 +931,65 @@ class Half:
         x0, y0, x1, y1, r = self.pcb
         cs = rounded_rect(x0, y0, x1, y1, r) - self.holes(self.d['holes'], 2.2)
         return Manifold.extrude(cs, PCB_T)
+
+    # parts from the Fusion design -------------------------------------------------------
+    def fusion_part(self, name):
+        """case/fusion/<side>/<name>.stl as a Manifold (in the frame the matching Half method uses)."""
+        cache = self.__dict__.setdefault('_fusion', {})
+        if name not in cache:
+            path = os.path.join(FUSION_DIR, self.side, f'{name}.stl')
+            if not os.path.exists(path):
+                raise FileNotFoundError(f'{path}: export it from Fusion (NrskCaseExport), or set NRSK_CASE_SOURCE=code')
+            m = read_stl(path)
+            if str(m.status()) != 'Error.NoError' or m.volume() <= 0:
+                raise ValueError(f'{path}: not a closed solid ({m.status()})')
+            cache[name] = m
+        return cache[name]
+
+
+def _fusion_or_code(method, name):
+    def wrapped(self):
+        return self.fusion_part(name) if self.source == 'fusion' else method(self)
+    wrapped.__name__, wrapped.__doc__ = method.__name__, method.__doc__
+    return wrapped
+
+
+def _stand_fusion_or_code(method):
+    def wrapped(self, deg, ring=False, lift=0.0):
+        if self.source == 'code':
+            return method(self, deg, ring, lift)
+        if ring or lift:
+            raise ValueError('the Fusion design has only the U stands: use Half(side, source="code") for the study')
+        y_cut = -(self.feet()[4][1] + STAND_PAST)
+        return self.fusion_part(f'stand-{deg}'), [f for f in self.feet() if -f[1] > y_cut]
+    wrapped.__name__, wrapped.__doc__ = method.__name__, method.__doc__
+    return wrapped
+
+
+for _m, _name in FUSION_PARTS.items():
+    setattr(Half, _m, _fusion_or_code(getattr(Half, _m), _name))
+Half.stand = _stand_fusion_or_code(Half.stand)
+
+
+def read_stl(path, tol=1e-4):
+    """Binary or ASCII STL -> Manifold, welding the triangle soup's coincident corners (within tol mm)."""
+    import numpy as np
+    from manifold3d import Mesh
+    with open(path, 'rb') as f:
+        data = f.read()
+    n = struct.unpack_from('<I', data, 80)[0] if len(data) >= 84 else -1
+    if len(data) == 84 + 50 * n:
+        rec = np.frombuffer(data, dtype=np.dtype([('n', '<f4', 3), ('v', '<f4', (3, 3)), ('a', '<u2')]), offset=84, count=n)
+        tri = rec['v'].astype(np.float64)
+    else:
+        vs = [list(map(float, ln.split()[1:4])) for ln in data.decode().splitlines() if ln.strip().startswith('vertex')]
+        tri = np.array(vs, dtype=np.float64).reshape(-1, 3, 3)
+    pts = tri.reshape(-1, 3)
+    keys = np.round(pts / tol).astype(np.int64)
+    _, first, inv = np.unique(keys, axis=0, return_index=True, return_inverse=True)
+    faces = inv.reshape(-1, 3).astype(np.uint32)
+    faces = faces[(faces[:, 0] != faces[:, 1]) & (faces[:, 1] != faces[:, 2]) & (faces[:, 0] != faces[:, 2])]
+    return Manifold(Mesh(vert_properties=pts[first].astype(np.float32), tri_verts=faces))
 
 
 # --- writers -----------------------------------------------------------------------
