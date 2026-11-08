@@ -182,3 +182,61 @@ def combine(comp, target, tools, op):
     inp.operation = op
     return comp.features.combineFeatures.add(inp)
 
+
+
+def rounded_rect(sketch, box):
+    """Closed rounded rectangle from an input.json box {x0, y0, x1, y1, r} (r may be 0 or missing)."""
+    x0, y0, x1, y1, r = box['x0'], box['y0'], box['x1'], box['y1'], box.get('r', 0.0)
+    if r <= 1e-9:
+        return polygon(sketch, [(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
+    lines, arcs = sketch.sketchCurves.sketchLines, sketch.sketchCurves.sketchArcs
+    b = lines.addByTwoPoints(pt(x0 + r, y0), pt(x1 - r, y0))
+    rt = lines.addByTwoPoints(pt(x1, y0 + r), pt(x1, y1 - r))
+    t = lines.addByTwoPoints(pt(x1 - r, y1), pt(x0 + r, y1))
+    lf = lines.addByTwoPoints(pt(x0, y1 - r), pt(x0, y0 + r))
+    k = r * (1 - 2 ** -0.5)
+    arcs.addByThreePoints(b.endSketchPoint, pt(x1 - k, y0 + k), rt.startSketchPoint)
+    arcs.addByThreePoints(rt.endSketchPoint, pt(x1 - k, y1 - k), t.startSketchPoint)
+    arcs.addByThreePoints(t.endSketchPoint, pt(x0 + k, y1 - k), lf.startSketchPoint)
+    arcs.addByThreePoints(lf.endSketchPoint, pt(x0 + k, y0 + k), b.startSketchPoint)
+    return [b, rt, t, lf]
+
+
+def offset_box(box, d):
+    """Grow (d > 0) or shrink a rounded box; the corner radius changes by d and stops at 0 (sharp)."""
+    return dict(x0=box['x0'] - d, y0=box['y0'] - d, x1=box['x1'] + d, y1=box['y1'] + d,
+                r=max(box.get('r', 0.0) + d, 0.0))
+
+
+def face_at_z(body, z_mm, tol=1e-4):
+    """The planar face of body lying in the plane z = z_mm, facing up or down (the largest if several)."""
+    best = None
+    for f in body.faces:
+        bb = f.boundingBox
+        if abs(bb.minPoint.z - cm(z_mm)) < tol and abs(bb.maxPoint.z - cm(z_mm)) < tol:
+            if best is None or f.area > best.area:
+                best = f
+    if best is None:
+        raise RuntimeError(f'{body.name}: no face at z = {z_mm}')
+    return best
+
+
+def fillet(comp, edges, r_mm):
+    coll = adsk.core.ObjectCollection.create()
+    for e in edges:
+        coll.add(e)
+    feats = comp.features.filletFeatures
+    inp = feats.createInput()
+    inp.edgeSetInputs.addConstantRadiusEdgeSet(coll, val(r_mm), True)
+    return feats.add(inp)
+
+
+
+def polygon_model(sketch, pts):
+    """Closed polygon through model points (x, y, z in mm), on any sketch plane."""
+    lines = sketch.sketchCurves.sketchLines
+    sp = [sketch.modelToSketchSpace(pt(*q)) for q in pts]
+    out = [lines.addByTwoPoints(sp[i], sp[(i + 1) % len(sp)]) for i in range(len(sp))]
+    for a, b in zip(out, out[1:] + out[:1]):
+        sketch.geometricConstraints.addCoincident(a.endSketchPoint, b.startSketchPoint)
+    return out

@@ -46,6 +46,31 @@ def clear(design, log):
     log('cleared the previous build')
 
 
+def project(app):
+    """The project to save in: the active one, else the first of the active hub (the data panel may not have
+    picked one yet, and then activeProject raises)."""
+    try:
+        return app.data.activeProject
+    except RuntimeError:
+        return app.data.activeHub.dataProjects.item(0)
+
+
+def save(app, side, log):
+    """Save the design in the cloud as nrsk-<side>-case (the cloud design is the source of truth). A failure is
+    logged, not raised: the parts are built, and the design can be saved by hand."""
+    doc, name = app.activeDocument, f'nrsk-{side}-case'
+    try:
+        if not doc.isSaved:
+            prj = project(app)
+            doc.saveAs(name, prj.rootFolder, 'nrsk case (docs/specs/fusion-case.md)', '')
+            log(f'saved as {name} in {prj.name}')
+        else:
+            doc.save('NrskCaseBuild')
+            log(f'saved {doc.name}')
+    except Exception as e:
+        log(f'WARNING not saved ({e}): save it as {name} by hand')
+
+
 def body(app, design, log):
     nf = importlib.reload(nrsk_fusion)
     importlib.reload(parts)
@@ -69,6 +94,7 @@ def body(app, design, log):
         made.append(name)
     nf.set_attr(design, 'phase', 'reproduce')
     log('built: ' + ', '.join(made))
+    save(app, side, log)
     return f'{side}: built {", ".join(made)}'
 
 

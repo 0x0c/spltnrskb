@@ -178,7 +178,7 @@ Claude は computer use で Fusion を操作する。スクリプトは「ユー
 | 1 | Fusion をインストールしてサインインし、`fusion/` のフォルダを「スクリプトとアドイン」に登録する。Claude が computer use で Fusion を操作できることを確かめる | なし | 空のスクリプトを画面操作で実行し、ログファイルが書き出される | — | 済 |
 | 2 | `gen/fusion_input.py` を作り、`input.json` を左右で書き出す | `gen/fusion_input.py`、`case/fusion/<side>/input.json` | 3 章の表のキーがすべてあり、`id` が重複しない。`Half` の値と一致することを確かめるテストが通る | — | 済 |
 | 3 | `make_case.py` に `source` と STL の読み込みを足し、`gen/fusion_diff.py` を作る。最初の部品としてホイールを `NrskCaseBuild` で作って書き出し、比べる。近似の誤差を測って部品ごとの閾値を決める | `gen/make_case.py`、`gen/fusion_diff.py`、`fusion/common/`、`fusion/NrskCaseBuild/`、`fusion/NrskCaseExport/` | `NRSK_CASE_SOURCE=code` で今と同じ出力になる（`case/` の差分がない）。ホイールが閾値に収まり、閾値を仕様書に書き戻す | 1、2 | 済 |
-| 4 | ホイールのキャップと台座 3 種を組み立てスクリプトに足す | `fusion/NrskCaseBuild/` | 左右の 4 部品が閾値に収まる | 3 | 未 |
+| 4 | ホイールのキャップと台座 3 種を組み立てスクリプトに足す | `fusion/NrskCaseBuild/` | 左右の 4 部品が閾値に収まる | 3 | 済 |
 | 5 | トレイを組み立てスクリプトに足す（壁、床、ボス、ポートのトンネル、ネジの座ぐりとナットのトラップ、ゴム足のくぼみ、ホイールの開口、OLED のカバーの下の段、底と上の縁のフィレット） | `fusion/NrskCaseBuild/` | 左右のトレイが閾値に収まる。`source=fusion` で `make_case.py` の干渉チェックが全部通る | 3 | 未 |
 | 6 | プリントのプレートを組み立てスクリプトに足す | `fusion/NrskCaseBuild/` | 左右のプレートが閾値に収まり、干渉チェックが通る | 5 | 未 |
 | 7 | ドラム、軸受けブロック、ベゼルを右の組み立てスクリプトに足す。ドラムのローレット（ねじれ角 30°、溝 36 本）はねじれのある掃引で作る | `fusion/NrskCaseBuild/` | 右の 3 部品が閾値に収まり、`check_drum()` が通る | 3 | 未 |
