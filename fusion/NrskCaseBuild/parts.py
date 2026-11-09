@@ -73,22 +73,36 @@ def wheel(comp, inp, log):
 
 
 def _heights(p):
-    """The tray's heights make_case uses round the wheel: wall top, wheel opening top (z1), cap ledge (z_l)."""
+    """The tray's heights round the wheel (as make_case): wall top and the wheel opening's top (z1)."""
     wall_top = p['FLOOR'] + p['STANDOFF'] + p['PCB_T'] + p['PLATE_GAP']
     wz0 = p['FLOOR'] + p['WHEEL_GAP']
-    z1 = wz0 - 0.3 + p['WHEEL_T'] + 0.7
-    return wall_top, z1, wall_top - p['CAP_LEDGE']
+    return wall_top, wz0 - 0.3 + p['WHEEL_T'] + 0.7
+
+
+def cap_tool(comp, inp, box, name):
+    """The cap's region as a body: the box (input.json 'cap') from the opening's top to the wall top, less the
+    cavity, so it only takes in the wall."""
+    c = inp['cap']
+    plane = nf.plane_at(comp, c['z_bottom'])
+    plane.name = f'{name} bottom'
+    sk = comp.sketches.add(plane)
+    sk.name = name
+    nf.rounded_rect(sk, box)
+    tool = nf.extrude(comp, sk.profiles.item(0), c['z_top'] - c['z_bottom'], NEW).bodies.item(0)
+    sk = comp.sketches.add(plane)
+    sk.name = f'{name} cavity'
+    nf.rounded_rect(sk, inp['inner'])
+    nf.extrude(comp, sk.profiles.item(0), c['z_top'] - c['z_bottom'] + 0.1, CUT, [tool])
+    return tool
 
 
 def wheel_cap(comp, inp, log):
-    """Half.wheel_cap(): the wall above the wheel opening, a separate stepped part dropped in from above. It is the
-    tray's wall (outer block with the small top round, minus the cavity) within the two tiers round the opening,
-    each CAP_FIT smaller: the opening's own circle up to the ledge, the shoulder CAP_SHOULDER wider above it."""
+    """Half.wheel_cap(): the wall over the wheel opening, a separate part dropped in from above. The corner of the
+    wall (outer block with the small top round, less the cavity), cut off by two flat faces square to the walls
+    where the opening leaves each wall's inner edge, each CAP_FIT short of the tray's (input.json 'cap')."""
     p = inp['params']
-    wall_top, z1, z_l = _heights(p)
-    (x, y), r = inp['wheel']['xy'], inp['wheel']['r']
-    rc = r + p['WHEEL_CUT']
-
+    wall_top = p['FLOOR'] + p['STANDOFF'] + p['PCB_T'] + p['PLATE_GAP']
+    z1 = inp['cap']['z_bottom']
     plane = nf.plane_at(comp, z1)
     plane.name = 'opening top'
     sk = comp.sketches.add(plane)
@@ -96,26 +110,18 @@ def wheel_cap(comp, inp, log):
     nf.rounded_rect(sk, inp['outer_box'])
     block = nf.extrude(comp, sk.profiles.item(0), wall_top - z1, NEW).bodies.item(0)
     block.name = 'wheel cap'
-    top = nf.face_at_z(block, wall_top)
-    nf.fillet(comp, list(top.edges), p['TRAY_TOP_FILLET'])
-    sk = comp.sketches.add(plane)
-    sk.name = 'cavity'
-    nf.rounded_rect(sk, inp['inner'])
-    nf.extrude(comp, sk.profiles.item(0), wall_top - z1 + 0.1, CUT, [block])
+    nf.fillet(comp, list(nf.face_at_z(block, wall_top).edges), p['TRAY_TOP_FILLET'])
+    tool = cap_tool(comp, inp, inp['cap']['cap'], 'cap region')
+    nf.combine(comp, block, [tool], INTERSECT)
+    log(f"wheel cap: z {z1:.2f} .. {wall_top:.2f}, ends at {inp['cap']['cap']}")
 
-    sk = comp.sketches.add(plane)
-    sk.name = 'lower tier'
-    nf.circle(sk, x, y, 2 * (rc - p['CAP_FIT']))
-    tiers = nf.extrude(comp, sk.profiles.item(0), z_l - z1, NEW).bodies.item(0)
-    ledge = nf.plane_at(comp, z_l)
-    ledge.name = 'cap ledge'
-    sk = comp.sketches.add(ledge)
-    sk.name = 'shoulder'
-    nf.circle(sk, x, y, 2 * (rc + p['CAP_SHOULDER'] - p['CAP_FIT']))
-    shoulder = nf.extrude(comp, sk.profiles.item(0), p['CAP_LEDGE'] + 0.01, NEW).bodies.item(0)
-    nf.combine(comp, tiers, [shoulder], JOIN)
-    nf.combine(comp, block, [tiers], INTERSECT)
-    log(f'wheel cap: opening r {rc:.2f}, z {z1:.2f} .. {wall_top:.2f}, ledge at {z_l:.2f}')
+
+def cut_cap_from_tray(comp, inp, log):
+    """Take the cap's place (input.json 'cap' tray_cut) out of the tray's wall."""
+    body = comp.bRepBodies.item(0)
+    tool = cap_tool(comp, inp, inp['cap']['tray_cut'], 'cap seat')
+    nf.combine(comp, body, [tool], CUT)
+    log(f"tray: cap seat cut at {inp['cap']['tray_cut']}")
 
 
 def stand(deg):
@@ -177,10 +183,10 @@ def stand(deg):
 def tray(comp, inp, log):
     """Half.tray(): the printed tray. Outer block with the rounded bottom (TRAY_FILLET) and top (TRAY_TOP_FILLET)
     edges, the cavity, PCB bosses with pilot holes, case screws from below (clearance hole, counterbore, pocket and
-    nut trap at the wall top), the wheel opening with the cap's tiers taken out, the post the wheel turns on, the
+    nut trap at the wall top), the wheel opening, the post the wheel turns on, the
     step under the OLED cover, the USB-C tunnels and openings, the reset hole and the foot recesses."""
     p = inp['params']
-    wall_top, z1, z_l = _heights(p)
+    wall_top, z1 = _heights(p)
     z_pcb = p['FLOOR'] + p['STANDOFF']
     (wx, wy), wr = inp['wheel']['xy'], inp['wheel']['r']
     rc = wr + p['WHEEL_CUT']
@@ -239,14 +245,6 @@ def tray(comp, inp, log):
     wo = nf.plane_at(comp, wz0 - 0.3)
     wo.name = 'wheel opening'
     nf.extrude(comp, circles(wo, 'wheel opening', [(wx, wy)], 2 * rc), p['WHEEL_T'] + 0.7, CUT, [body])
-    t1 = nf.plane_at(comp, z1)
-    t1.name = 'cap bottom'
-    nf.extrude(comp, circles(t1, 'cap lower tier', [(wx, wy)], 2 * rc), z_l - z1, CUT, [body])
-    t2 = nf.plane_at(comp, z_l)
-    t2.name = 'cap ledge'
-    nf.extrude(comp, circles(t2, 'cap shoulder', [(wx, wy)], 2 * (rc + p['CAP_SHOULDER'])), p['CAP_LEDGE'] + 0.1,
-               CUT, [body])
-
     # step for the thicker OLED cover
     if 'oled' in inp:
         cp = nf.plane_at(comp, wall_top - p['WALL_POCKET'])
@@ -283,6 +281,7 @@ def tray(comp, inp, log):
     feet = inp['feet']
     nf.extrude(comp, circles(xy, 'foot recesses', feet, p['FOOT_D'], 'FOOT_D'), p['FOOT_DEPTH'], CUT, [body],
                expr='FOOT_DEPTH')
+    cut_cap_from_tray(comp, inp, log)
     log(f"tray: wall top {wall_top:.2f}, {len(holes)} bosses, {len(screws)} screws, {len(inp['slots'])} ports, "
         f"{len(feet)} feet")
 

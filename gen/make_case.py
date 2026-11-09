@@ -67,17 +67,12 @@ NUT_TRAP = (4.15, 1.8)       # hex trap for an M2 nut under the pocket (across f
 RESET_D = 3.0
 BUTTON_HOLE = 4.5            # plate hole for a tall tact switch's actuator (3.5 mm) poking through (encoder test board)
 BUTTON_KEEP = 3.6            # printed plate's web kept off the 6 mm switch body (half size)
-# 3D print: the wall above the wheel opening is a separate cap, so the wheel can be dropped in from above
-CAP_SHOULDER = 2.0           # cap's top tier overhangs the opening by this much and rests on the wall
-CAP_LEDGE = 3.0              # thickness of that top tier
-CAP_FIT = 0.15
-# the cap's anti-rotation lug: the cap is cut from the wall by circles, so it could turn in its round seat. A lug
-# hangs from the cap's lower tier where the outer side wall's centre line crosses the opening (in front of the wheel:
-# behind it lies outside the rounded corner, and on the back wall the left half's link port tunnel runs), reaching
-# under the ledge into a slot in the tray: width across, reach past the opening's edge, height under the ledge.
-# CAP_KEY_SHIFT turns it toward the back, away from the case screw's pocket and nut trap in front (1.3 mm clear)
-CAP_KEY = (2.5, 1.2, 3.0)
-CAP_KEY_SHIFT = 4.0
+# 3D print: the wall above the wheel opening is a separate cap, so the wheel can be dropped in from above. The cap is
+# the corner of the wall, cut off by two flat faces square to the walls where the opening leaves each wall's inner
+# edge: its ends bear on the tray, so it cannot turn, and outside the opening it sits on the wall below
+CAP_SHOULDER = 2.0           # case screws stay this far (plus an insert's radius) past the opening, as for the old
+                             # stepped cap, whose top tier reached this far
+CAP_FIT = 0.15               # the cap's end faces to the tray's
 RIB_T = 2.0                  # all-printed variant: web under the printed plate (PCB top + 1.5)
 TRAY_FILLET = 2.0     # 3D-printed tray: rounded bottom outer edge
 TRAY_TOP_FILLET = 0.6 # small round on the top outer edge, under the plate
@@ -590,16 +585,6 @@ class Half:
         (wx, wy), wr = self.wheel_xy()
         wz0 = FLOOR + WHEEL_GAP
         body = body - Manifold.extrude(self.wheel_cut(), WHEEL_T + 0.7).translate((0, 0, wz0 - 0.3))
-        # wall above the opening -> separate cap (stepped, rests on a ledge, held down by the plate)
-        z1 = wz0 - 0.3 + WHEEL_T + 0.7
-        cut = self.wheel_cut()
-        z_l = wall_top - CAP_LEDGE
-
-        def tiers(grow):
-            return (Manifold.extrude(cut.offset(grow, JoinType.Round), z_l - z1).translate((0, 0, z1)) +
-                    Manifold.extrude(cut.offset(CAP_SHOULDER + grow, JoinType.Round), CAP_LEDGE + 0.01).translate((0, 0, z_l)))
-        self._cap = body ^ (tiers(-CAP_FIT) + self.cap_key(-CAP_FIT))
-        body = body - tiers(0.0) - self.cap_key(0.0)
         # pocket for the thicker cover
         if self.window_box is not None:
             body = body - Manifold.extrude(self.cover_shape().offset(COVER_FIT, JoinType.Round), WALL_POCKET + 0.01).translate(
@@ -619,37 +604,35 @@ class Half:
             body = body - Manifold.cylinder(FLOOR + 0.02, RESET_D / 2, RESET_D / 2).translate((rx, -ry, -0.01))
         for x, y in self.feet():
             body = body - Manifold.cylinder(FOOT_DEPTH + 0.01, FOOT_D / 2, FOOT_D / 2).translate((x, -y, -0.01))
-        return body
+        # the wall over the opening -> the cap, cut from the finished tray (so it keeps every pocket and tunnel)
+        z1 = wz0 - 0.3 + WHEEL_T + 0.7
+        self._cap = body ^ Manifold.extrude(self.cap_region(-CAP_FIT), wall_top + 0.01 - z1).translate((0, 0, z1))
+        return body - Manifold.extrude(self.cap_region(0.0), wall_top + 0.01 - z1).translate((0, 0, z1))
 
-    def cap_key_pose(self):
-        """Where the cap's lug sits: (x, y) on the opening's edge (model frame) and its outward direction (deg)."""
+    def cap_ends(self):
+        """Board coordinates of the cap's two end faces: x of the one across the back wall, y of the one across the
+        outer side wall, where the opening's circle crosses each wall's inner edge."""
         (wx, wy), wr = self.wheel_xy()
         rc = wr + WHEEL_CUT
+        x0, y0, x1, y1, _ = self.pcb
         ox0, _, ox1, _, _ = self.outer_box
-        xs = ox0 + WALL / 2 if wx < (ox0 + ox1) / 2 else ox1 - WALL / 2     # outer side wall's centre line
-        y = wy + math.sqrt(rc * rc - (xs - wx) ** 2)                         # board y, in front of the wheel
-        deg = math.degrees(math.atan2(-(y - wy), xs - wx))
-        return deg + (CAP_KEY_SHIFT if xs > wx else -CAP_KEY_SHIFT), rc     # toward the back
+        right = wx > (ox0 + ox1) / 2
+        dx = math.sqrt(rc * rc - (y0 - CLEAR - wy) ** 2)
+        xi = x1 + CLEAR if right else x0 - CLEAR
+        return (wx - dx if right else wx + dx), wy + math.sqrt(rc * rc - (xi - wx) ** 2)
 
-    def cap_key_footprint(self, grow=0.0):
-        """The slot (grow = 0) seen from above, model frame."""
-        (wx, wy), _ = self.wheel_xy()
-        deg, rc = self.cap_key_pose()
-        w, reach, _ = CAP_KEY
-        return CrossSection.square((reach + 0.5 + grow, w + 2 * grow)).translate((rc - 0.5, -(w / 2 + grow))).rotate(
-            deg).translate((wx, -wy))
+    def cap_region(self, grow):
+        """The cap seen from above (grow = -CAP_FIT: its end faces drawn back) or the tray's cut for it (grow = 0):
+        the wall from the corner to the two end faces."""
+        return rect(*self.cap_rect(grow)) ^ (self.outer - self.inner)
 
-    def cap_key(self, grow):
-        """The lug (grow = -CAP_FIT) or the tray's slot for it (grow = 0): a box from 0.5 inside the opening's edge
-        to CAP_KEY[1] past it, CAP_KEY[0] wide, from CAP_KEY[2] under the ledge up to the ledge."""
-        (wx, wy), _ = self.wheel_xy()
-        deg, rc = self.cap_key_pose()
-        w, reach, h = CAP_KEY
-        wall_top = FLOOR + STANDOFF + PCB_T + PLATE_GAP
-        z_l = wall_top - CAP_LEDGE
-        u0, u1, z0 = rc - 0.5, rc + reach + grow, z_l - h - grow
-        box = Manifold.cube((u1 - u0, w + 2 * grow, z_l + 0.01 - z0)).translate((u0, -(w / 2 + grow), z0))
-        return box.rotate((0, 0, deg)).translate((wx, -wy, 0))
+    def cap_rect(self, grow):
+        """Board rectangle (x0, y0, x1, y1) from beyond the corner to the cap's end faces (moved out by grow)."""
+        xe, ye = self.cap_ends()
+        ox0, oy0, ox1, _, _ = self.outer_box
+        if xe > (ox0 + ox1) / 2:
+            return xe - grow, oy0 - 1, ox1 + 1, ye + grow
+        return ox0 - 1, oy0 - 1, xe + grow, ye + grow
 
     def _filleted(self, top):
         """Outer block of the tray with filleted bottom and top outer edges (stacked offset slices)."""
@@ -1126,16 +1109,13 @@ def check_wheel(hf):
     assert abs(pin_top - (FLOOR + hf.enc_bottom() + PIN_ENGAGE)) < 1e-6, 'pin does not reach into the rotor'
     assert pin_top < FLOOR + STANDOFF - 0.3, 'pin reaches the PCB'
     assert FLOOR + WHEEL_GAP + WHEEL_T > FLOOR + hf.enc_bottom(), 'rim no longer overlaps the encoder (hub not needed)'
-    # the cap: in its seat without touching the tray, its lug in the wall (1 mm skin both sides) and clear of the
-    # case screws' pockets and nut traps
+    # the cap: in its seat without touching the tray, in one piece, over all of the opening in the wall, its end faces
+    # clear of the case screws
     cap, tray = hf.wheel_cap(), hf.tray()
     assert (cap ^ tray).volume() < 1e-3, 'wheel cap hits the tray'
     assert len(cap.decompose()) == 1, 'wheel cap falls apart'
-    slot = hf.cap_key_footprint()
-    assert (slot - (hf.outer.offset(-1.0, JoinType.Round) - hf.inner.offset(1.0, JoinType.Round))).area() < 1e-6, \
-        'cap lug slot leaves the wall'
-    near = hf.holes(hf.screws, max(BOSS_POCKET[0], 2 * NUT_TRAP[0] / math.sqrt(3)))
-    assert (hf.cap_key_footprint(0.8) ^ near).area() < 1e-6, 'cap lug slot within 0.8 mm of a case screw'
+    assert ((hf.wheel_cut(0) ^ (hf.outer - hf.inner)) - hf.cap_region(0.0)).area() < 1e-6, 'cap does not span the opening'
+    assert (hf.cap_region(1.0) ^ hf.holes(hf.screws, SCREW_D)).area() < 1e-6, 'cap end within 1 mm of a case screw'
 
 
 def check_feet(hf):
