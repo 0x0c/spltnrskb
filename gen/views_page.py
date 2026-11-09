@@ -1,12 +1,20 @@
-"""Design-review page: the finished keyboard in 3D, path traced in the browser -> docs/views.html.
+"""Design-review pages: a model in 3D, path traced in the browser.
 
-The model, the studio lighting and the floor shadows come from gen/export_web3d.sh (docs/3d/), made from the same
-Blender scene as the renders, flat on the desk and on each tilt stand (<a|b>-stand<deg>.glb); the close-ups below the viewer are the A / B renders of gen/render_compare.sh (whole
-board, OLED, left wheel) and gen/render_details.sh (docs/img/details/<shot>-<variant>.jpg).
-Open docs/views.html through a local web server (e.g. python3 -m http.server -d docs), file:// cannot load the model.
+    python3 gen/views_page.py [keyboard|enctest ...]     (default: both)
+
+keyboard -> docs/views.html: the finished keyboard, A and B. The model, the studio lighting and the floor shadows come
+  from gen/export_web3d.sh (docs/3d/), made from the same Blender scene as the renders, flat on the desk and on each
+  tilt stand (<a|b>-stand<deg>.glb); the close-ups below the viewer
+  are the A / B renders of gen/render_compare.sh (whole board, OLED, left wheel) and gen/render_details.sh
+  (docs/img/details/<shot>-<variant>.jpg).
+enctest -> docs/enctest-views.html: the encoder test kit (docs/encoder-test-board.md). The model and its floor shadow
+  come from gen/render_enctest.py --web (docs/3d/enctest.glb, shadow-enctest.jpg), lit by the keyboard's studio
+  (docs/3d/studio.hdr); the close-ups are that script's renders (docs/img/enctest*.png).
+Open the pages through a local web server (e.g. python3 -m http.server -d docs), file:// cannot load the model.
 """
 import json
 import os
+import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 DOCS = os.path.join(ROOT, 'docs')
@@ -43,22 +51,86 @@ DETAILS = [
 STANDS = (3, 6, 9)       # tilt stand angles with a model in docs/3d (make_case.STAND_ANGLES)
 
 
-def main():
-    details = {v: [(t, f'img/{files[v]}') for t, files in DETAILS
-                   if v in files and os.path.exists(os.path.join(DOCS, 'img', files[v]))] for v in 'ab'}
-    stands = [d for d in STANDS if all(os.path.exists(os.path.join(DOCS, '3d', f'{v}-stand{d}.glb')) for v in 'ab')]
-    data = json.dumps({'details': details, 'stands': stands}, ensure_ascii=False)
-    html = (TEMPLATE.replace('/*DATA*/null', data)
+def enctest_points():
+    """Where the presets of the enctest page look: the thumbwheel and the USB-C, in the page's metres (three.js: y up,
+    z = board y, origin on the board outline's centre, as gen/render_enctest.py --web centres the model)."""
+    d = json.load(open(os.path.join(ROOT, 'enctest', 'case_data.json')))
+    o, m = d['outline'], d['mcu']
+    cx, cy = (o['x0'] + o['x1']) / 2, (o['y0'] + o['y1']) / 2
+
+    def at(x, y, z):
+        return [round((x - cx) / 1000, 4), round(z / 1000, 4), round((y - cy) / 1000, 4)]
+    (wx, wy), (ux, uy) = d['wheel']['center'], m['center']
+    return at(wx, wy, 6.0), at(ux - m['size'][0] / 2, uy, 4.0)
+
+
+# one page per model: what differs between them; the template is the same
+def pages():
+    wheel, usb = enctest_points()
+    return {
+        'keyboard': dict(
+            out='views.html', title='nrsk Design Views', h1='nrsk デザイン確認',
+            intro='完成した筐体 A・B を 3D で見られます。形状と材質、照明は Blender のレンダリングと同じものです。'
+                  '手を止めるとブラウザ上でパストレーシングが進み、写真に近い画になります。',
+            link=['enctest-views.html', 'エンコーダー検証基板 →'],
+            variants=[['a', 'A アクリル', 'A アクリル'], ['b', 'B プリント', 'B 3D プリント']],
+            model='3d/{v}.glb', shadow='3d/shadow-{v}{s}.jpg', shadowSize=1.2,
+            # parts the viewer can take out: glb nodes named '<prefix>:...', and the shadow file's suffix without them
+            parts=[['cables', 'ケーブル', 'cables', '-nocable']],
+            target=[0, 0.008, 0], minDistance=0.12, maxDistance=2.5, fStop=8, store='nrsk-views3d',
+            # viewpoints: label, azimuth (0 = from the front, 90 = from the right), elevation, distance (m),
+            # lens (mm, 36 mm film), and optionally the point looked at (m)
+            presets=[['斜め前', -8, 34, 0.98, 62], ['打鍵する位置', -10, 37, 0.52, 40], ['正面', 0, 8, 0.85, 62],
+                     ['右', 90, 22, 0.85, 62], ['背面', 180, 28, 0.85, 62], ['左', 270, 22, 0.85, 62],
+                     ['真上', 0, 89.9, 0.95, 62]],
+            # tilt stands with a model of every variant ('3d/<v>-stand<deg>.glb'); none: no stand toggle
+            stands=[d for d in STANDS if all(os.path.exists(os.path.join(DOCS, '3d', f'{v}-stand{d}.glb')) for v in 'ab')],
+            details=DETAILS),
+        'enctest': dict(
+            out='enctest-views.html', title='nrsk Encoder Test Views', h1='エンコーダー検証基板 デザイン確認',
+            intro='サムホイールとドラム式ダイヤルを確かめる検証キットを 3D で見られます。形状と材質は Blender のレンダリング'
+                  'と同じもの、照明はキーボードのページと同じスタジオです。プレートやトレイを外すと、基板と、その裏の '
+                  'RP2040-Zero が見えます。',
+            link=['views.html', '← キーボード本体'],
+            variants=[['p', '3D プリント', '']],
+            model='3d/enctest.glb', shadow='3d/shadow-enctest{s}.jpg', shadowSize=0.3,
+            parts=[['plate', 'プレート', 'plate', '-noplate'], ['tray', 'トレイ', 'tray', '-notray']], stands=[],
+            target=[0, 0.006, 0], minDistance=0.04, maxDistance=0.8, fStop=16, store='nrsk-enctest-views3d',
+            presets=[['斜め前', -30, 34, 0.24, 62], ['正面', 0, 10, 0.22, 62], ['右', 90, 18, 0.2, 62],
+                     ['背面', 180, 24, 0.22, 62], ['左', 270, 18, 0.2, 62], ['真上', 0, 89.9, 0.24, 62],
+                     ['ホイールの角', 125, 14, 0.09, 62, wheel], ['USB-C', 250, 12, 0.07, 62, usb]],
+            details=[('全体', {'p': 'enctest.png'}), ('サムホイールの角', {'p': 'enctest-wheel.png'}),
+                     ('ドラム式ダイヤルとタクトスイッチ', {'p': 'enctest-drum.png'}),
+                     ('左の壁の USB-C', {'p': 'enctest-usb.png'})]),
+    }
+
+
+def write(cfg):
+    details = cfg.pop('details')
+    cfg['details'] = {v: [(t, f'img/{files[v]}') for t, files in details
+                          if v in files and os.path.exists(os.path.join(DOCS, 'img', files[v]))]
+                      for v, *_ in cfg['variants']}
+    html = TEMPLATE
+    for key in ('title', 'h1', 'intro', 'out'):
+        html = html.replace('{%s}' % key.upper(), cfg[key])
+    html = (html.replace('{LINK_HREF}', cfg['link'][0]).replace('{LINK_TEXT}', cfg['link'][1])
+            .replace('/*DATA*/null', json.dumps(cfg, ensure_ascii=False))
             .replace('{THREE}', THREE).replace('{BVH}', BVH).replace('{PATHTRACER}', PATHTRACER))
-    out = os.path.join(DOCS, 'views.html')
+    out = os.path.join(DOCS, cfg['out'])
     with open(out, 'w') as fh:
         fh.write(html)
     print('wrote', out)
 
 
+def main():
+    cfgs = pages()
+    for name in sys.argv[1:] or cfgs:
+        write(cfgs[name])
+
+
 TEMPLATE = r'''<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>nrsk Design Views</title>
+<title>{TITLE}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;600&family=IBM+Plex+Mono:wght@400&display=swap">
 <style>
 /* Layout: the 3D stage with its toolbar, then the close-up renders */
@@ -74,6 +146,11 @@ h1{font-size:22px;font-weight:600;margin:0;text-wrap:balance}
 h2{font-size:15px;font-weight:600;margin:0 0 12px;text-wrap:balance}
 header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:16px}
 header p{margin:4px 0 0;color:var(--muted);max-width:66ch}
+.head-side{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.nav{color:var(--accent);font-size:13px;text-decoration:none;white-space:nowrap}
+.nav:hover{text-decoration:underline}
+.nav:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.seg[hidden]{display:none}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
 .seg button{font:inherit;border:0;background:none;color:var(--fg);padding:7px 14px;cursor:pointer;white-space:nowrap}
 .seg button+button{border-left:1px solid var(--line)}
@@ -128,18 +205,18 @@ body:has(.lb[open]){overflow:hidden}
 <main>
   <header>
     <div>
-      <h1>nrsk デザイン確認</h1>
-      <p>完成した筐体 A・B を 3D で見られます。形状と材質、照明は Blender のレンダリングと同じものです。手を止めるとブラウザ上でパストレーシングが進み、写真に近い画になります。</p>
+      <h1>{H1}</h1>
+      <p>{INTRO}</p>
     </div>
-    <div class="seg" role="group" aria-label="筐体">
-      <button data-v="a">A アクリル</button>
-      <button data-v="b">B プリント</button>
+    <div class="head-side">
+      <a class="nav" href="{LINK_HREF}">{LINK_TEXT}</a>
+      <div class="seg" id="variants" role="group" aria-label="筐体"></div>
     </div>
   </header>
 
   <section class="viewer" aria-label="3D ビュー">
     <div class="stage" id="stage">
-      <canvas id="view" tabindex="0" aria-label="キーボードの 3D ビュー。ドラッグで回転、ホイールで拡大"></canvas>
+      <canvas id="view" tabindex="0" aria-label="3D ビュー。ドラッグで回転、ホイールで拡大"></canvas>
       <div class="loading" id="loading">読み込んでいます…</div>
       <div class="status" id="status" hidden></div>
     </div>
@@ -150,7 +227,7 @@ body:has(.lb[open]){overflow:hidden}
         <label class="toggle"><input type="checkbox" id="pt"> パストレース</label>
         <label class="toggle">サンプル数 <select id="spp"></select></label>
         <label class="toggle"><input type="checkbox" id="dof"> ボケ</label>
-        <label class="toggle"><input type="checkbox" id="cables"> ケーブル</label>
+        <span class="toggles" id="parts"></span>
         <label class="toggle" id="stand-box"><input type="checkbox" id="stand"> 台座</label>
         <label class="toggle" id="deg-box">角度 <select id="deg" aria-label="台座の角度"></select></label>
         <button class="chip" id="full">全画面</button>
@@ -191,21 +268,22 @@ import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
 import {HDRLoader} from 'three/addons/loaders/HDRLoader.js';
 import {WebGLPathTracer, PhysicalCamera} from 'three-gpu-pathtracer';
 
+// the page's model (gen/views_page.py pages()): variants, parts that can be taken out, viewpoints, close-ups
 const DATA = /*DATA*/null;
-const V_NAME = {a: 'A アクリル', b: 'B 3D プリント'};
+const V_NAME = Object.fromEntries(DATA.variants.map(([v, , name]) => [v, name]));
+const PARTS = DATA.parts.map(([id, label, prefix, shadow]) => ({id, label, prefix, shadow}));
 const SPP = [16, 32, 64, 128, 256, 512, 1024];   // choices for the path tracer's sample count
-const SHADOW_SIZE = 1.2, FLOOR_SIZE = 12;        // m; the shadow map covers SHADOW_SIZE square around the origin
-const TARGET = new THREE.Vector3(0, 0.008, 0);
-// viewpoints: azimuth (0 = from the front, 90 = from the right), elevation, distance (m), lens (mm, 36 mm film)
-const PRESETS = [
-  ['斜め前', -8, 34, 0.98, 62], ['打鍵する位置', -10, 37, 0.52, 40], ['正面', 0, 8, 0.85, 62], ['右', 90, 22, 0.85, 62],
-  ['背面', 180, 28, 0.85, 62], ['左', 270, 22, 0.85, 62], ['真上', 0, 89.9, 0.95, 62],
-];
+const SHADOW_SIZE = DATA.shadowSize, FLOOR_SIZE = 12;   // m; the shadow map covers SHADOW_SIZE square around the origin
+const TARGET = new THREE.Vector3(...DATA.target);
+// viewpoints: azimuth (0 = from the front, 90 = from the right), elevation, distance (m), lens (mm, 36 mm film), target
+const PRESETS = DATA.presets;
 const $ = id => document.getElementById(id);
-// path tracing is off by default (it keeps the GPU busy); the checkbox turns it on
-const state = {v: 'a', pt: false, dof: true, cables: true, spp: 64, spin: false, stand: false, deg: 9};
-try { Object.assign(state, JSON.parse(localStorage.getItem('nrsk-views3d') || '{}')); } catch (e) {}
-const save = () => { try { localStorage.setItem('nrsk-views3d', JSON.stringify(state)); } catch (e) {} };
+// path tracing is off by default (it keeps the GPU busy); the checkbox turns it on. Every part is shown at first
+const state = {v: DATA.variants[0][0], pt: false, dof: true, spp: 64, spin: false, stand: false, deg: 9};
+for (const p of PARTS) state[p.id] = true;
+try { Object.assign(state, JSON.parse(localStorage.getItem(DATA.store) || '{}')); } catch (e) {}
+if (!V_NAME[state.v]) state.v = DATA.variants[0][0];
+const save = () => { try { localStorage.setItem(DATA.store, JSON.stringify(state)); } catch (e) {} };
 
 // --- renderer, camera, controls ----------------------------------------------------------
 const canvas = $('view');
@@ -223,15 +301,15 @@ renderer.toneMappingExposure = 0.22;                 // matched by eye to the Cy
 
 const scene = new THREE.Scene();
 scene.environmentRotation.y = Math.PI / 2;           // Blender's equirect seam vs three's
-const camera = new PhysicalCamera(30, 16 / 9, 0.01, 50);
+const camera = new PhysicalCamera(30, 16 / 9, 0.005, 50);
 camera.filmGauge = 36;
 camera.apertureBlades = 6;
 const controls = new OrbitControls(camera, canvas);
 controls.target.copy(TARGET);
 controls.enableDamping = true;
 controls.dampingFactor = 0.12;
-controls.minDistance = 0.12;
-controls.maxDistance = 2.5;
+controls.minDistance = DATA.minDistance;
+controls.maxDistance = DATA.maxDistance;
 controls.maxPolarAngle = Math.PI / 2 - 0.01;         // stay above the floor
 controls.screenSpacePanning = true;
 
@@ -253,17 +331,21 @@ scene.add(floor);
 const models = {};
 let dirty = true, ready = false, sceneSet = false;
 
-// a model per case variant, flat on the desk or with both halves on a tilt stand
+// the shadow file of what is shown: '' with every part, the suffixes of the parts taken out (in PARTS order) without
+// them; parts with no shadow of their own keep the full one
+const shadowSuffix = () => PARTS.filter(p => p.shadow && !state[p.id]).map(p => p.shadow).join('');
+const shadowFiles = () => PARTS.filter(p => p.shadow).reduce((files, p) => files.concat(files.map(f => f + p.shadow)), ['']);
+// a model per variant, flat on the desk or with both halves on a tilt stand
 const STANDS = DATA.stands || [];
 function modelKey() { return `${state.v}${state.stand && STANDS.includes(state.deg) ? `-stand${state.deg}` : ''}`; }
-function shadowKey() { return `${modelKey()}${state.cables ? '' : '-nocable'}`; }
+function shadowKey() { return modelKey() + shadowSuffix(); }
 
 // what is not shown is taken out of the scene, not hidden: the path tracer would still trace hidden meshes
-const cables = {};
+const partObjs = {};
 function applyScene() {
   for (const [k, root] of Object.entries(models)) {
     if (k === modelKey()) scene.add(root); else scene.remove(root);
-    for (const c of cables[k]) { if (state.cables) root.add(c); else root.remove(c); }
+    for (const p of PARTS) for (const o of partObjs[k][p.id]) { if (state[p.id]) root.add(o); else root.remove(o); }
   }
   // the baked shadow only in the raster view: the path tracer would darken the floor twice
   floorMat.aoMap = state.pt ? null : floorTex[shadowKey()] || null;
@@ -274,7 +356,7 @@ function applyScene() {
 
 function applyCamera() {
   camera.focusDistance = camera.position.distanceTo(controls.target);
-  camera.fStop = state.dof ? 8 : 1e6;
+  camera.fStop = state.dof ? DATA.fStop : 1e6;
   camera.updateProjectionMatrix();
   if (sceneSet) pathTracer.updateCamera();
   dirty = true;
@@ -320,8 +402,9 @@ function stepTween(now) {
 // the presets are framed for 16:9; step back on narrower stages so both halves stay in view
 const fit = () => Math.max(1, 16 / 9 / camera.aspect);
 function preset(i) {
-  const [, az, el, dist, lens] = PRESETS[i];
-  goTo(spherical(az, el, dist * fit()), TARGET.clone(), lens);
+  const [, az, el, dist, lens, at] = PRESETS[i];
+  const target = at ? new THREE.Vector3(...at) : TARGET.clone();
+  goTo(spherical(az, el, dist * fit()).sub(TARGET).add(target), target, lens);
 }
 function orbitBy(dAz, dEl) {
   const off = camera.position.clone().sub(controls.target), s = new THREE.Spherical().setFromVector3(off);
@@ -363,9 +446,14 @@ canvas.addEventListener('keydown', e => {
 });
 
 // --- toggles -------------------------------------------------------------------------------
+// variants: a switch only when there is more than one
+$('variants').innerHTML = DATA.variants.map(([v, label]) => `<button data-v="${v}">${label}</button>`).join('');
+$('variants').hidden = DATA.variants.length < 2;
+$('parts').innerHTML = PARTS.map(p => `<label class="toggle"><input type="checkbox" data-part="${p.id}"> ${p.label}</label>`).join('');
 function renderToggles() {
-  document.querySelectorAll('header .seg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === state.v));
-  $('spin').checked = state.spin; $('pt').checked = state.pt; $('dof').checked = state.dof; $('cables').checked = state.cables;
+  document.querySelectorAll('#variants button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === state.v));
+  $('spin').checked = state.spin; $('pt').checked = state.pt; $('dof').checked = state.dof;
+  document.querySelectorAll('#parts input').forEach(i => { i.checked = state[i.dataset.part]; });
   if (!STANDS.includes(state.deg)) state.deg = STANDS[STANDS.length - 1];
   $('stand-box').hidden = $('deg-box').hidden = !STANDS.length;
   $('stand').checked = state.stand; $('deg').value = state.deg; $('deg').disabled = !state.stand;
@@ -374,7 +462,7 @@ function renderToggles() {
   $('dof').disabled = $('spp').disabled = !state.pt;
   $('status').hidden = !state.pt || !ready;
 }
-document.querySelectorAll('header .seg button').forEach(b => b.addEventListener('click', async () => {
+document.querySelectorAll('#variants button').forEach(b => b.addEventListener('click', async () => {
   state.v = b.dataset.v; save(); renderToggles(); renderDetails();
   await load(modelKey()); applyScene();
 }));
@@ -383,7 +471,9 @@ $('pt').addEventListener('change', e => { state.pt = e.target.checked; save(); r
 $('spp').innerHTML = SPP.map(n => `<option value="${n}">${n}</option>`).join('');
 $('spp').addEventListener('change', e => { state.spp = +e.target.value; save(); });   // more: tracing carries on, fewer: it stops
 $('dof').addEventListener('change', e => { state.dof = e.target.checked; save(); applyCamera(); });
-$('cables').addEventListener('change', e => { state.cables = e.target.checked; save(); applyScene(); });
+document.querySelectorAll('#parts input').forEach(i => i.addEventListener('change', e => {
+  state[i.dataset.part] = e.target.checked; save(); applyScene();
+}));
 $('deg').innerHTML = STANDS.map(d => `<option value="${d}">${d}°</option>`).join('');
 const restand = async () => { save(); renderToggles(); await load(modelKey()); applyScene(); };
 $('stand').addEventListener('change', e => { state.stand = e.target.checked; restand(); });
@@ -398,12 +488,12 @@ const draco = new DRACOLoader().setDecoderPath('{THREE}/examples/jsm/libs/draco/
 const gltf = new GLTFLoader().setDRACOLoader(draco);
 const texLoader = new THREE.TextureLoader();
 const pending = {};
-function load(v) {          // v: a model key (modelKey())
+function load(v) {          // v: a model key (modelKey()), in place of {v} in the model and shadow file names
   return pending[v] ??= Promise.all([
-    gltf.loadAsync(`3d/${v}.glb`, e => {
+    gltf.loadAsync(DATA.model.replace('{v}', v), e => {
       if (!ready && e.total) $('loading').textContent = `読み込んでいます… ${Math.round(100 * e.loaded / e.total)}%`;
     }),
-    ...['', '-nocable'].map(s => texLoader.loadAsync(`3d/shadow-${v}${s}.jpg`).then(t => {
+    ...shadowFiles().map(s => texLoader.loadAsync(DATA.shadow.replace('{v}', v).replace('{s}', s)).then(t => {
       t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
       t.repeat.set(FLOOR_SIZE / SHADOW_SIZE, FLOOR_SIZE / SHADOW_SIZE);
       t.offset.set(0.5 - FLOOR_SIZE / SHADOW_SIZE / 2, 0.5 - FLOOR_SIZE / SHADOW_SIZE / 2);
@@ -411,7 +501,7 @@ function load(v) {          // v: a model key (modelKey())
     })),
   ]).then(([g]) => {
     models[v] = g.scene;
-    cables[v] = g.scene.children.filter(o => o.name.startsWith('cables'));
+    partObjs[v] = Object.fromEntries(PARTS.map(p => [p.id, g.scene.children.filter(o => o.name.startsWith(p.prefix))]));
     // clear acrylic and the half mirror: solid glass for the path tracer, but they don't block its shadow rays, or
     // the board under the plate would only get light by chance (black at a few dozen samples)
     g.scene.traverse(o => {
@@ -430,7 +520,7 @@ async function start() {
   ready = true;
   $('loading').hidden = true;
   renderToggles();
-  load(state.v === 'a' ? 'b' : 'a');                  // the other variant in the background
+  for (const [v] of DATA.variants) load(v);           // the other variants in the background
 }
 
 let lastFrame = 0;
@@ -455,14 +545,14 @@ function frame(now) {
 start().catch(e => {
   console.error(e);
   $('loading').hidden = false;
-  $('loading').textContent = 'モデルを読み込めませんでした。docs/views.html はローカルの Web サーバー経由で開いてください（python3 -m http.server -d docs）。';
+  $('loading').textContent = 'モデルを読み込めませんでした。docs/{OUT} はローカルの Web サーバー経由で開いてください（python3 -m http.server -d docs）。';
 });
 requestAnimationFrame(frame);
-if (location.hash === '#debug') window.nrsk = {THREE, scene, camera, controls, renderer, pathTracer, models, state, applyScene, applyCamera};
+if (location.hash === '#debug') window.nrsk = {THREE, scene, camera, controls, renderer, pathTracer, models, state, applyScene, applyCamera, preset};
 
 // --- close-ups -----------------------------------------------------------------------------
 function renderDetails() {
-  const items = (DATA.details[state.v] || []).map(([t, url]) => ({src: url, cap: `${V_NAME[state.v]}・${t}`}));
+  const items = (DATA.details[state.v] || []).map(([t, url]) => ({src: url, cap: V_NAME[state.v] ? `${V_NAME[state.v]}・${t}` : t}));
   $('details').innerHTML = items.map((d, i) =>
     `<button class="shot" data-i="${i}"><figure><img loading="lazy" src="${d.src}" alt="${d.cap}"><figcaption>${d.cap}</figcaption></figure></button>`).join('')
     || '<p class="empty">寄りの画像はありません。</p>';

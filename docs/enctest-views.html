@@ -1,0 +1,488 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>nrsk Encoder Test Views</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;600&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+/* Layout: the 3D stage with its toolbar, then the close-up renders */
+:root{--bg:#eef1f4;--panel:#ffffff;--fg:#1b2129;--muted:#5d6773;--line:#c9d1da;--accent:#1f6b3a;--on-accent:#ffffff;
+ --key:#f24d00;--stage:#d9d9d9;
+ --sans:"IBM Plex Sans JP",system-ui,-apple-system,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#14181d;--panel:#1d232a;--fg:#e6eaee;--muted:#9aa5b1;--line:#34404c;--accent:#5fc285;--on-accent:#0d1a12;--key:#ff7a3d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14181d;--panel:#1d232a;--fg:#e6eaee;--muted:#9aa5b1;--line:#34404c;--accent:#5fc285;--on-accent:#0d1a12;--key:#ff7a3d;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.6 var(--sans)}
+main{max-width:1320px;margin:0 auto;padding:28px 20px 64px;display:grid;gap:36px}
+h1{font-size:22px;font-weight:600;margin:0;text-wrap:balance}
+h2{font-size:15px;font-weight:600;margin:0 0 12px;text-wrap:balance}
+header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:16px}
+header p{margin:4px 0 0;color:var(--muted);max-width:66ch}
+.head-side{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.nav{color:var(--accent);font-size:13px;text-decoration:none;white-space:nowrap}
+.nav:hover{text-decoration:underline}
+.nav:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.seg[hidden]{display:none}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.seg button{font:inherit;border:0;background:none;color:var(--fg);padding:7px 14px;cursor:pointer;white-space:nowrap}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+button:focus-visible,.stage canvas:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.viewer{display:grid;gap:10px}
+/* the stage stays a light studio in dark mode too: the floor and the lighting are part of the picture */
+.stage{position:relative;aspect-ratio:16/9;min-height:320px;max-height:calc(100dvh - 120px);width:100%;background:var(--stage);border-radius:8px;overflow:hidden}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+.stage canvas:active{cursor:grabbing}
+.stage:fullscreen{border-radius:0;max-height:none;aspect-ratio:auto}
+.status{position:absolute;left:10px;bottom:10px;font:12px/1 var(--mono);font-variant-numeric:tabular-nums;background:rgba(255,255,255,.86);color:#1b2129;padding:6px 8px;border-radius:4px;pointer-events:none}
+.loading{position:absolute;inset:0;display:grid;place-items:center;color:#5d6773;font-size:13px;text-align:center;padding:16px}
+.loading[hidden]{display:none}
+.tools{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:13px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--fg);padding:5px 12px;cursor:pointer}
+.chip:hover{border-color:var(--muted)}
+.toggles{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;user-select:none}
+.toggle[hidden]{display:none}
+.toggle input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+.toggle select{font:inherit;font-size:13px;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:3px 6px}
+.hint{font-size:12px;color:var(--muted);margin:0}
+.details{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.shot{border:0;padding:0;background:none;color:inherit;font:inherit;text-align:left;cursor:zoom-in;min-width:0}
+.shot figure{margin:0}
+.shot figcaption{font-size:12px;color:var(--muted);margin-top:6px}
+.details img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:5px;background:var(--stage)}
+.shot:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* lightbox: the image as large as the window allows; click it for 100 %, ← → or swipe for the next one */
+.lb{border:0;padding:0;margin:0;width:100vw;height:100dvh;max-width:none;max-height:none;background:#0e1114;color:#e6eaee}
+.lb::backdrop{background:transparent}
+body:has(.lb[open]){overflow:hidden}
+.lb[open]{display:grid;grid-template-rows:auto minmax(0,1fr)}
+.lb-bar{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 16px}
+.lb-cap{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-count{font:12px var(--mono);color:#9aa5b1;font-variant-numeric:tabular-nums}
+.lb button{font:inherit;color:inherit;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:6px;cursor:pointer}
+.lb-close{width:36px;height:36px;font-size:20px;line-height:1}
+.lb-body{position:relative;overflow:auto;display:grid;place-items:center;touch-action:pan-x pan-y pinch-zoom}
+.lb-body img{max-width:calc(100vw - 32px);max-height:calc(100dvh - 72px);object-fit:contain;cursor:zoom-in;user-select:none;-webkit-user-drag:none}
+.lb-body.zoomed{place-items:start}
+.lb-body.zoomed img{max-width:none;max-height:none;cursor:zoom-out}
+.lb .lb-nav{position:fixed;top:50%;transform:translateY(-50%);width:44px;height:64px;font-size:28px;line-height:1;background:rgba(14,17,20,.72)}
+.lb-nav.prev{left:12px}.lb-nav.next{right:12px}
+.lb-nav:disabled{display:none}
+.lb button:focus-visible{outline:2px solid #5fc285;outline-offset:2px}
+.empty{color:var(--muted)}
+@media (max-width:640px){main{padding:20px 16px 48px}.stage{aspect-ratio:4/5}.lb .lb-nav{width:36px;height:52px}.seg button{padding:7px 10px}}
+</style>
+<main>
+  <header>
+    <div>
+      <h1>エンコーダー検証基板 デザイン確認</h1>
+      <p>サムホイールとドラム式ダイヤルを確かめる検証キットを 3D で見られます。形状と材質は Blender のレンダリングと同じもの、照明はキーボードのページと同じスタジオです。プレートやトレイを外すと、基板と、その裏の RP2040-Zero が見えます。</p>
+    </div>
+    <div class="head-side">
+      <a class="nav" href="views.html">← キーボード本体</a>
+      <div class="seg" id="variants" role="group" aria-label="筐体"></div>
+    </div>
+  </header>
+
+  <section class="viewer" aria-label="3D ビュー">
+    <div class="stage" id="stage">
+      <canvas id="view" tabindex="0" aria-label="3D ビュー。ドラッグで回転、ホイールで拡大"></canvas>
+      <div class="loading" id="loading">読み込んでいます…</div>
+      <div class="status" id="status" hidden></div>
+    </div>
+    <div class="tools">
+      <div class="presets" id="presets" role="group" aria-label="視点"></div>
+      <div class="toggles">
+        <label class="toggle"><input type="checkbox" id="spin"> 自動回転</label>
+        <label class="toggle"><input type="checkbox" id="pt"> パストレース</label>
+        <label class="toggle">サンプル数 <select id="spp"></select></label>
+        <label class="toggle"><input type="checkbox" id="dof"> ボケ</label>
+        <span class="toggles" id="parts"></span>
+        <label class="toggle" id="stand-box"><input type="checkbox" id="stand"> 台座</label>
+        <label class="toggle" id="deg-box">角度 <select id="deg" aria-label="台座の角度"></select></label>
+        <button class="chip" id="full">全画面</button>
+      </div>
+    </div>
+    <p class="hint">ドラッグで回転、右ドラッグか 2 本指で移動、ホイールかピンチで拡大します。← → ↑ ↓ で 15° ずつ回ります。自動回転は触っている間だけ止まり、手を離して少しすると再開します。パストレース中は、選んだサンプル数まで描いてから 30° ずつ回ります。パストレースは手を止めている間だけ進み、選んだサンプル数で止まります。多いほどノイズが減りますが、時間がかかります。</p>
+  </section>
+
+  <section>
+    <h2>寄りの画像（Blender）</h2>
+    <div class="details" id="details"></div>
+  </section>
+</main>
+<dialog class="lb" id="lb" aria-labelledby="lb-cap">
+  <div class="lb-bar">
+    <span class="lb-cap" id="lb-cap"></span>
+    <span class="lb-count" id="lb-count"></span>
+    <button class="lb-close" id="lb-close" aria-label="閉じる">×</button>
+  </div>
+  <div class="lb-body" id="lb-body"><img id="lb-img" alt=""></div>
+  <button class="lb-nav prev" id="lb-prev" aria-label="前の画像">‹</button>
+  <button class="lb-nav next" id="lb-next" aria-label="次の画像">›</button>
+</dialog>
+<script type="importmap">
+{"imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
+  "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/",
+  "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.9.15/build/index.module.js",
+  "three-gpu-pathtracer": "https://cdn.jsdelivr.net/npm/three-gpu-pathtracer@0.0.24/build/index.module.js"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {DRACOLoader} from 'three/addons/loaders/DRACOLoader.js';
+import {HDRLoader} from 'three/addons/loaders/HDRLoader.js';
+import {WebGLPathTracer, PhysicalCamera} from 'three-gpu-pathtracer';
+
+// the page's model (gen/views_page.py pages()): variants, parts that can be taken out, viewpoints, close-ups
+const DATA = {"out": "enctest-views.html", "title": "nrsk Encoder Test Views", "h1": "エンコーダー検証基板 デザイン確認", "intro": "サムホイールとドラム式ダイヤルを確かめる検証キットを 3D で見られます。形状と材質は Blender のレンダリングと同じもの、照明はキーボードのページと同じスタジオです。プレートやトレイを外すと、基板と、その裏の RP2040-Zero が見えます。", "link": ["views.html", "← キーボード本体"], "variants": [["p", "3D プリント", ""]], "model": "3d/enctest.glb", "shadow": "3d/shadow-enctest{s}.jpg", "shadowSize": 0.3, "parts": [["plate", "プレート", "plate", "-noplate"], ["tray", "トレイ", "tray", "-notray"]], "stands": [], "target": [0, 0.006, 0], "minDistance": 0.04, "maxDistance": 0.8, "fStop": 16, "store": "nrsk-enctest-views3d", "presets": [["斜め前", -30, 34, 0.24, 62], ["正面", 0, 10, 0.22, 62], ["右", 90, 18, 0.2, 62], ["背面", 180, 24, 0.22, 62], ["左", 270, 18, 0.2, 62], ["真上", 0, 89.9, 0.24, 62], ["ホイールの角", 125, 14, 0.09, 62, [0.0266, 0.006, -0.011]], ["USB-C", 250, 12, 0.07, 62, [-0.0381, 0.004, 0.0]]], "details": {"p": [["全体", "img/enctest.png"], ["サムホイールの角", "img/enctest-wheel.png"], ["ドラム式ダイヤルとタクトスイッチ", "img/enctest-drum.png"], ["左の壁の USB-C", "img/enctest-usb.png"]]}};
+const V_NAME = Object.fromEntries(DATA.variants.map(([v, , name]) => [v, name]));
+const PARTS = DATA.parts.map(([id, label, prefix, shadow]) => ({id, label, prefix, shadow}));
+const SPP = [16, 32, 64, 128, 256, 512, 1024];   // choices for the path tracer's sample count
+const SHADOW_SIZE = DATA.shadowSize, FLOOR_SIZE = 12;   // m; the shadow map covers SHADOW_SIZE square around the origin
+const TARGET = new THREE.Vector3(...DATA.target);
+// viewpoints: azimuth (0 = from the front, 90 = from the right), elevation, distance (m), lens (mm, 36 mm film), target
+const PRESETS = DATA.presets;
+const $ = id => document.getElementById(id);
+// path tracing is off by default (it keeps the GPU busy); the checkbox turns it on. Every part is shown at first
+const state = {v: DATA.variants[0][0], pt: false, dof: true, spp: 64, spin: false, stand: false, deg: 9};
+for (const p of PARTS) state[p.id] = true;
+try { Object.assign(state, JSON.parse(localStorage.getItem(DATA.store) || '{}')); } catch (e) {}
+if (!V_NAME[state.v]) state.v = DATA.variants[0][0];
+const save = () => { try { localStorage.setItem(DATA.store, JSON.stringify(state)); } catch (e) {} };
+
+// --- renderer, camera, controls ----------------------------------------------------------
+const canvas = $('view');
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({canvas, antialias: true, alpha: true});
+} catch (e) {
+  $('loading').textContent = 'このブラウザでは WebGL 2 が使えないため、3D 表示ができません。下の寄りの画像をご覧ください。';
+  throw e;
+}
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setClearColor(0x000000, 0);
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 0.22;                 // matched by eye to the Cycles renders
+
+const scene = new THREE.Scene();
+scene.environmentRotation.y = Math.PI / 2;           // Blender's equirect seam vs three's
+const camera = new PhysicalCamera(30, 16 / 9, 0.005, 50);
+camera.filmGauge = 36;
+camera.apertureBlades = 6;
+const controls = new OrbitControls(camera, canvas);
+controls.target.copy(TARGET);
+controls.enableDamping = true;
+controls.dampingFactor = 0.12;
+controls.minDistance = DATA.minDistance;
+controls.maxDistance = DATA.maxDistance;
+controls.maxPolarAngle = Math.PI / 2 - 0.01;         // stay above the floor
+controls.screenSpacePanning = true;
+
+const pathTracer = new WebGLPathTracer(renderer);
+pathTracer.bounces = 8;
+pathTracer.transmissiveBounces = 8;
+pathTracer.filterGlossyFactor = 0.5;
+pathTracer.minSamples = 3;
+pathTracer.renderDelay = 120;
+pathTracer.fadeDuration = 300;
+pathTracer.tiles.set(2, 2);
+
+// floor: lit like the studio floor; the raster view darkens it with the baked shadow, the path tracer casts its own
+const floorTex = {};
+const floorMat = new THREE.MeshStandardMaterial({color: new THREE.Color('#f7f7f7'), roughness: 0.9, aoMapIntensity: 1});
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_SIZE, FLOOR_SIZE).rotateX(-Math.PI / 2), floorMat);
+scene.add(floor);
+
+const models = {};
+let dirty = true, ready = false, sceneSet = false;
+
+// the shadow file of what is shown: '' with every part, the suffixes of the parts taken out (in PARTS order) without
+// them; parts with no shadow of their own keep the full one
+const shadowSuffix = () => PARTS.filter(p => p.shadow && !state[p.id]).map(p => p.shadow).join('');
+const shadowFiles = () => PARTS.filter(p => p.shadow).reduce((files, p) => files.concat(files.map(f => f + p.shadow)), ['']);
+// a model per variant, flat on the desk or with both halves on a tilt stand
+const STANDS = DATA.stands || [];
+function modelKey() { return `${state.v}${state.stand && STANDS.includes(state.deg) ? `-stand${state.deg}` : ''}`; }
+function shadowKey() { return modelKey() + shadowSuffix(); }
+
+// what is not shown is taken out of the scene, not hidden: the path tracer would still trace hidden meshes
+const partObjs = {};
+function applyScene() {
+  for (const [k, root] of Object.entries(models)) {
+    if (k === modelKey()) scene.add(root); else scene.remove(root);
+    for (const p of PARTS) for (const o of partObjs[k][p.id]) { if (state[p.id]) root.add(o); else root.remove(o); }
+  }
+  // the baked shadow only in the raster view: the path tracer would darken the floor twice
+  floorMat.aoMap = state.pt ? null : floorTex[shadowKey()] || null;
+  floorMat.needsUpdate = true;
+  sceneSet = false;
+  dirty = true;
+}
+
+function applyCamera() {
+  camera.focusDistance = camera.position.distanceTo(controls.target);
+  camera.fStop = state.dof ? DATA.fStop : 1e6;
+  camera.updateProjectionMatrix();
+  if (sceneSet) pathTracer.updateCamera();
+  dirty = true;
+}
+
+function resize() {
+  const r = canvas.parentElement.getBoundingClientRect();
+  renderer.setSize(r.width, r.height, false);
+  camera.aspect = r.width / r.height;
+  applyCamera();
+}
+new ResizeObserver(resize).observe(canvas.parentElement);
+
+// --- viewpoints ----------------------------------------------------------------------------
+let tween = null;
+function spherical(az, el, dist) {
+  const a = THREE.MathUtils.degToRad(az), e = THREE.MathUtils.degToRad(el);
+  return new THREE.Vector3(Math.sin(a) * Math.cos(e), Math.sin(e), Math.cos(a) * Math.cos(e)).multiplyScalar(dist).add(TARGET);
+}
+function goTo(pos, target, lens) {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const from = {pos: camera.position.clone(), target: controls.target.clone(), lens: camera.getFocalLength()};
+  tween = {from, to: {pos, target, lens}, t0: performance.now(), dur: reduce ? 0 : 450};
+}
+function stepTween(now) {
+  if (!tween) return;
+  const {from, to, t0, dur} = tween;
+  const k = dur ? Math.min(1, (now - t0) / dur) : 1, e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+  // round the target, not straight through the model
+  const s0 = new THREE.Spherical().setFromVector3(from.pos.clone().sub(from.target));
+  const s1 = new THREE.Spherical().setFromVector3(to.pos.clone().sub(to.target));
+  let dt = s1.theta - s0.theta;
+  if (dt > Math.PI) dt -= 2 * Math.PI;
+  if (dt < -Math.PI) dt += 2 * Math.PI;
+  const s = new THREE.Spherical(THREE.MathUtils.lerp(s0.radius, s1.radius, e), THREE.MathUtils.lerp(s0.phi, s1.phi, e), s0.theta + dt * e);
+  controls.target.lerpVectors(from.target, to.target, e);
+  camera.position.setFromSpherical(s).add(controls.target);
+  camera.setFocalLength(THREE.MathUtils.lerp(from.lens, to.lens, e));
+  camera.lookAt(controls.target);
+  applyCamera();
+  if (k >= 1) tween = null;
+}
+// the presets are framed for 16:9; step back on narrower stages so both halves stay in view
+const fit = () => Math.max(1, 16 / 9 / camera.aspect);
+function preset(i) {
+  const [, az, el, dist, lens, at] = PRESETS[i];
+  const target = at ? new THREE.Vector3(...at) : TARGET.clone();
+  goTo(spherical(az, el, dist * fit()).sub(TARGET).add(target), target, lens);
+}
+function orbitBy(dAz, dEl) {
+  const off = camera.position.clone().sub(controls.target), s = new THREE.Spherical().setFromVector3(off);
+  s.theta += THREE.MathUtils.degToRad(dAz);
+  s.phi = THREE.MathUtils.clamp(s.phi - THREE.MathUtils.degToRad(dEl), 0.001, controls.maxPolarAngle);
+  goTo(new THREE.Vector3().setFromSpherical(s).add(controls.target), controls.target.clone(), camera.getFocalLength());
+}
+
+$('presets').innerHTML = PRESETS.map(([n], i) => `<button class="chip" data-i="${i}">${n}</button>`).join('');
+$('presets').querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+  spinWait = performance.now() + SPIN_IDLE; preset(+b.dataset.i);
+}));
+const [, az0, el0, d0, lens0] = PRESETS[0];
+camera.setFocalLength(lens0);
+resize();
+camera.position.copy(spherical(az0, el0, d0 * fit()));
+camera.lookAt(TARGET);
+
+// auto-rotate: a slow turntable in the raster view; with path tracing on, a 30° step once the image has its samples.
+// Touching the view pauses it, and it picks up again a few seconds after the hand comes off.
+const SPIN_IDLE = 3000, SPIN_HOLD = 1200;
+let spinWait = 0, held = false, sampledAt = 0;
+function spinning(now) { return state.spin && !held && now >= spinWait; }
+function stepSpin(now) {
+  controls.autoRotate = spinning(now) && !state.pt && !tween;
+  if (!spinning(now) || !state.pt || tween || !ready) { sampledAt = 0; return; }
+  if (pathTracer.samples < state.spp) return;
+  sampledAt ||= now;
+  if (now - sampledAt >= SPIN_HOLD) { sampledAt = 0; orbitBy(-30, 0); }   // the same way round as autoRotate
+}
+controls.autoRotateSpeed = 1.5;                        // a turn in 40 s
+
+controls.addEventListener('start', () => { tween = null; held = true; });
+controls.addEventListener('end', () => { held = false; spinWait = performance.now() + SPIN_IDLE; });
+controls.addEventListener('change', applyCamera);
+canvas.addEventListener('keydown', e => {
+  const k = {ArrowLeft: [-15, 0], ArrowRight: [15, 0], ArrowUp: [0, 15], ArrowDown: [0, -15]}[e.key];
+  if (k) { e.preventDefault(); spinWait = performance.now() + SPIN_IDLE; orbitBy(...k); }
+});
+
+// --- toggles -------------------------------------------------------------------------------
+// variants: a switch only when there is more than one
+$('variants').innerHTML = DATA.variants.map(([v, label]) => `<button data-v="${v}">${label}</button>`).join('');
+$('variants').hidden = DATA.variants.length < 2;
+$('parts').innerHTML = PARTS.map(p => `<label class="toggle"><input type="checkbox" data-part="${p.id}"> ${p.label}</label>`).join('');
+function renderToggles() {
+  document.querySelectorAll('#variants button').forEach(b => b.setAttribute('aria-pressed', b.dataset.v === state.v));
+  $('spin').checked = state.spin; $('pt').checked = state.pt; $('dof').checked = state.dof;
+  document.querySelectorAll('#parts input').forEach(i => { i.checked = state[i.dataset.part]; });
+  if (!STANDS.includes(state.deg)) state.deg = STANDS[STANDS.length - 1];
+  $('stand-box').hidden = $('deg-box').hidden = !STANDS.length;
+  $('stand').checked = state.stand; $('deg').value = state.deg; $('deg').disabled = !state.stand;
+  if (!SPP.includes(state.spp)) state.spp = 64;
+  $('spp').value = state.spp;
+  $('dof').disabled = $('spp').disabled = !state.pt;
+  $('status').hidden = !state.pt || !ready;
+}
+document.querySelectorAll('#variants button').forEach(b => b.addEventListener('click', async () => {
+  state.v = b.dataset.v; save(); renderToggles(); renderDetails();
+  await load(modelKey()); applyScene();
+}));
+$('spin').addEventListener('change', e => { state.spin = e.target.checked; spinWait = 0; save(); });
+$('pt').addEventListener('change', e => { state.pt = e.target.checked; save(); renderToggles(); applyScene(); });
+$('spp').innerHTML = SPP.map(n => `<option value="${n}">${n}</option>`).join('');
+$('spp').addEventListener('change', e => { state.spp = +e.target.value; save(); });   // more: tracing carries on, fewer: it stops
+$('dof').addEventListener('change', e => { state.dof = e.target.checked; save(); applyCamera(); });
+document.querySelectorAll('#parts input').forEach(i => i.addEventListener('change', e => {
+  state[i.dataset.part] = e.target.checked; save(); applyScene();
+}));
+$('deg').innerHTML = STANDS.map(d => `<option value="${d}">${d}°</option>`).join('');
+const restand = async () => { save(); renderToggles(); await load(modelKey()); applyScene(); };
+$('stand').addEventListener('change', e => { state.stand = e.target.checked; restand(); });
+$('deg').addEventListener('change', e => { state.deg = +e.target.value; restand(); });
+$('full').addEventListener('click', () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else $('stage').requestFullscreen?.();
+});
+
+// --- loading -------------------------------------------------------------------------------
+const draco = new DRACOLoader().setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/libs/draco/gltf/');
+const gltf = new GLTFLoader().setDRACOLoader(draco);
+const texLoader = new THREE.TextureLoader();
+const pending = {};
+function load(v) {          // v: a model key (modelKey()), in place of {v} in the model and shadow file names
+  return pending[v] ??= Promise.all([
+    gltf.loadAsync(DATA.model.replace('{v}', v), e => {
+      if (!ready && e.total) $('loading').textContent = `読み込んでいます… ${Math.round(100 * e.loaded / e.total)}%`;
+    }),
+    ...shadowFiles().map(s => texLoader.loadAsync(DATA.shadow.replace('{v}', v).replace('{s}', s)).then(t => {
+      t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+      t.repeat.set(FLOOR_SIZE / SHADOW_SIZE, FLOOR_SIZE / SHADOW_SIZE);
+      t.offset.set(0.5 - FLOOR_SIZE / SHADOW_SIZE / 2, 0.5 - FLOOR_SIZE / SHADOW_SIZE / 2);
+      floorTex[v + s] = t;
+    })),
+  ]).then(([g]) => {
+    models[v] = g.scene;
+    partObjs[v] = Object.fromEntries(PARTS.map(p => [p.id, g.scene.children.filter(o => o.name.startsWith(p.prefix))]));
+    // clear acrylic and the half mirror: solid glass for the path tracer, but they don't block its shadow rays, or
+    // the board under the plate would only get light by chance (black at a few dozen samples)
+    g.scene.traverse(o => {
+      if (o.material?.transmission) Object.assign(o.material, {thickness: 0.0015, castShadow: false});
+    });
+  });
+}
+
+async function start() {
+  const env = await new HDRLoader().loadAsync('3d/studio.hdr');
+  env.mapping = THREE.EquirectangularReflectionMapping;
+  scene.environment = env;
+  renderToggles();
+  await load(modelKey());
+  applyScene();
+  ready = true;
+  $('loading').hidden = true;
+  renderToggles();
+  for (const [v] of DATA.variants) load(v);           // the other variants in the background
+}
+
+let lastFrame = 0;
+function frame(now) {
+  requestAnimationFrame(frame);
+  stepTween(now);
+  stepSpin(now);
+  controls.update(Math.min(0.1, (now - (lastFrame || now)) / 1000));   // seconds, so the turntable keeps its pace at any refresh rate
+  lastFrame = now;
+  if (!ready) return;
+  if (state.pt) {
+    if (!sceneSet) { pathTracer.setScene(scene, camera); sceneSet = true; }
+    if (dirty) { pathTracer.reset(); dirty = false; }
+    if (pathTracer.samples < state.spp) pathTracer.renderSample();
+    $('status').textContent = `${Math.floor(Math.min(pathTracer.samples, state.spp))} / ${state.spp} spp`;
+  } else if (dirty) {
+    renderer.render(scene, camera);
+    dirty = false;
+  }
+}
+
+start().catch(e => {
+  console.error(e);
+  $('loading').hidden = false;
+  $('loading').textContent = 'モデルを読み込めませんでした。docs/enctest-views.html はローカルの Web サーバー経由で開いてください（python3 -m http.server -d docs）。';
+});
+requestAnimationFrame(frame);
+if (location.hash === '#debug') window.nrsk = {THREE, scene, camera, controls, renderer, pathTracer, models, state, applyScene, applyCamera, preset};
+
+// --- close-ups -----------------------------------------------------------------------------
+function renderDetails() {
+  const items = (DATA.details[state.v] || []).map(([t, url]) => ({src: url, cap: V_NAME[state.v] ? `${V_NAME[state.v]}・${t}` : t}));
+  $('details').innerHTML = items.map((d, i) =>
+    `<button class="shot" data-i="${i}"><figure><img loading="lazy" src="${d.src}" alt="${d.cap}"><figcaption>${d.cap}</figcaption></figure></button>`).join('')
+    || '<p class="empty">寄りの画像はありません。</p>';
+  $('details').querySelectorAll('.shot').forEach(b => b.addEventListener('click', () => lightbox(items, +b.dataset.i)));
+}
+
+const lb = {items: [], i: 0, onShow: null};
+function lightbox(items, i, onShow = null) {
+  Object.assign(lb, {items, onShow});
+  if (!$('lb').open) $('lb').showModal();
+  show(i);
+}
+
+function show(i) {
+  const n = lb.items.length, d = lb.items[i];
+  if (!d) return;
+  lb.i = i;
+  $('lb-body').classList.remove('zoomed');
+  $('lb-img').src = d.src; $('lb-img').alt = d.cap;
+  $('lb-cap').textContent = d.cap;
+  $('lb-count').textContent = `${i + 1} / ${n}`;
+  $('lb-prev').disabled = $('lb-next').disabled = n < 2;
+  [i - 1, i + 1].forEach(j => { const e = lb.items[(j + n) % n]; if (e) new Image().src = e.src; });
+  lb.onShow?.(i);
+}
+
+function lbStep(dir) {
+  const n = lb.items.length;
+  if (n > 1) show((lb.i + dir + n) % n);
+}
+
+function setupLightbox() {
+  const dlg = $('lb'), body = $('lb-body'), img = $('lb-img');
+  $('lb-close').addEventListener('click', () => dlg.close());
+  $('lb-prev').addEventListener('click', () => lbStep(-1));
+  $('lb-next').addEventListener('click', () => lbStep(1));
+  // the dark area around the image closes it; the image itself toggles 100 % at the clicked spot
+  body.addEventListener('click', e => { if (e.target === body && !body.classList.contains('zoomed')) dlg.close(); });
+  let p0 = null;
+  img.addEventListener('pointerdown', e => { p0 = {x: e.clientX, y: e.clientY}; });
+  img.addEventListener('pointerup', e => {
+    if (!p0) return;
+    const dx = e.clientX - p0.x, dy = e.clientY - p0.y; p0 = null;
+    const zoomed = body.classList.contains('zoomed');
+    if (!zoomed && Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) return lbStep(dx < 0 ? 1 : -1);   // swipe
+    if (Math.hypot(dx, dy) > 6) return;
+    const r = img.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+    body.classList.toggle('zoomed');
+    if (!zoomed) {
+      if (img.naturalWidth <= r.width) return body.classList.remove('zoomed');   // already shown at full size
+      body.scrollLeft = fx * img.naturalWidth - body.clientWidth / 2;
+      body.scrollTop = fy * img.naturalHeight - body.clientHeight / 2;
+    }
+  });
+  dlg.addEventListener('close', () => { lb.onShow = null; body.classList.remove('zoomed'); });
+}
+document.addEventListener('keydown', e => {
+  if (!$('lb').open) return;   // Esc is the dialog's own
+  const k = {ArrowLeft: -1, ArrowRight: 1}[e.key];
+  if (k) { e.preventDefault(); lbStep(k); }
+});
+setupLightbox(); renderToggles(); renderDetails();
+</script>
