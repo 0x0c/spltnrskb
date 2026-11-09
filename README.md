@@ -209,6 +209,7 @@ Fusion のスクリプトは `fusion/` にあります。`fusion/link.sh` を 1 
 
 - `NrskCaseSync`：基板から来る寸法を Fusion の設計に反映します。
 - `NrskCaseExport`：部品ごとの STL と `.f3d` を `case/fusion/` に書き出します。
+- `NrskCaseLayout`：Fusion の画面で、各部品を組み立てた位置に表示します（台座は 3° だけ）。部品は書き出す座標系で作ってあるので、そのままではホイールが床に、プレートがトレイにめり込んで見えます。配置を動かすだけなので、書き出す STL は変わりません。
 - `NrskCaseBuild` と `NrskCaseFreeze`：設計を最初に組み立てるときだけ使います。今の設計は凍結してあり、`NrskCaseBuild` は実行を拒みます。
 - `NrskEditCapKey` と `NrskEditDrumPin`：凍結のあとに設計へ加えた編集（キャップの回り止め、ドラムの六角ピン）の記録です。設計ごとに 1 度だけ適用でき、2 度目は拒みます。
 
