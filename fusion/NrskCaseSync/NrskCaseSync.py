@@ -25,7 +25,7 @@ import nrsk_fusion  # noqa: E402
 
 POINTS = ('screws', 'pcb_holes', 'feet', 'keys')            # lists of {id, xy}
 # what the build used besides the parameters and the points; a change here needs a hand edit
-SHAPES = ('outer_box', 'inner', 'port_skin', 'slots', 'wheel', 'cap')
+SHAPES = ('outer_box', 'inner', 'port_skin', 'slots', 'wheel', 'cap_key')
 DRUM_SHAPES = ('origin', 'drum_d', 'block_x', 'hood_ends', 'bezel_box', 'ledge_box', 'plate_hole', 'web_cut')
 
 

@@ -381,7 +381,7 @@ def rounded_box(comp, x0, x1, y0, y1, z0, z1, r, far_end, name=None):
 
 # --- user parameters (make_case's constants) and the input the design was built from -------------------
 COUNTS = {'WHEEL_KNURLS', 'N_FRAMES', 'DRUM_GROOVES'}     # plain numbers, not lengths
-ANGLES = {'DRUM_HELIX', 'STAND_ANGLES'}
+ANGLES = {'DRUM_HELIX', 'STAND_ANGLES', 'CAP_KEY_SHIFT'}
 
 
 def parameter_values(params):

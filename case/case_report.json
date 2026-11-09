@@ -50,7 +50,7 @@
    ]
   ],
   "pcb_holes": 8,
-  "tray_volume_cm3": 101.1,
+  "tray_volume_cm3": 101.3,
   "feet_xy": [
    [
     26.5,
@@ -141,7 +141,7 @@
    ]
   ],
   "pcb_holes": 8,
-  "tray_volume_cm3": 110.4,
+  "tray_volume_cm3": 110.6,
   "feet_xy": [
    [
     -1.0,

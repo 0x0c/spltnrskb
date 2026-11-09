@@ -3,7 +3,7 @@
 	"type": "script",
 	"author": "nrsk",
 	"description": {
-		"": "nrsk: NrskEditCapStraight (wheel cap with straight ends)"
+		"": "nrsk: NrskEditCapLugs (round wheel cap with two anti-rotation lugs)"
 	},
 	"supportedOS": "windows|mac",
 	"editEnabled": true
