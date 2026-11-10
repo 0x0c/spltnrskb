@@ -4,6 +4,10 @@
 #define RP2040_BOOTLOADER_DOUBLE_TAP_RESET
 #define RP2040_BOOTLOADER_DOUBLE_TAP_RESET_TIMEOUT 500U
 
+// No VBUS sense pin: the half that enumerates on USB becomes the master. If the host is slow to enumerate
+// (BIOS, wake from sleep, KVM), a half that gave up waiting reboots and tries again instead of staying deaf.
+#define SPLIT_WATCHDOG_ENABLE
+
 // I2C1 on GP2 (SDA) / GP3 (SCL): OLED
 #define I2C_DRIVER I2CD1
 #define I2C1_SDA_PIN GP2

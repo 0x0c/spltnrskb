@@ -72,6 +72,12 @@
         "handedness": {
             "pin": "GP0"
         },
+        "bootmagic": {
+            "matrix": [
+                6,
+                0
+            ]
+        },
         "transport": {
             "sync": {
                 "layer_state": true,
