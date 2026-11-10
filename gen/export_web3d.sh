@@ -1,6 +1,6 @@
 #!/bin/bash
 # Assets of the 3D design-review page (docs/views.html) from the same Blender scene as the renders:
-#   docs/3d/<a|b>.glb                    the model, A = clear acrylic plate + low-head screws (with KiCad's assembled
+#   docs/3d/<a|b>.glb                    the model, A = clear acrylic plate + pan-head screws (with KiCad's assembled
 #                                        boards under it), B = all printed
 #   docs/3d/studio.hdr                   the studio lighting as an equirectangular HDR
 #   docs/3d/shadow-<a|b>[-nocable].jpg   the floor shadow (ambient occlusion map of the floor)
@@ -28,7 +28,7 @@ fi
 run() { blender -b -P gen/render_blender.py -- "$@" > /dev/null 2>&1 || { echo "failed: $*"; exit 1; }; }
 [ -n "$ONLY_STANDS" ] || run --samples 512 --web "env:$OUT/studio.hdr"   # ONLY_STANDS=1: the stand models only
 for variant in a b; do
-  if [ "$variant" = a ]; then base="--top acrylic --screws lowpan"; else base="--top print"; fi
+  if [ "$variant" = a ]; then base="--top acrylic --screws pan"; else base="--top print"; fi
   for stand in "" 3 6 9; do     # flat on the desk, then on each tilt stand
     if [ -n "$stand" ]; then case_args="$base --stand $stand" name="$variant-stand$stand"; else case_args=$base name=$variant; fi
     [ -n "$ONLY_STANDS" ] && [ -z "$stand" ] && continue

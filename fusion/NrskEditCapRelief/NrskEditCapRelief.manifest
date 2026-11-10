@@ -1,0 +1,10 @@
+{
+	"autodeskProduct": "Fusion",
+	"type": "script",
+	"author": "nrsk",
+	"description": {
+		"": "nrsk: NrskEditCapRelief (wheel cap clear of the plate bosses)"
+	},
+	"supportedOS": "windows|mac",
+	"editEnabled": true
+}

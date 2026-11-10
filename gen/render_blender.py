@@ -40,7 +40,8 @@ SHOTS = arg('--shots', 'hero,detail,oled').split(',')
 RES = int(arg('--res', '1800'))
 OLED_H = arg('--oled-height', None)          # None = built design (cover on the plate); else variant height
 OUT_SUFFIX = arg('--suffix', '')
-SCREWS = arg('--screws', 'none')             # case screws on the plate: 'none', 'flat' (M2 countersunk, flush) or 'lowpan' (M2 low-head pan)
+SCREWS = arg('--screws', 'none')             # case screws on the plate: 'none', 'flat' (M2 countersunk, flush), 'lowpan' (M2 low-head pan)
+                                             # or 'pan' (M2 pan head, 3.8 x 1.3 mm: variant A's M2 x 16)
 TOP = arg('--top', 'acrylic')
 PORTS = arg('--ports', None)                 # USB-C/TRRS opening study style (case/preview/port-variants, made for the former TRRS link), left half only
 NO_CABLES = '--no-cables' in args                # switch plate: 'acrylic' (clear, laser cut) or 'print' (printed, with web)
@@ -455,9 +456,10 @@ def build_half(side, world):
             objs.append(import_stl(os.path.join(ROOT, 'case', 'preview', f'{side}-pcb.stl'), MAT['pcb'], f'{side} pcb'))
     for k in data['keys']:
         objs += keycap(k, side)
-    if SCREWS in ('flat', 'lowpan'):
+    if SCREWS in ('flat', 'lowpan', 'pan'):
         rep = json.load(open(os.path.join(ROOT, 'case', 'case_report.json')))
-        make = flat_screw if SCREWS == 'flat' else lowpan_screw
+        make = {'flat': flat_screw, 'lowpan': lowpan_screw,
+                'pan': lambda name, x, y: lowpan_screw(name, x, y, d=3.8, h=1.3)}[SCREWS]
         for i, (x, y) in enumerate(rep[side]['screws_xy']):
             objs += make(f'{side} screw {i}', x, y)
     if OLED_H is None:

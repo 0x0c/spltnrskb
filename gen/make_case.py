@@ -53,12 +53,16 @@ PORT_LIFT = 2.0              # tunnel headroom: the board slides in this high, c
 FLOOR = 2.0
 BOSS_D = 4.6         # stays clear of back-side pads (>= 2.75 mm from hole centre)
 PILOT_D = 1.6        # M2 self-tapping
-INSERT_D = 3.2       # M2 heat-set insert (in the printed plate's bosses)
+INSERT_D = 2.9       # hole for an M2 heat-set insert of 3.2 mm outer diameter (in the printed plate's bosses):
+                     # 0.3 mm under it, so the knurl melts into the wall and the screw cannot pull the insert out
 INSERT_DEPTH = 4.0
+INSERT_D_NOMINAL = 3.2   # the insert's own diameter: places the two screws beside the wheel (Half._screws)
 # plate screws (one tray for A and B):
 #   B (printed plate): M2 x 12 from the tray bottom (counterbored) up the wall into a heat-set insert in a boss under
 #     the plate, so the plate top shows no screws; the boss sits in a pocket at the wall top
-#   A (acrylic plate): M2 x 6 slim-head screw from the top into an M2 nut dropped into the hex trap under that pocket
+#   A (acrylic plate): M2 x 16 pan-head screw from the top through the plate and the whole wall into an M2 nut
+#     pressed into the counterbore under the tray. (Not into a nut in the hex trap under the pocket, as first
+#     planned: the trap opens upward, so a screw from the top only lifts the nut out of it. The trap stays unused.)
 #   acrylic stack: M2 x 20 from the top through everything into a nut under the bottom plate
 SCREW_CB = (4.6, 1.6)        # counterbore for the pan head under the tray (diameter, depth)
 PLATE_BOSS = (5.6, 3.0)      # boss under the printed plate (diameter, height)
@@ -164,7 +168,7 @@ BLOCK_T, BLOCK_HALF_W = 3.0, 3.5      # bearing block: thickness along the axis,
 BLOCK_R = 1.0                         # bearing block: radius of the top corners (seen along the axis)
 BLOCK_TOP = EC10_AXIS + 1.5
 BLOCK_SLOT_R, BLOCK_LIP = 1.1, 1.8    # slot radius around the round pin, snap-in mouth width
-BLOCK_PEG = (1.9, 1.4)                # pegs into the 2.0 mm NPTH: diameter, length
+BLOCK_PEG = (1.8, 1.4)                # pegs into the 2.0 mm NPTH: diameter, length (0.1 mm radial play: printable)
 PLATE_TOP_Z = PLATE_GAP + PLATE_T     # plate top above the PCB top (5.0)
 DRUM_OPENING = (-7.1, -7.6, 2 * DRUM_GAP + DRUM_W + BLOCK_T + 0.6, 7.6, 1.0)   # plate opening: x0, y0, x1, y1, corner r
 # the bezel's flange sits in a plate hole of its own outline, flush with the plate top (like the OLED cover); a
@@ -518,7 +522,10 @@ class Half:
                 pts.append((inner_x, (a2 + b2) / 2))
         # the corner wheel takes the corner screw; put one on each face just past the wheel opening
         (wx, wy), wr = self.d['wheel']['center'], self.d['wheel']['r']
-        keep = wr + WHEEL_CUT + CAP_SHOULDER + INSERT_D / 2 + 0.8     # clear of the wheel cap's shoulder
+        # clear of the wheel cap's shoulder as far as the insert hole goes. The pocket in the wall top (and the
+        # printed plate's boss in it) reaches 0.25 mm into the cap's top tier: the cap is relieved there (Fusion
+        # edit NrskEditCapRelief). Moving these two screws out instead would push the feet and the stands along.
+        keep = wr + WHEEL_CUT + CAP_SHOULDER + INSERT_D_NOMINAL / 2 + 0.8
         pts = [p for p in pts if math.hypot(p[0] - wx, p[1] - wy) > keep]
         d = math.sqrt(keep ** 2 - (wy - Y0) ** 2)
         side_x = X0 if wx < (X0 + X1) / 2 else X1
