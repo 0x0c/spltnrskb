@@ -24,7 +24,7 @@ FP = {
     'ldo': 'Package_TO_SOT_SMD:SOT-23-5',
     'boot': 'Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm',
     'esd': 'Package_TO_SOT_SMD:SOT-23-6',
-    'xtal': 'Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm_HandSoldering',
+    'xtal': 'Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm',   # reflowed by JLCPCB: the pads sit under the terminals
     'r': 'Resistor_SMD:R_0805_2012Metric',
     'c': 'Capacitor_SMD:C_0805_2012Metric',
     'fuse': 'Fuse:Fuse_1206_3216Metric',
@@ -315,6 +315,11 @@ def build(side):
     link = {'A4': 'VCC', 'A1': 'GND', 'A5': None, 'B5': None, 'A6': 'DATA', 'B6': 'DATA',
             'A7': None, 'B7': None, 'A8': None, 'B8': None, 'SH': 'GND'}
     sh.symbol('Connector:USB_C_Receptacle_USB2.0_16P', 'J1', 'USB-C', JX, JY, 0, FP['usb'], link)
+    # the link is plugged in and out with power on and DATA goes straight to a GPIO: the same ESD array as on
+    # the host port clamps DATA and the 5 V rail (its second channel is not used). No series resistor: the
+    # PIO half-duplex driver pulls low against the other half's 2 mA high drive and has little margin for one.
+    sh.symbol('Power_Protection:USBLC6-2SC6', 'U3', 'USBLC6-2SC6', JX + 38.1, JY, 0, FP['esd'],
+              {'1': 'DATA', '6': 'DATA', '3': None, '4': None, '2': 'GND', '5': 'VCC'})
 
     # OLED (0.91" SSD1306, I2C on PD0/PD1)
     OX, OY = 342.9, 215.9
