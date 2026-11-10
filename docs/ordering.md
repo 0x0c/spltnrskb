@@ -130,7 +130,7 @@ OLED カバーを貼る透明の両面テープ（厚さ 0.5 mm、3M スコッ�
 
 ## 7. 3D プリント
 
-`case/print/` の STL を印刷します。材料は PETG を勧めます。今の STL には、印刷の前に Fusion で実行することが残っています（ホイールの六角ピン、B のキャップの逃がしなど）。[pre-order-checklist.md](pre-order-checklist.md) の「筐体で発注前に直すこと」を先に確かめてください。
+`case/print/` の STL を印刷します。材料は PETG を勧めます。はめあいのすき間など、印刷のあとに手で合わせる箇所が残っています。[pre-order-checklist.md](pre-order-checklist.md) の「筐体で発注前に直すこと」を先に確かめてください。
 
 | ファイル | A | B | アクリル版 | 向き |
 | --- | --- | --- | --- | --- |

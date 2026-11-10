@@ -216,7 +216,8 @@ Fusion のスクリプトは `fusion/` にあります。`fusion/link.sh` を 1 
 - `NrskCaseExport`：部品ごとの STL と `.f3d` を `case/fusion/` に書き出します。
 - `NrskCaseLayout`：Fusion の画面で、各部品を組み立てた位置に表示します（台座は 3° だけ）。部品は書き出す座標系で作ってあるので、そのままではホイールが床に、プレートがトレイにめり込んで見えます。配置を動かすだけなので、書き出す STL は変わりません。
 - `NrskCaseBuild` と `NrskCaseFreeze`：設計を最初に組み立てるときだけ使います。今の設計は凍結してあり、`NrskCaseBuild` は実行を拒みます。
-- `NrskEditCapLugs` と `NrskEditDrumPin`：凍結のあとに設計へ加えた編集（キャップの回り止めの爪 2 つ、ドラムの六角ピン）の記録です。設計ごとに 1 度だけ適用でき、2 度目は拒みます。
+- `NrskEditCapLugs`、`NrskEditDrumPin`、`NrskEditWheelPin`、`NrskEditCapRelief`：凍結のあとに設計へ加えた編集の記録です。順に、キャップの回り止めの爪 2 つ、ドラムの六角ピン、ホイールの六角ピン、キャップのボスの逃がしです。設計ごとに 1 度だけ適用でき、2 度目は拒みます。
+- `NrskEdit2026Fixes`：同期、`NrskEditWheelPin`、`NrskEditCapRelief`、書き出しを 1 回の実行で続けて行います。
 
 基板を作り直したときは、次の順に筐体を更新します。
 
@@ -519,6 +520,6 @@ RP2040 は ROM に USB ブートローダーを持っています。専用の書
 - DRC と ERC の結果です（2026-11-10、KiCad 10.0.6、GND のベタを表裏に敷いた後の基板）。左右とも、DRC の違反と警告、未接続のパッド、回路図との不一致、ERC の違反はすべて 0 件です。USB-C の外形線は舌の角に掛かるため、シルクではなく Fab 層に描いています（`lib/nrsk.pretty` の USB-C のフットプリント）。
 - RP2040 は 0.4 mm ピッチの QFN で、裏面のサーマルパッドも GND に半田付けする必要があります。手半田はホットエアかリフローが前提なので、JLCPCB の部品実装サービスを使います。USB-C（0.5 mm ピッチ）も同様です。注文に使うファイルと手順は [docs/ordering.md](docs/ordering.md) にあります。
 - JLCPCB の配置のプレビューでは、2 つの USB-C（J1、J2）の差込口が基板の外側を向いているかを必ず確かめてください。USB-C の回転の補正値は、実際の実装でまだ確かめていません。エンコーダー EC05E1220401 は JLCPCB の在庫が少ないので、在庫も注文の直前に確かめます。
-- 筐体の 3D プリント部品には、印刷の前に Fusion で実行することが残っています（ホイールの六角ピン、B のキャップの逃がし、インサートの下穴など）。一覧は [docs/pre-order-checklist.md](docs/pre-order-checklist.md) の「筐体で発注前に直すこと」にあります。
+- 筐体の 3D プリント部品には、はめあいのすき間など、印刷のあとに手で合わせる箇所が残っています。一覧は [docs/pre-order-checklist.md](docs/pre-order-checklist.md) の「筐体で発注前に直すこと」にあります。
 - ホットスワップソケットのフットプリントは、一般的な Kailh CPG151101S11 の寸法で作った自作品です。1 枚目は実物のソケットと照合してください。
 - QMK のファームウェアは、`firmware/qmk/compile.sh`（`qmk compile -kb nrsk -km default`）が警告なしで通ることを確認しています。使ったのは、現行の qmk_firmware（2026-10 時点）と Arm GNU Toolchain 15.2.rel1 です。確認は 2026-11-10 に、右半分の Bootmagic と左右通信のウォッチドッグを足した後の設定で行いました。出力は `nrsk_default.uf2`（約 87 KB）です。実機での動作（キー入力、左右通信、OLED、ホイール）はまだ確認していません。
