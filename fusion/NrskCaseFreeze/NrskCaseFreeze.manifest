@@ -1,0 +1,10 @@
+{
+	"autodeskProduct": "Fusion",
+	"type": "script",
+	"author": "nrsk",
+	"description": {
+		"": "nrsk: NrskCaseFreeze (docs/specs/fusion-case.md)"
+	},
+	"supportedOS": "windows|mac",
+	"editEnabled": true
+}

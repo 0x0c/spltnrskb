@@ -125,7 +125,7 @@ RP2040 の GPIO は 30 本あるので、シリアル通信 1 本、左右判定
 - 形: 直径 13 mm、幅 21.6 mm のドラムで、表面に斜めのローレット（ねじれ角 30°、溝 36 本、深さ 0.4 mm）があります。細かいローレットを出すため、光造形の樹脂で作ります（`case/print/right-drum.stl`）。
 - 高さ: 軸は基板の上面から 7 mm です。ドラムの上端はプレートから 8.5 mm 出て、キーキャップの上面より 4.5 mm 低くなります。キーボードの高さは変わりません。
 - 位置: ドラムを囲むベゼルは、左右のフードが同じ大きさの対称な形で、2 u の空きをほぼ埋めています。左は F12 との間のプレートの帯、右は筐体の壁で端が決まるので、ベゼルとドラムの中心は下の段の Backspace（2 u）の中心より約 0.7 mm 右に来ます。
-- 検出: 軸が基板と平行な横型のロータリーエンコーダー Alps EC10E1220505（1 回転 24 クリック、12 パルス）を、ドラムの左に表面から差し込みます。ドラムの左端の六角ピン（対辺 1.66 mm）が、エンコーダーの六角穴（対辺 1.73 mm）に 1.6 mm 入って回します。
+- 検出: 軸が基板と平行な横型のロータリーエンコーダー Alps EC10E1220505（1 回転 24 クリック、12 パルス）を、ドラムの左に表面から差し込みます。ドラムの左端の六角ピン（対辺 1.66 mm）が、エンコーダーの六角穴（対辺 1.73 mm）に 1.6 mm 入って回します。ピンは根元から先まで対辺 1.66 mm の六角のままで、先端の縁だけを 0.2 mm 面取りしています。
 - 軸受け: ドラムの右端の丸ピン（直径 2 mm）を、基板の穴 2 つに差し込んだ 3D プリントの軸受けブロックが受けます。ブロックの位置決めピンは基板の下へ出ないので、基板の下のサムホイールとは当たりません。ブロックの溝は上が開いた U 字で、入口を 1.8 mm に絞ってあるので、ピンを上から押し込むとはまって抜けません。指で押し下げる力は、エンコーダーとブロックの両方で受けます。
 - ベゼル: 3D プリントのベゼル（`case/print/right-drum-bezel.stl`）の枠を、プレートの穴に収めます。枠の上面はプレートと面一で、段差はありません。プレートを載せる前にベゼルを基板の上に置き、上からプレートをかぶせます。枠の下のつばがプレートの下面に当たってベゼルが抜けるのを止め、軸受けブロックの上面とエンコーダー側の脚が下から支えます。ベゼルのフードがエンコーダーを覆い、もう一方のフードの天井が軸受けブロックを押さえます。A、B、アクリル版で同じ部品を使います。
 - ファームウェア: QMK のエンコーダー機能で読みます（右半分の 2 個目のエンコーダー）。1 クリックで A 相と B 相が半周期だけ進むので、分解能（`resolution`）を 2 にしています。マウスのホイールのキーコードを送るため、QMK のマウスキー機能を有効にしています。実機で向きが逆なら、`gen/make_qmk.py` の `pin_a` と `pin_b` を入れ替えます。
@@ -168,7 +168,7 @@ B〜F は OLED を基板の外側（壁の上）へ移すため、基板のコ�
 | 部分 | A / B（3D プリントのトレイ、`case/print/`） | アクリル版（`case/laser/`） |
 | --- | --- | --- |
 | 底 | トレイの床 2 mm、外周の下端 R2・上端 R0.6 のフィレット | 底板 3 mm（`<side>-bottom`） |
-| 壁 | トレイと一体、幅 8 mm、高さ 14.1 mm。ホイールの上は外せる角キャップ（`<side>-wheel-cap.stl`） | 枠 3 mm × 4 枚（差込口のある枠には切り欠き、`frame4` は切り欠きなし） |
+| 壁 | トレイと一体、幅 8 mm、高さ 14.1 mm。ホイールの上は外せる角キャップ（`<side>-wheel-cap.stl`）。キャップの下段から出た 2 つの爪（奥の壁と側面の壁に 1 つずつ）がトレイの溝に入るので、キャップは回りません | 枠 3 mm × 4 枚（差込口のある枠には切り欠き、`frame4` は切り欠きなし） |
 | 基板の支持 | 床から高さ 7 mm のボス（φ4.6、下穴 φ1.6）に M2 × 6 mm タッピングネジ | M2 × 7 mm スペーサーに、上から M2 × 4 mm、下から M2 × 5 mm のネジ |
 | プレート | A：透明アクリル 1.5 mm、上からスリムヘッド M2 × 6 mm でナット受けのナットへ／B：3D プリント（補強付き、裏のボスに M2 インサート）、底の座ぐりから M2 × 12 mm | 透明アクリル 1.5 mm、上から M2 × 20 mm とナットで底板まで共締め |
 | ネジ本数 | 外周 左 10・右 11、基板 左右 8 ずつ | 同じ |
@@ -199,6 +199,30 @@ B〜F は OLED を基板の外側（壁の上）へ移すため、基板のコ�
 
 組み立て手順は、同じデータを使ったインタラクティブな組み立てガイド（`case/preview/assembly.html`、公開版は [http://www.0x0c.me/spltnrskb/assembly.html](http://www.0x0c.me/spltnrskb/assembly.html)）で確認できます。手順ごとに部品が所定の位置に入るアニメーションと説明が出て、A・B・アクリル版と左右を切り替えられます。
 
+### Fusion の設計と、基板を変えたときの更新
+
+3D プリントの部品の形は、Autodesk Fusion の設計 `nrsk-left-case` と `nrsk-right-case`（Hybrid Design）が正です。対象はトレイ、B のプレート、ホイール、ホイールのキャップ、台座、ドラム式ダイヤル一式です。形を変えるときは、Fusion の GUI で編集します。リポジトリには、節目ごとに書き出した設計（`case/fusion/nrsk-<side>-case.f3d`）と部品ごとの STL（`case/fusion/<side>/`）を置いています。`gen/make_case.py` はその STL を読み込み、干渉チェックをしてから `case/print/` と `case/preview/` へ書き出します。アクリル版と、検証基板のトレイとプレートは、従来どおり `make_case.py` が作ります。
+
+寸法の定数の正は `make_case.py` です。Fusion のユーザーパラメータは同じ名前で、同期のたびに `make_case.py` の値で上書きされます。Fusion で値を変えて決めたら、`make_case.py` にも書き戻してください。
+
+Fusion のスクリプトは `fusion/` にあります。`fusion/link.sh` を 1 度実行すると、Fusion の「ユーティリティ」タブの「アドイン」から開く「スクリプトとアドイン」の一覧に載ります。
+
+- `NrskCaseSync`：基板から来る寸法を Fusion の設計に反映します。
+- `NrskCaseExport`：部品ごとの STL と `.f3d` を `case/fusion/` に書き出します。
+- `NrskCaseLayout`：Fusion の画面で、各部品を組み立てた位置に表示します（台座は 3° だけ）。部品は書き出す座標系で作ってあるので、そのままではホイールが床に、プレートがトレイにめり込んで見えます。配置を動かすだけなので、書き出す STL は変わりません。
+- `NrskCaseBuild` と `NrskCaseFreeze`：設計を最初に組み立てるときだけ使います。今の設計は凍結してあり、`NrskCaseBuild` は実行を拒みます。
+- `NrskEditCapLugs` と `NrskEditDrumPin`：凍結のあとに設計へ加えた編集（キャップの回り止めの爪 2 つ、ドラムの六角ピン）の記録です。設計ごとに 1 度だけ適用でき、2 度目は拒みます。
+
+基板を作り直したときは、次の順に筐体を更新します。
+
+1. `./build.sh` で基板を作り直します。`<side>/case_data.json` が新しくなります。
+2. `.venv/bin/python gen/fusion_input.py` で、Fusion 向けの入力（`case/fusion/<side>/input.json`）を作ります。
+3. Fusion で `nrsk-<side>-case` を開き、`NrskCaseSync` を実行します。`make_case.py` の定数の値が追従します。ネジ、基板の穴、ゴム足、キー、ドラムのピン、リセットの穴の位置も追従します。要素の増減や、外形、差込口、ホイールの位置などの変更は自動では追えません。そのときは何も変えずに違いを表示して止まります。GUI で直してから実行し直してください。
+4. `NrskCaseExport` を実行します。
+5. `.venv/bin/python gen/make_case.py` を実行して、干渉チェックを通します。続けて `build.sh` の筐体の段の残り（`case_preview.py`、`case_section.py`、`case_viewer.py`、`assembly_guide.py`）を実行します。`./build.sh` を実行し直してもかまいません。
+
+移行の経緯と検討した代替案は [docs/specs/fusion-case.md](docs/specs/fusion-case.md) にあります。
+
 ### 三面図
 
 `case/print/` の STL は、部品ごとに三面図（第三角法：平面図・正面図・右側面図）を `case/drawings/<部品名>.pdf` に用意しています。A3 横の用紙に、収まる最大の標準尺度（10:1〜1:2）で描き、全体の寸法（幅・奥行き・高さ）と表題欄を入れています。見える稜線と輪郭は実線、隠れる部分は破線（かくれ線）です。部品は STL の向きのまま描くので、台座は印刷するときの姿勢、B のプレートは上面が上です。
@@ -207,13 +231,13 @@ B〜F は OLED を基板の外側（壁の上）へ移すため、基板のコ�
 
 線は拡大しても粗くならないベクトルです。日本語の文字には PDF 標準の日本語フォント（平成角ゴシック）を指定し、埋め込んでいません。表示するときは閲覧ソフトの日本語ゴシック体で置き換わります（macOS のプレビュー、Acrobat、Chrome、Firefox で表示できます）。
 
-STL を書き出すスクリプト（`make_case.py`、`foot_coupon.py`、`pin_coupon.py`、`make_enctest.py`）は、`print/` に STL を書くたびに、同じ階層の `drawings/` の三面図を作り直します（検証基板の筐体は `enctest/case/drawings/`）。各 PDF には、元の STL、`gen/case_drawings.py`、オプションのハッシュを記録しています。どれも変わっていなければ描き直しを省くので、STL の中身が同じなら時間はかかりません。描くのは `gen/case_drawings.py` です（numpy だけで動きます）。メッシュの稜線（面どうしが 35° より大きく折れる辺）と輪郭を拾い、深度バッファで見える部分と隠れる部分に分けます。フィレットは薄い段を積み重ねた形なので、段の辺は描かず、フィレットの両端の線だけを残します。STL を指定すると、その部品だけを描きます（`python3 gen/case_drawings.py case/print/left-tray.stl`、かくれ線なしは `--no-hidden`、変更がなくても描き直すときは `--force`）。
+STL を書き出すスクリプト（`make_case.py`、`foot_coupon.py`、`pin_coupon.py`、`make_enctest.py`）は、`print/` に STL を書くたびに、同じ階層の `drawings/` の三面図を作り直します（検証基板の筐体は `enctest/case/drawings/`）。各 PDF には、元の STL、`gen/case_drawings.py`、オプションのハッシュを記録しています。どれも変わっていなければ描き直しを省くので、STL の中身が同じなら時間はかかりません。描くのは `gen/case_drawings.py` です（numpy だけで動きます）。メッシュの稜線（面どうしが 35° より大きく折れる辺）と輪郭を拾い、深度バッファで見える部分と隠れる部分に分けます。フィレットは細かい面の集まり（コードで作る部品では薄い段の積み重ね）なので、その間の辺は描かず、フィレットの両端の線だけを残します。STL を指定すると、その部品だけを描きます（`python3 gen/case_drawings.py case/print/left-tray.stl`、かくれ線なしは `--no-hidden`、変更がなくても描き直すときは `--force`）。
 
 ### ゴム足と台座
 
 3D プリント版のトレイの底には、ゴム足（3M CS-02、直径 9.5 mm）を貼る位置を決めるくぼみ（直径 10 mm、深さ 1 mm）が 5 か所あります。くぼみはプレートのネジの座ぐりを避けているので、プレートを外すときにゴム足を剥がす必要はありません。サムホイールのある角だけは、ホイールを挟んで 2 個です。この配置で、すべてのキーがゴム足で囲まれた範囲の内側に入ります。
 
-奥を持ち上げたいときは、3D プリントの台座（`case/print/<side>-stand-3.stl`、`-6`、`-9`）に載せます。台座は奥の辺と両側の辺に沿った U 字で、上面のくぼみに奥の 3 つのゴム足が収まり、手前の 2 つのゴム足は机に載ります。ネジは使わず、角度を変えるときは台座を取り替えます。9° の台座の高さは 22.9 mm です。
+奥を持ち上げたいときは、3D プリントの台座（`case/print/<side>-stand-3.stl`、`-6`、`-9`）に載せます。台座は奥の辺と両側の辺に沿った U 字で、上面のくぼみに奥の 3 つのゴム足が収まり、手前の 2 つのゴム足は机に載ります。ネジは使わず、角度を変えるときは台座を取り替えます。9° の台座の高さは 22.8 mm です。
 
 ![台座に載せた左半分（9°）](docs/img/tilt-study/U-back.jpg)
 
@@ -241,7 +265,7 @@ LCSC で買えるものは、すべて LCSC を最初の購入先にしていま
 
 - **水晶振動子**：Raspberry Pi のリファレンスと同じ Abracon ABM8-272-T3（12 MHz、負荷容量 10 pF）を 15 pF のコンデンサと組み合わせます。安価な YXC X322512MSB4SI は負荷容量 20 pF なので、そのままでは合いません。
 - **QSPI Flash**：W25Q128JVSIQ は LCSC に 2 つの部品番号があり、よく使われる C97521 は確認時に在庫切れでした。BOM には在庫のある C113767 を載せています。
-- **ロータリーエンコーダー**：Alps EC05E1220401 は LCSC（C116648）で 1 個から買えます。ホイールの六角ピンのはめあいは印刷機によって変わるので、対辺を変えた 7 本のピンを並べた `case/print/pin-coupon.stl` を印刷して確かめてください（手順は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）。ピンの対辺は `gen/make_case.py` の `PIN_AF` で変えられます。
+- **ロータリーエンコーダー**：Alps EC05E1220401 は LCSC（C116648）で 1 個から買えます。ホイールの六角ピンのはめあいは印刷機によって変わるので、対辺を変えた 7 本のピンを並べた `case/print/pin-coupon.stl` を印刷して確かめてください（手順は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）。ピンの対辺を変えるときは、Fusion の設計でホイールとドラムの六角ピンのスケッチを直します。試し印刷の `pin_coupon.py` が使う `gen/make_case.py` の `PIN_AF` も合わせてください。
 - **ドラム式ダイヤルのエンコーダー**：Alps EC10E1220505 は LCSC（C160888）で 5 個単位です。基板の表に挿入実装する部品なので、JLCPCB の部品実装には含めず、手で半田付けします。ドラムの六角ピンのはめあいは、サムホイールと同じく試し印刷で確かめてください。2 つのエンコーダーの機構と信号は、キーボードを作る前に [検証基板](docs/encoder-test-board.md) で確かめられます。
 - **OLED**：LCSC の HS91L02W2C01 は、写真ではピン順が GND/VCC/SCL/SDA ですが、3.3 V で動くかとピンヘッダが付くかはページに書かれていません。遊舎工房の品も代替として BOM に載せています。どちらもピン順を現物で確認してください。
 
@@ -328,6 +352,8 @@ spltnrskb/
 │   │   ├── case-section.png     組み立て状態の断面図
 │   │   ├── oled-variants/       OLED の高さ・角度の比較用モデル
 │   │   └── port-variants/       USB-C と TRRS の開口の比較用モデル（左右接続が TRRS だったころのもの）
+│   ├── fusion/                  Fusion の設計の書き出し（nrsk-<side>-case.f3d）と、<side>/ に部品ごとの
+│   │                            STL と Fusion への入力 input.json
 │   └── case_report.json         筐体の寸法とネジの本数（BOM とビューアが読む）
 ├── bom/                         左右と筐体を合わせた部品表（CSV と Markdown）
 ├── firmware/qmk/keyboards/nrsk/ QMK のキーボード定義と既定のキーマップ
@@ -350,6 +376,7 @@ spltnrskb/
 │   ├── dial-study/              サムホイールの比較レンダリング
 │   └── encoder-study/           サムホイールの読み取り方式の比較（AS5600 とエンコーダーの断面）
 ├── gen/                         生成スクリプト（下表）
+├── fusion/                      Fusion のスクリプト（NrskCaseSync、NrskCaseExport ほか）と登録用の link.sh
 ├── build.sh                     一括再生成
 ├── .github/workflows/pages.yml  3D ビューアと組み立てガイドを GitHub Pages へ公開
 └── tools/, .venv/               Freerouting、取得した 3D モデル、Python 仮想環境（Git の管理対象外）
@@ -364,7 +391,7 @@ spltnrskb/
 | 基板 | `make_pcb.py`、`route.py`、`sexpr.py` | 部品の配置、Freerouting による自動配線、KiCad ファイルの読み書き |
 | 3D 出力 | `export_3d.py`、`glb_mesh.py` | ビューア用の基板メッシュ（`build/3d/`、Git の管理対象外） |
 | ファームウェア | `make_qmk.py` | `firmware/qmk/keyboards/nrsk/` |
-| 筐体 | `make_case.py`、`case_preview.py`、`case_section.py`、`case_viewer.py`、`assembly_guide.py`、`case_drawings.py`（`make_case.py` から呼ばれる） | `case/` 以下のすべて |
+| 筐体 | `make_case.py`、`case_preview.py`、`case_section.py`、`case_viewer.py`、`assembly_guide.py`、`case_drawings.py`（`make_case.py` から呼ばれる） | `case/` 以下のすべて（3D プリントの部品は `case/fusion/` の STL から） |
 | 部品表 | `make_bom.py`、`bom_sources.json` | `bom/`（購入先の情報は `bom_sources.json` に手で記入） |
 | JLCPCB の実装データ | `make_jlc.py` | `fab/<side>/nrsk-<side>-jlc-bom.csv`、`fab/<side>/nrsk-<side>-jlc-cpl.csv` |
 | README の画像 | `doc_images.sh` | `docs/img/left-*.png`、`docs/img/right-*.png`、断面図 |
@@ -377,7 +404,8 @@ spltnrskb/
 - OLED と開口の比較検討：`oled_variants.py`、`oled_study.sh`、`oled_sheet.py`、`port_variants.py`
 - 六角ピンの試し印刷：`pin_coupon.py`（`case/print/pin-coupon.stl`。使い方は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）
 - ゴム足のくぼみの試し印刷：`foot_coupon.py`（`case/print/foot-coupon.stl`。使い方は [docs/ordering.md](docs/ordering.md) の 7 章）
-- チルト脚と台座の比較検討：`tilt_variants.py`、`tilt_stands.py`、`render_tilt.py`、`tilt_sheet.py`、`tilt_study.sh`。台座そのものは `make_case.py` が作ります
+- チルト脚と台座の比較検討：`tilt_variants.py`、`render_tilt.py`、`tilt_sheet.py`。台座そのものは Fusion の設計にあります。比較に使った全周の台座のモデル（`tilt_stands.py`）と一括の実行（`tilt_study.sh`）は、筐体を Fusion へ移した際に削除しました。どちらも、移す前のコミット `7e1b2cc` で動きます
+- Fusion の設計：`fusion_input.py`（Fusion への入力）、`fusion_diff.py`（Fusion の部品と `make_case.py` のトレイとプレートの比較）。手順は「Fusion の設計と、基板を変えたときの更新」の節
 - エンコーダーの検証基板：`build_enctest.sh`、`make_enctest.py`、`render_enctest.py`（使い方は [docs/encoder-test-board.md](docs/encoder-test-board.md)）
 
 KLE を編集した場合は `./build.sh` を実行すると、回路図、基板、配線、ERC/DRC、製造データ、筐体、BOM、QMK 定義をすべて作り直します。

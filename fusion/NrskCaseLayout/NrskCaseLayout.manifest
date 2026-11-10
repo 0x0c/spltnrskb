@@ -1,0 +1,10 @@
+{
+	"autodeskProduct": "Fusion",
+	"type": "script",
+	"author": "nrsk",
+	"description": {
+		"": "nrsk: NrskCaseLayout (show the parts where they sit when assembled)"
+	},
+	"supportedOS": "windows|mac",
+	"editEnabled": true
+}

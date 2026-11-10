@@ -21,7 +21,7 @@
 3. そのピンに差したまま、エンコーダーの本体を指で押さえて回転部を左右に揺すり、クリックが動く前のガタを確かめます。
 4. 記録すること：もっとも太く入ったピンの数字、そのピンでのガタの感触、1 つ太いピンが入らなかった様子（先端だけ入る、まったく入らない）。
 
-結果をもとに `gen/make_case.py` の `PIN_AF` を変え、ホイールの STL（`case/print/<side>-wheel.stl`）を作り直します。
+結果をもとに、Fusion の設計（`nrsk-<side>-case`）でホイールの六角ピンのスケッチの寸法を直します。`NrskCaseExport` で書き出してから `gen/make_case.py` を実行すると、ホイールの STL（`case/print/<side>-wheel.stl`）が新しくなります。試し印刷のピン（`gen/pin_coupon.py`）が使う `gen/make_case.py` の `PIN_AF` も合わせます。手順は README の「Fusion の設計と、基板を変えたときの更新」の節にあります。
 
 ## 2. 基板の差し込み（3D プリント版）
 

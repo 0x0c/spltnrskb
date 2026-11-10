@@ -1,0 +1,10 @@
+{
+	"autodeskProduct": "Fusion",
+	"type": "script",
+	"author": "nrsk",
+	"description": {
+		"": "nrsk: NrskEditCapLugs (round wheel cap with two anti-rotation lugs)"
+	},
+	"supportedOS": "windows|mac",
+	"editEnabled": true
+}

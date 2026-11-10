@@ -75,8 +75,11 @@ def hardware(hf, variant):
     return out
 
 
+VIEW_SIMPLIFY = 0.01   # mm: meshes are thinned this far for the page (the Fusion parts are finely meshed)
+
+
 def pack(man):
-    mesh = man.to_mesh()
+    mesh = man.simplify(VIEW_SIMPLIFY).to_mesh()
     v = np.asarray(mesh.vert_properties[:, :3], dtype=np.float32)
     t = np.asarray(mesh.tri_verts, dtype=np.uint32)
     return dict(v=base64.b64encode(v.tobytes()).decode(), i=base64.b64encode(t.tobytes()).decode())

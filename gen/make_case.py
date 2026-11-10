@@ -19,7 +19,7 @@ import os
 import struct
 import sys
 
-from manifold3d import CrossSection, JoinType, Manifold, OpType, set_circular_segments
+from manifold3d import CrossSection, JoinType, Manifold, set_circular_segments
 
 from footprints import DRUM_D, DRUM_GAP, DRUM_W
 
@@ -71,6 +71,13 @@ BUTTON_KEEP = 3.6            # printed plate's web kept off the 6 mm switch body
 CAP_SHOULDER = 2.0           # cap's top tier overhangs the opening by this much and rests on the wall
 CAP_LEDGE = 3.0              # thickness of that top tier
 CAP_FIT = 0.15
+# the cap's anti-rotation lugs: the cap is cut from the wall by circles, so it could turn in its round seat. A lug
+# hangs from the cap's lower tier on each wall, where the wall's centre line crosses the opening (the crossing on the
+# far side of the corner lies outside the rounded corner), reaching under the ledge into a slot in the tray: width
+# across, reach past the opening's edge, height under the ledge. CAP_KEY_SHIFT turns each toward the corner, away
+# from the case screw just past the opening (1.3 mm clear of its pocket and nut trap)
+CAP_KEY = (2.5, 1.2, 3.5)
+CAP_KEY_SHIFT = 4.0
 RIB_T = 2.0                  # all-printed variant: web under the printed plate (PCB top + 1.5)
 TRAY_FILLET = 2.0     # 3D-printed tray: rounded bottom outer edge
 TRAY_TOP_FILLET = 0.6 # small round on the top outer edge, under the plate
@@ -168,6 +175,14 @@ HOOD_IN_R = 0.8                       # both hoods: inner radius of the top corn
 HOOD_OUT_R = BLOCK_R + BEZEL_CLEAR + BEZEL_WALL   # both hoods: outer radius (2.3), concentric with the block's corners
 BEZEL_FILLET = 1.2                    # concave fillet where each hood meets the flange
 BEZEL_FLAT = 0.8                      # flat flange left beyond the fillet's foot at the short ends
+# Fusion (docs/specs/fusion-case.md): the parts the Fusion designs make, by Half method -> exported STL name
+FUSION_SIDES = ('left', 'right')
+FUSION_DIR = os.path.join(OUT, 'fusion')
+FUSION_SIMPLIFY = 0.005     # mm: how far a Fusion part's mesh may be thinned when it is read
+FUSION_EXACT = {'drum', 'drum-block', 'drum-bezel'}   # not thinned: the bezel's hood sits on the block (check_drum)
+DEFAULT_SOURCE = 'fusion'    # the keyboard's parts come from Fusion; 'code' still builds the tray and the plate
+FUSION_PARTS = {'tray': 'tray', 'plate3d_printed': 'plate', 'wheel3d': 'wheel', 'wheel_cap': 'wheel-cap',
+                'drum3d': 'drum', 'drum_block3d': 'drum-block', 'drum_bezel3d': 'drum-bezel'}
 
 
 def cs_poly(pts):
@@ -241,9 +256,16 @@ def hexagon(af, h):
 
 
 class Half:
-    def __init__(self, side):
+    def __init__(self, side, source=None):
         self.d = json.load(open(os.path.join(ROOT, side, 'case_data.json')))
         self.side = side
+        # where the 3D printed parts come from (docs/specs/fusion-case.md): 'fusion' = the STLs the Fusion design
+        # exported to case/fusion/<side>/, 'code' = built here. Only the keyboard halves have a Fusion design.
+        if side not in FUSION_SIDES:
+            self.source = 'code'
+        else:
+            self.source = source or os.environ.get('NRSK_CASE_SOURCE') or DEFAULT_SOURCE
+        assert self.source in ('code', 'fusion'), self.source
         o = self.d['outline']
         self.pcb = (o['x0'], o['y0'], o['x1'], o['y1'], o['r'])
         x0, y0, x1, y1, r = self.pcb
@@ -454,36 +476,9 @@ class Half:
         return max(y for _, y in self.feet())
 
     def stand(self, deg, ring=False, lift=0.0):
-        """Tilt stand for deg (tray frame, under the tray): the band along the outline, its top STAND_POCKET above the
-        feet's bottoms with the top edges rounded, cut at the desk, pockets for the feet it carries. The U (default)
-        runs along the back edge and down both sides STAND_PAST past the foot beside the wheel; ring = the whole
-        outline (tilt study), with the front lifted by lift."""
-        key = (deg, ring, lift)
-        if key in getattr(self, '_stands', {}):
-            return self._stands[key]
-        band = self.outer - self.outer.offset(-STAND_W, JoinType.Round)
-        feet = self.feet()
-        if not ring:
-            ox0, oy0, ox1, oy1, _ = self.outer_box
-            y_cut = -(feet[4][1] + STAND_PAST)                 # tray frame
-            band = band ^ CrossSection.square((ox1 - ox0 + 2, -oy0 - y_cut + 1)).translate((ox0 - 1, y_cut))
-            feet = [f for f in feet if -f[1] > y_cut]
-        # printed bottom down, pockets up: straight walls, the top edges rounded by stacked offset slices
-        top, r, n = -FOOT_PROUD + STAND_POCKET[1], STAND_FILLET, 8
-        m = Manifold.extrude(band, 200.0 - r).translate((0, 0, top - 200.0))
-        for i in range(n):
-            za, zb = top - r + r * i / n, top - r + r * (i + 1) / n
-            zm = (za + zb) / 2 - (top - r)
-            inset = r - math.sqrt(max(r * r - zm * zm, 0.0))
-            m = m + Manifold.extrude(band.offset(-inset, JoinType.Round), zb - za + 0.001).translate((0, 0, za))
-        desk = Manifold.cube((1000, 1000, 500)).translate((-500, -500, 0)).transform(
-            affine_inverse(stand_pose(deg, self.front_y(), lift)))
-        m = m ^ desk
-        d, depth = STAND_POCKET
-        for x, y in feet:
-            m = m - Manifold.cylinder(depth + 0.01, d / 2, d / 2, 64).translate((x, -y, -FOOT_PROUD))
-        self._stands = {**getattr(self, '_stands', {}), key: (m, feet)}
-        return m, feet
+        """Tilt stand for deg (tray frame, under the tray), and the feet it carries: from the Fusion design
+        (docs/specs/fusion-case.md). The study's variants (ring, lift) were built here before the move to Fusion."""
+        raise NotImplementedError('the tilt stands are built in Fusion (case/fusion/<side>/stand-<deg>.stl)')
 
     def plugs3d(self):
         """USB-C plugs in the back-edge ports (tray frame): 12.5 x 7 mm, 25 mm out of the wall."""
@@ -603,8 +598,8 @@ class Half:
         def tiers(grow):
             return (Manifold.extrude(cut.offset(grow, JoinType.Round), z_l - z1).translate((0, 0, z1)) +
                     Manifold.extrude(cut.offset(CAP_SHOULDER + grow, JoinType.Round), CAP_LEDGE + 0.01).translate((0, 0, z_l)))
-        self._cap = body ^ tiers(-CAP_FIT)
-        body = body - tiers(0.0)
+        self._cap = body ^ (tiers(-CAP_FIT) + self.cap_key(-CAP_FIT))
+        body = body - tiers(0.0) - self.cap_key(0.0)
         # pocket for the thicker cover
         if self.window_box is not None:
             body = body - Manifold.extrude(self.cover_shape().offset(COVER_FIT, JoinType.Round), WALL_POCKET + 0.01).translate(
@@ -625,6 +620,51 @@ class Half:
         for x, y in self.feet():
             body = body - Manifold.cylinder(FOOT_DEPTH + 0.01, FOOT_D / 2, FOOT_D / 2).translate((x, -y, -0.01))
         return body
+
+    def cap_key_poses(self):
+        """Where the cap's lugs sit: their outward directions (deg, model frame) from the wheel's centre, one on the
+        outer side wall and one on the back wall; and the opening's radius."""
+        (wx, wy), wr = self.wheel_xy()
+        rc = wr + WHEEL_CUT
+        ox0, oy0, ox1, _, _ = self.outer_box
+        right = wx > (ox0 + ox1) / 2
+        xs = ox1 - WALL / 2 if right else ox0 + WALL / 2          # outer side wall's centre line
+        yb = oy0 + WALL / 2                                       # back wall's centre line (board y)
+        side = (xs, wy + math.sqrt(rc * rc - (xs - wx) ** 2))     # in front of the wheel
+        back = (wx + (-1 if right else 1) * math.sqrt(rc * rc - (yb - wy) ** 2), yb)   # toward the middle
+        corner = math.degrees(math.atan2(-(oy0 - wy), (ox1 if right else ox0) - wx))
+        out = []
+        for x, y in (side, back):
+            deg = math.degrees(math.atan2(-(y - wy), x - wx))
+            turn = (corner - deg + 180) % 360 - 180               # toward the corner
+            out.append(deg + math.copysign(CAP_KEY_SHIFT, turn))
+        return out, rc
+
+    def cap_key_footprint(self, grow=0.0):
+        """The slots (grow = 0) seen from above, model frame."""
+        (wx, wy), _ = self.wheel_xy()
+        degs, rc = self.cap_key_poses()
+        w, reach, _ = CAP_KEY
+        cs = CrossSection()
+        for deg in degs:
+            cs = cs + CrossSection.square((reach + 0.5 + grow, w + 2 * grow)).translate(
+                (rc - 0.5, -(w / 2 + grow))).rotate(deg).translate((wx, -wy))
+        return cs
+
+    def cap_key(self, grow):
+        """The lugs (grow = -CAP_FIT) or the tray's slots for them (grow = 0): boxes from 0.5 inside the opening's
+        edge to CAP_KEY[1] past it, CAP_KEY[0] wide, from CAP_KEY[2] under the ledge up to the ledge."""
+        (wx, wy), _ = self.wheel_xy()
+        degs, rc = self.cap_key_poses()
+        w, reach, h = CAP_KEY
+        wall_top = FLOOR + STANDOFF + PCB_T + PLATE_GAP
+        z_l = wall_top - CAP_LEDGE
+        u0, u1, z0 = rc - 0.5, rc + reach + grow, z_l - h - grow
+        out = Manifold()
+        for deg in degs:
+            box = Manifold.cube((u1 - u0, w + 2 * grow, z_l + 0.01 - z0)).translate((u0, -(w / 2 + grow), z0))
+            out = out + box.rotate((0, 0, deg)).translate((wx, -wy, 0))
+        return out
 
     def _filleted(self, top):
         """Outer block of the tray with filleted bottom and top outer edges (stacked offset slices)."""
@@ -650,23 +690,8 @@ class Half:
         return self._cap
 
     def wheel3d(self):
-        """Knurled thumbwheel (printable): bore from below; on top a lowered hub under the encoder and the hex pin
-        that drives the encoder's rotor. z = 0 is the wheel bottom."""
-        (x, y), r = self.wheel_xy()
-        pts = []
-        n = WHEEL_KNURLS * 12
-        for i in range(n):
-            a = 2 * math.pi * i / n
-            rr = r - TOOTH_DEPTH * (1 - math.cos(WHEEL_KNURLS * a)) / 2      # rounded teeth, crests at r
-            pts.append((x + rr * math.cos(a), y + rr * math.sin(a)))
-        rim = cs_poly(pts)
-        w = Manifold.extrude(rim, WHEEL_T)
-        w = w - Manifold.cylinder(BORE_DEPTH, BORE_D / 2, BORE_D / 2, 48).translate((x, -y, 0))
-        hub, pin_len = self.hub_top() - WHEEL_GAP, PIN_ENGAGE + HUB_CLEAR
-        w = w - Manifold.cylinder(WHEEL_T, HUB_R, HUB_R, 96).translate((x, -y, hub))
-        corner = PIN_AF / math.sqrt(3)
-        pin = hexagon(PIN_AF, pin_len) ^ Manifold.cylinder(pin_len, corner, PIN_AF / 2 - PIN_CHAMFER, 24)
-        return w + pin.translate((x, -y, hub))
+        """Knurled thumbwheel (z = 0 is the wheel bottom): from the Fusion design."""
+        raise NotImplementedError('the wheel is built in Fusion (case/fusion/<side>/wheel.stl)')
 
     @staticmethod
     def enc_bottom():
@@ -749,128 +774,20 @@ class Half:
         return m - self._daxis(bore, -7.0)
 
     def drum3d(self):
-        """Knurled drum: hex pin into the encoder rotor on the -x end, round pin into the block on the +x end."""
-        r = DRUM_D / 2
-        n = DRUM_GROOVES * 12
-        pts = []
-        for i in range(n):
-            a = 2 * math.pi * i / n
-            rr = r - DRUM_GROOVE_DEPTH * (1 - math.cos(DRUM_GROOVES * a)) / 2
-            pts.append((rr * math.cos(a), rr * math.sin(a)))
-        twist = math.degrees(DRUM_W * math.tan(math.radians(DRUM_HELIX)) / r)
-        body = Manifold.extrude(CrossSection([pts]), DRUM_W, 48, twist)
-        c = DRUM_CHAMFER
-        env = (Manifold.cylinder(c, r - c, r + 0.01, 96) + Manifold.cylinder(DRUM_W - 2 * c, r + 0.01, r + 0.01, 96).translate((0, 0, c))
-               + Manifold.cylinder(c, r + 0.01, r - c, 96).translate((0, 0, DRUM_W - c)))
-        body = self._along_x(body ^ env)
-        pin_len = DRUM_GAP - EC10_ROTOR_FACE + DRUM_PIN_ENGAGE
-        corner = PIN_AF / math.sqrt(3)
-        pin = hexagon(PIN_AF, pin_len) ^ Manifold.cylinder(pin_len, corner, PIN_AF / 2 - PIN_CHAMFER, 24)
-        pin = pin.rotate((0, -90, 0))            # tip toward -x
-        d, l = DRUM_ROUND_PIN
-        rpin = self._along_x(Manifold.cylinder(l, d / 2, d / 2, 32))
-        return self._daxis(body + pin + rpin.translate((DRUM_W, 0, 0)), DRUM_GAP)
-
-    def _dbox_rounded(self, x0, hw, z0, x1, z1, r, end):
-        """Box in the drum's local frame (x0..x1, |y| <= hw, z0..z1) rounded to r on every edge except the bottom
-        and the end facing the drum: the top corners seen along the axis, and the far end (end = -1: at x0,
-        +1: at x1) seen from above and from the side, as the hull of spheres, posts and a flat end slab."""
-        def at(m, x, y, z):
-            bx, by = self._dl(x, y)
-            return m.translate((bx, -by, z))
-        xr = x1 - r if end > 0 else x0 + r          # centre line of the rounded end
-        xf = x0 if end > 0 else x1 - 0.01           # flat end, facing the drum
-        parts = []
-        for sy in (-1, 1):
-            yc = sy * (hw - r)
-            parts += [at(Manifold.sphere(r), xr, yc, z1 - r), at(Manifold.cylinder(z1 - r - z0, r), xr, yc, z0),
-                      at(self._along_x(Manifold.cylinder(0.01, r)), xf, yc, z1 - r)]
-        parts.append(self._dbox(xf, -hw, z0, xf + 0.01, hw, z1 - r))
-        # a short box (x1 - x0 < 2 r) would let the end spheres poke past the flat end: trim to the box
-        return Manifold.batch_hull(parts) ^ self._dbox(x0, -hw, z0, x1, hw, z1)
-
-    def _hood_fillet(self, x0, hw, x1, r, end, z, f, xa, xb):
-        """Concave fillet of radius f round the foot of a hood (plan: x0..x1, |y| <= hw, far end corners rounded
-        to r as in _dbox_rounded) standing on a face at height z; kept to xa..xb so it stops at the drum side.
-        A slab of the foot outline grown by f, less the tube of radius f swept along that outline f above the face
-        (cylinders along the sides, a torus round each far corner) and less the hood itself."""
-        core = (CrossSection.square((x1 - x0, 2 * (hw - r))).translate((x0 - r if end > 0 else x0 + r, -(hw - r)))
-                .offset(r, JoinType.Round) ^ CrossSection.square((x1 - x0, 2 * hw)).translate((x0, -hw)))
-        ox, oy = self._dl(0, 0)
-        # the tube's centre line, built for the far end at +x, run on past the drum side, then mirrored if needed
-        xs, xc, yc, rr = x0 - f - 1, x1 - r, hw - r, r + f
-        if end < 0:
-            xs, xc = x1 + f + 1, x0 + r
-        sx = 1 if end > 0 else -1
-        pts = [(xs, -(hw + f))]
-        n = 32
-        for cy, a0 in ((-yc, -math.pi / 2), (yc, 0.0)):       # far corners, quarter arcs round (xc, -/+yc)
-            for i in range(n + 1):
-                a = a0 + math.pi / 2 * i / n
-                pts.append((xc + sx * rr * math.cos(a), cy + rr * math.sin(a)))
-        pts.append((xs, hw + f))
-        ball = Manifold.sphere(f, 96)
-        balls = [ball.translate((ox + px, -oy + py, z + f)) for px, py in pts]
-        tube = Manifold.batch_boolean([Manifold.batch_hull([a, b]) for a, b in zip(balls, balls[1:])], OpType.Add)
-        slab = Manifold.extrude(core.offset(f - 0.02, JoinType.Round), f + 0.01).translate((ox, -oy, z - 0.01))
-        # the hood's own footprint, shrunk a hair so the fillet fuses with the wall, but kept full width across the
-        # open drum-side end so no film is left over the opening
-        xd = x0 if end > 0 else x1
-        foot = core.offset(-0.01, JoinType.Miter) + CrossSection.square((0.1, 2 * hw)).translate((xd - 0.05, -hw))
-        foot = Manifold.extrude(foot, f + 1).translate((ox, -oy, z - 0.5))
-        return (slab - tube - foot) ^ self._dbox(xa, -hw - f - 1, z - 1, xb, hw + f + 1, z + f + 1)
+        """Knurled drum with its hex and round pins (z above the PCB top): from the Fusion design."""
+        raise NotImplementedError('the drum is built in Fusion (case/fusion/<side>/drum.stl)')
 
     def _block_x(self):
         x0 = DRUM_GAP + DRUM_W + DRUM_GAP
         return x0, x0 + BLOCK_T
 
     def drum_block3d(self):
-        """Bearing block on the PCB: U slot open upward with a narrowed (snap-in) mouth, two locating pegs.
-        Seen along the axis the top corners are rounded; the flat bottom sits on the PCB."""
-        x0, x1 = self._block_x()
-        b = self._dbox_rounded(x0, BLOCK_HALF_W, 0, x1, BLOCK_TOP, BLOCK_R, 1)
-        pin_end = DRUM_GAP + DRUM_W + DRUM_ROUND_PIN[1]
-        slot_x1 = pin_end + 0.3
-        b = b - self._daxis(self._along_x(Manifold.cylinder(slot_x1 - x0 + 0.1, BLOCK_SLOT_R, BLOCK_SLOT_R, 48)), x0 - 0.1)
-        b = b - self._dbox(x0 - 0.1, -BLOCK_LIP / 2, EC10_AXIS, slot_x1, BLOCK_LIP / 2, BLOCK_TOP + 0.1)
-        d, l = BLOCK_PEG
-        for px, py in self.d['drum']['pegs']:
-            b = b + Manifold.cylinder(l + 0.01, d / 2, d / 2, 24).translate((px, -py, -l))
-        return b
+        """Bearing block on the PCB (z above the PCB top): from the Fusion design."""
+        raise NotImplementedError('the drum block is built in Fusion (case/fusion/<side>/drum-block.stl)')
 
     def drum_bezel3d(self):
-        """Flange flush in the plate hole round the opening, with a ledge under the plate; a hood over the encoder
-        (its far wall runs down to the PCB as a leg) and one over the block (its roof holds the block down), both
-        open toward the drum. Laid on the PCB before the plate goes on."""
-        zl, z0, z1 = PLATE_GAP - BEZEL_LEDGE_T, PLATE_GAP, PLATE_TOP_Z
-        m = (Manifold.extrude(self.bezel_outline(), z1 - z0).translate((0, 0, z0))
-             + Manifold.extrude(self.bezel_ledge(), BEZEL_LEDGE_T).translate((0, 0, zl)))
-        w, c = BEZEL_WALL, BEZEL_CLEAR
-        # encoder hood: top corners rounded like the block hood outside; inside the radius stays small enough
-        # to clear the body's square top edges by the 0.3 mm clearance, and the block hood follows it
-        ex0, ey, etop = EC10_BRACKET[0] - c, EC10_BODY[3] + c, EC10_BODY[4] + c
-        m = m + (self._dbox_rounded(ex0 - w, ey + w, z0, 0.2, etop + w, HOOD_OUT_R, -1)
-                 - self._dbox_rounded(ex0, ey, z0 - 0.1, 0.3, etop, HOOD_IN_R, -1))
-        # leg: the encoder hood's far wall down to the PCB, clear of the bracket and the pads
-        m = m + self._dbox(ex0 - w, -BEZEL_LEG_HW, 0, ex0, BEZEL_LEG_HW, zl + 0.01)
-        # block hood: roof on the block top; its length, width, height and corners match the encoder hood's, so it
-        # is solid above the block top and beyond the block's far end
-        bx0, bx1 = self._block_x()
-        by, btop = ey, BLOCK_TOP                         # as wide as the encoder hood
-        bhood_top, bend = etop + w, self._hood_ends()[1]    # beyond the block the hood is solid
-        m = m + (self._dbox_rounded(bx0 - 0.1, by + w, z0, bend, bhood_top, HOOD_OUT_R, 1)
-                 - self._dbox_rounded(bx0 - 0.2, by, z0 - 0.1, bx1 + c, btop, HOOD_IN_R, 1))
-        # fillets at the foot of both hoods, on the flange top; they end flush with the hoods' drum-side faces,
-        # where the flange is cut away for the drum
-        fr, ef, bf = BEZEL_FILLET, 0.2, bx0 - 0.1          # drum-side faces of the encoder / block hood
-        m = m + self._hood_fillet(ex0 - w, ey + w, ef, HOOD_OUT_R, -1, z1, fr, ex0 - w - fr - 0.1, ef)
-        m = m + self._hood_fillet(bf, by + w, bend, HOOD_OUT_R, 1, z1, fr, bf, bend + fr + 0.1)
-        # through the flange and the ledge: under both hoods and the drum (between the hoods' drum-side faces)
-        rr = DRUM_D / 2
-        m = m - self._dbox(ef, -(rr + 0.2), zl - 0.1, bf, rr + 0.2, z1 + 0.1)
-        m = m - self._dbox(ex0, -ey, zl - 0.1, 0.3, ey, z1 + 0.1)
-        m = m - self._dbox(bx0 - 0.2, -by, zl - 0.1, bx1 + c, by, z1 + 0.1)
-        return m
+        """Bezel over the drum dial (z above the PCB top): from the Fusion design."""
+        raise NotImplementedError('the drum bezel is built in Fusion (case/fusion/<side>/drum-bezel.stl)')
 
     def plate3d(self):
         return Manifold.extrude(self.plate(), PLATE_T)
@@ -918,6 +835,78 @@ class Half:
         x0, y0, x1, y1, r = self.pcb
         cs = rounded_rect(x0, y0, x1, y1, r) - self.holes(self.d['holes'], 2.2)
         return Manifold.extrude(cs, PCB_T)
+
+    # parts from the Fusion design -------------------------------------------------------
+    def fusion_part(self, name):
+        """case/fusion/<side>/<name>.stl as a Manifold (in the frame the matching Half method uses). A board built
+        from a keyboard half (case_data 'source', the encoder test board) uses that half's parts."""
+        cache = self.__dict__.setdefault('_fusion', {})
+        if name not in cache:
+            side = self.side if self.side in FUSION_SIDES else self.d.get('source')
+            path = os.path.join(FUSION_DIR, side, f'{name}.stl')
+            if not os.path.exists(path):
+                raise FileNotFoundError(f'{path}: export it from Fusion (NrskCaseExport), or set NRSK_CASE_SOURCE=code')
+            # Fusion meshes curved faces finely (the tray: 200 k triangles); thinning it within FUSION_SIMPLIFY keeps
+            # the shape (0.02 % of the volume) at a fifth of the triangles for the print STLs and the viewer
+            m = read_stl(path)
+            if name not in FUSION_EXACT:
+                m = m.simplify(FUSION_SIMPLIFY)
+            if str(m.status()) != 'Error.NoError' or m.volume() <= 0:
+                raise ValueError(f'{path}: not a closed solid ({m.status()})')
+            cache[name] = m
+        return cache[name]
+
+
+def _fusion_or_code(method, name):
+    def wrapped(self):
+        if self.source == 'fusion':
+            return self.fusion_part(name)
+        try:
+            return method(self)
+        except NotImplementedError:        # only in Fusion: a test board takes its keyboard half's part
+            if self.d.get('source') in FUSION_SIDES:
+                return self.fusion_part(name)
+            raise
+    wrapped.__name__, wrapped.__doc__ = method.__name__, method.__doc__
+    return wrapped
+
+
+def _stand_fusion_or_code(method):
+    def wrapped(self, deg, ring=False, lift=0.0):
+        if self.source == 'code':
+            return method(self, deg, ring, lift)
+        if ring or lift:
+            raise ValueError('the Fusion design has only the U stands: use Half(side, source="code") for the study')
+        y_cut = -(self.feet()[4][1] + STAND_PAST)
+        return self.fusion_part(f'stand-{deg}'), [f for f in self.feet() if -f[1] > y_cut]
+    wrapped.__name__, wrapped.__doc__ = method.__name__, method.__doc__
+    return wrapped
+
+
+for _m, _name in FUSION_PARTS.items():
+    setattr(Half, _m, _fusion_or_code(getattr(Half, _m), _name))
+Half.stand = _stand_fusion_or_code(Half.stand)
+
+
+def read_stl(path, tol=1e-4):
+    """Binary or ASCII STL -> Manifold, welding the triangle soup's coincident corners (within tol mm)."""
+    import numpy as np
+    from manifold3d import Mesh
+    with open(path, 'rb') as f:
+        data = f.read()
+    n = struct.unpack_from('<I', data, 80)[0] if len(data) >= 84 else -1
+    if len(data) == 84 + 50 * n:
+        rec = np.frombuffer(data, dtype=np.dtype([('n', '<f4', 3), ('v', '<f4', (3, 3)), ('a', '<u2')]), offset=84, count=n)
+        tri = rec['v'].astype(np.float64)
+    else:
+        vs = [list(map(float, ln.split()[1:4])) for ln in data.decode().splitlines() if ln.strip().startswith('vertex')]
+        tri = np.array(vs, dtype=np.float64).reshape(-1, 3, 3)
+    pts = tri.reshape(-1, 3)
+    keys = np.round(pts / tol).astype(np.int64)
+    _, first, inv = np.unique(keys, axis=0, return_index=True, return_inverse=True)
+    faces = inv.reshape(-1, 3).astype(np.uint32)
+    faces = faces[(faces[:, 0] != faces[:, 1]) & (faces[:, 1] != faces[:, 2]) & (faces[:, 0] != faces[:, 2])]
+    return Manifold(Mesh(vert_properties=pts[first].astype(np.float32), tri_verts=faces))
 
 
 # --- writers -----------------------------------------------------------------------
@@ -1152,6 +1141,16 @@ def check_wheel(hf):
     assert abs(pin_top - (FLOOR + hf.enc_bottom() + PIN_ENGAGE)) < 1e-6, 'pin does not reach into the rotor'
     assert pin_top < FLOOR + STANDOFF - 0.3, 'pin reaches the PCB'
     assert FLOOR + WHEEL_GAP + WHEEL_T > FLOOR + hf.enc_bottom(), 'rim no longer overlaps the encoder (hub not needed)'
+    # the cap: in its seat without touching the tray, its lugs in the wall (1 mm skin both sides) and clear of the
+    # case screws' pockets and nut traps
+    cap, tray = hf.wheel_cap(), hf.tray()
+    assert (cap ^ tray).volume() < 1e-3, 'wheel cap hits the tray'
+    assert len(cap.decompose()) == 1, 'wheel cap falls apart'
+    slot = hf.cap_key_footprint()
+    assert (slot - (hf.outer.offset(-1.0, JoinType.Round) - hf.inner.offset(1.0, JoinType.Round))).area() < 1e-6, \
+        'cap lug slot leaves the wall'
+    near = hf.holes(hf.screws, max(BOSS_POCKET[0], 2 * NUT_TRAP[0] / math.sqrt(3)))
+    assert (hf.cap_key_footprint(0.8) ^ near).area() < 1e-6, 'cap lug slot within 0.8 mm of a case screw'
 
 
 def check_feet(hf):
@@ -1196,7 +1195,8 @@ def check_tilt(hf):
         assert (m ^ tray).volume() < 1e-3, f'{deg} deg stand hits the tray'
         assert all((m ^ pl).volume() < 1e-3 for pl in hf.plugs3d()), f'{deg} deg stand hits a plug'
         b = w.bounding_box()
-        assert b[3] - b[0] <= BED and b[4] - b[1] <= BED and abs(b[2]) < 1e-6, f'{deg} deg stand off the bed'
+        # 1e-4: a stand read from a (float32) STL sits on the bed within ~1e-5 mm
+        assert b[3] - b[0] <= BED and b[4] - b[1] <= BED and abs(b[2]) < 1e-4, f'{deg} deg stand off the bed'
 
 
 def check_closed(hf, layers):

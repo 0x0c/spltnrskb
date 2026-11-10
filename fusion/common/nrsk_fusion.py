@@ -1,0 +1,409 @@
+"""Shared by the nrsk Fusion scripts (docs/specs/fusion-case.md): paths, input.json, units, logging, the design's
+nrsk attributes, and small geometry helpers.
+
+Lengths in input.json are mm in make_case's model frame (z up, y = -board y). Fusion's API works in cm, so every
+length goes through cm(). Sketches on the root XY plane (or a plane parallel to it) use the model x, y directly.
+"""
+import datetime
+import json
+import os
+import traceback
+
+import adsk.core
+import adsk.fusion
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..'))
+FUSION_OUT = os.path.join(ROOT, 'case', 'fusion')
+INPUT_VERSION = 1
+ATTR = 'nrsk'
+SIDES = ('left', 'right')
+
+
+def cm(mm):
+    return mm / 10.0
+
+
+def pt(x, y, z=0.0):
+    """Model mm -> Fusion Point3D (cm)."""
+    return adsk.core.Point3D.create(cm(x), cm(y), cm(z))
+
+
+def val(mm):
+    return adsk.core.ValueInput.createByReal(cm(mm))
+
+
+def side_dir(side):
+    d = os.path.join(FUSION_OUT, side)
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def load_input(side):
+    path = os.path.join(FUSION_OUT, side, 'input.json')
+    with open(path) as f:
+        data = json.load(f)
+    if data.get('version') != INPUT_VERSION:
+        raise ValueError(f"{path}: version {data.get('version')}, the scripts read {INPUT_VERSION}: "
+                         'run gen/fusion_input.py again or update the scripts')
+    return data
+
+
+class Log:
+    """Writes case/fusion/<side>/<script>.log (or case/fusion/<script>.log before the side is known)."""
+
+    def __init__(self, script):
+        self.script, self.lines, self.side = script, [], None
+
+    def __call__(self, msg):
+        self.lines.append(str(msg))
+
+    def write(self, ok):
+        d = side_dir(self.side) if self.side else FUSION_OUT
+        with open(os.path.join(d, f'{self.script}.log'), 'w') as f:
+            f.write(f"{'ok' if ok else 'FAILED'} {datetime.datetime.now().isoformat(timespec='seconds')}\n")
+            f.write('\n'.join(self.lines) + '\n')
+
+
+def run_script(script, body):
+    """Run body(app, design, log) with logging; any exception is logged and shown."""
+    app = adsk.core.Application.get()
+    ui = app.userInterface
+    log = Log(script)
+    try:
+        design = adsk.fusion.Design.cast(app.activeProduct)
+        if not design:
+            raise RuntimeError('open a design first (the Design workspace)')
+        summary = body(app, design, log)
+        log.write(True)
+        ui.messageBox(f'{script}: ok\n{summary or ""}')
+    except Exception:
+        log(traceback.format_exc())
+        log.write(False)
+        ui.messageBox(f'{script} failed:\n{traceback.format_exc()}')
+
+
+# --- the design's nrsk attributes ------------------------------------------------------
+def get_attr(entity, name):
+    a = entity.attributes.itemByName(ATTR, name)
+    return a.value if a else None
+
+
+def set_attr(entity, name, value):
+    entity.attributes.add(ATTR, name, str(value))
+
+
+def design_side(design, ui=None, ask=False):
+    side = get_attr(design, 'side')
+    if side is None and ask:
+        value, cancelled = ui.inputBox('Which half is this design? (left / right)', 'nrsk', 'left')
+        if cancelled:
+            raise RuntimeError('cancelled')
+        side = value.strip().lower()
+        if side not in SIDES:
+            raise ValueError(f'{side!r}: left or right')
+        set_attr(design, 'side', side)
+    if side not in SIDES:
+        raise RuntimeError('this design has no nrsk side: build it with NrskCaseBuild first')
+    return side
+
+
+def part_components(design):
+    """{part name: component} for the components the build made (attribute nrsk.part)."""
+    out = {}
+    for occ in design.rootComponent.occurrences:
+        name = get_attr(occ.component, 'part')
+        if name:
+            out[name] = occ.component
+    return out
+
+
+# --- geometry helpers ------------------------------------------------------------------
+def plane_at(comp, z):
+    """A construction plane parallel to XY at model height z (mm); the XY plane itself at 0."""
+    if abs(z) < 1e-9:
+        return comp.xYConstructionPlane
+    inp = comp.constructionPlanes.createInput()
+    inp.setByOffset(comp.xYConstructionPlane, val(z))
+    return comp.constructionPlanes.add(inp)
+
+
+def tag(entity, ident):
+    """Mark a sketch entity with the input.json id it was drawn for: NrskCaseSync moves it when that item moves."""
+    if ident:
+        set_attr(entity, 'id', ident)
+
+
+def circle(sketch, x, y, d, ident=None, expr=None):
+    """Circle of diameter d (mm) round (x, y); expr makes the diameter a dimension driven by user parameters."""
+    c = sketch.sketchCurves.sketchCircles.addByCenterRadius(pt(x, y), cm(d / 2))
+    tag(c, ident)
+    if expr:
+        dim = sketch.sketchDimensions.addDiameterDimension(c, pt(x + d, y + d))
+        dim.parameter.expression = expr
+    return c
+
+
+def polygon(sketch, pts, ident=None):
+    lines = sketch.sketchCurves.sketchLines
+    out = []
+    for i, (x, y) in enumerate(pts):
+        x1, y1 = pts[(i + 1) % len(pts)]
+        out.append(lines.addByTwoPoints(pt(x, y), pt(x1, y1)))
+    for a, b in zip(out, out[1:] + out[:1]):          # one closed loop: connect the shared corners
+        sketch.geometricConstraints.addCoincident(a.endSketchPoint, b.startSketchPoint)
+    for ln in out:
+        tag(ln, ident)
+    return out
+
+
+def closed_spline(sketch, pts):
+    coll = adsk.core.ObjectCollection.create()
+    for x, y in pts:
+        coll.add(pt(x, y))
+    s = sketch.sketchCurves.sketchFittedSplines.add(coll)
+    s.isClosed = True
+    return s
+
+
+def smallest_profile(sketch):
+    return min(sketch.profiles, key=lambda p: p.areaProperties().area)
+
+
+def largest_profile(sketch):
+    return max(sketch.profiles, key=lambda p: p.areaProperties().area)
+
+
+def extrude(comp, profile, dist_mm, op, bodies=None, taper_deg=0.0, start_mm=None, expr=None):
+    """Extrude profile (or a list of profiles) by dist_mm along the sketch plane's normal (+z for planes parallel to
+    XY; negative = the other way) with operation op (adsk.fusion.FeatureOperations). expr gives the distance as an
+    expression of user parameters (its value is |dist_mm|; the sign of dist_mm still sets the direction)."""
+    feats = comp.features.extrudeFeatures
+    if isinstance(profile, (list, tuple)):
+        coll = adsk.core.ObjectCollection.create()
+        for pr in profile:
+            coll.add(pr)
+        profile = coll
+    inp = feats.createInput(profile, op)
+    direction = adsk.fusion.ExtentDirections.PositiveExtentDirection if dist_mm >= 0 else \
+        adsk.fusion.ExtentDirections.NegativeExtentDirection
+    extent = adsk.fusion.DistanceExtentDefinition.create(
+        adsk.core.ValueInput.createByString(expr) if expr else val(abs(dist_mm)))
+    inp.setOneSideExtent(extent, direction, adsk.core.ValueInput.createByString(f'{taper_deg} deg'))
+    if start_mm is not None:
+        inp.startExtent = adsk.fusion.OffsetStartDefinition.create(val(start_mm))
+    if bodies is not None:
+        inp.participantBodies = list(bodies)
+    return feats.add(inp)
+
+
+def combine(comp, target, tools, op):
+    coll = adsk.core.ObjectCollection.create()
+    for b in tools:
+        coll.add(b)
+    inp = comp.features.combineFeatures.createInput(target, coll)
+    inp.operation = op
+    return comp.features.combineFeatures.add(inp)
+
+
+
+def rounded_rect(sketch, box):
+    """Closed rounded rectangle from an input.json box {x0, y0, x1, y1, r} (r may be 0 or missing)."""
+    x0, y0, x1, y1, r = box['x0'], box['y0'], box['x1'], box['y1'], box.get('r', 0.0)
+    if r <= 1e-9:
+        return polygon(sketch, [(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
+    lines, arcs = sketch.sketchCurves.sketchLines, sketch.sketchCurves.sketchArcs
+    b = lines.addByTwoPoints(pt(x0 + r, y0), pt(x1 - r, y0))
+    rt = lines.addByTwoPoints(pt(x1, y0 + r), pt(x1, y1 - r))
+    t = lines.addByTwoPoints(pt(x1 - r, y1), pt(x0 + r, y1))
+    lf = lines.addByTwoPoints(pt(x0, y1 - r), pt(x0, y0 + r))
+    k = r * (1 - 2 ** -0.5)
+    arcs.addByThreePoints(b.endSketchPoint, pt(x1 - k, y0 + k), rt.startSketchPoint)
+    arcs.addByThreePoints(rt.endSketchPoint, pt(x1 - k, y1 - k), t.startSketchPoint)
+    arcs.addByThreePoints(t.endSketchPoint, pt(x0 + k, y1 - k), lf.startSketchPoint)
+    arcs.addByThreePoints(lf.endSketchPoint, pt(x0 + k, y0 + k), b.startSketchPoint)
+    return [b, rt, t, lf]
+
+
+def offset_box(box, d):
+    """Grow (d > 0) or shrink a rounded box; the corner radius changes by d and stops at 0 (sharp)."""
+    return dict(x0=box['x0'] - d, y0=box['y0'] - d, x1=box['x1'] + d, y1=box['y1'] + d,
+                r=max(box.get('r', 0.0) + d, 0.0))
+
+
+def face_at_z(body, z_mm, tol=1e-4):
+    """The planar face of body lying in the plane z = z_mm, facing up or down (the largest if several)."""
+    best = None
+    for f in body.faces:
+        bb = f.boundingBox
+        if abs(bb.minPoint.z - cm(z_mm)) < tol and abs(bb.maxPoint.z - cm(z_mm)) < tol:
+            if best is None or f.area > best.area:
+                best = f
+    if best is None:
+        raise RuntimeError(f'{body.name}: no face at z = {z_mm}')
+    return best
+
+
+def fillet(comp, edges, r_mm):
+    coll = adsk.core.ObjectCollection.create()
+    for e in edges:
+        coll.add(e)
+    feats = comp.features.filletFeatures
+    inp = feats.createInput()
+    inp.edgeSetInputs.addConstantRadiusEdgeSet(coll, val(r_mm), True)
+    return feats.add(inp)
+
+
+
+def polygon_model(sketch, pts):
+    """Closed polygon through model points (x, y, z in mm), on any sketch plane."""
+    lines = sketch.sketchCurves.sketchLines
+    sp = [sketch.modelToSketchSpace(pt(*q)) for q in pts]
+    out = [lines.addByTwoPoints(sp[i], sp[(i + 1) % len(sp)]) for i in range(len(sp))]
+    for a, b in zip(out, out[1:] + out[:1]):
+        sketch.geometricConstraints.addCoincident(a.endSketchPoint, b.startSketchPoint)
+    return out
+
+
+def plane_y(comp, y):
+    """A construction plane parallel to XZ at model y (mm), and the extrude sign that points toward +y."""
+    for d in (y, -y):
+        inp = comp.constructionPlanes.createInput()
+        inp.setByOffset(comp.xZConstructionPlane, val(d))
+        plane = comp.constructionPlanes.add(inp)
+        g = plane.geometry
+        if abs(g.origin.y * 10 - y) < 1e-6 or abs(y) < 1e-9:
+            return plane, (1 if g.normal.y > 0 else -1)
+        plane.deleteMe()
+    raise RuntimeError(f'no plane at y = {y}')
+
+
+def stadium_xz(sketch, xc, zc, w, h, y):
+    """Closed slot (straight sides, round ends) in the plane y = const: w wide along x, h tall along z."""
+    r = h / 2
+    sp = lambda x, z: sketch.modelToSketchSpace(pt(x, y, z))   # noqa: E731
+    lines, arcs = sketch.sketchCurves.sketchLines, sketch.sketchCurves.sketchArcs
+    a, b = xc - w / 2 + r, xc + w / 2 - r
+    bot = lines.addByTwoPoints(sp(a, zc - r), sp(b, zc - r))
+    top = lines.addByTwoPoints(sp(b, zc + r), sp(a, zc + r))
+    arcs.addByThreePoints(bot.endSketchPoint, sp(b + r, zc), top.startSketchPoint)
+    arcs.addByThreePoints(top.endSketchPoint, sp(a - r, zc), bot.startSketchPoint)
+
+
+def hexagon_pts(x, y, corner):
+    """Corners of a regular hexagon round (x, y), the first on +x (as manifold's 6-segment cylinder)."""
+    import math
+    return [(x + corner * math.cos(math.radians(60 * i)), y + corner * math.sin(math.radians(60 * i))) for i in range(6)]
+
+
+def plane_x(comp, x):
+    """A construction plane parallel to YZ at model x (mm), and the extrude sign that points toward +x."""
+    for d in (x, -x):
+        inp = comp.constructionPlanes.createInput()
+        inp.setByOffset(comp.yZConstructionPlane, val(d))
+        plane = comp.constructionPlanes.add(inp)
+        g = plane.geometry
+        if abs(g.origin.x * 10 - x) < 1e-6 or abs(x) < 1e-9:
+            return plane, (1 if g.normal.x > 0 else -1)
+        plane.deleteMe()
+    raise RuntimeError(f'no plane at x = {x}')
+
+
+def polygon3(sketch, pts):
+    """Closed polygon through model points (x, y, z) on any sketch plane (alias kept short for the builders)."""
+    return polygon_model(sketch, pts)
+
+
+def circle3(sketch, centre, d):
+    """Circle round a model point on any sketch plane."""
+    return sketch.sketchCurves.sketchCircles.addByCenterRadius(sketch.modelToSketchSpace(pt(*centre)), cm(d / 2))
+
+
+def spline3(sketch, pts):
+    coll = adsk.core.ObjectCollection.create()
+    for q in pts:
+        coll.add(sketch.modelToSketchSpace(pt(*q)))
+    s = sketch.sketchCurves.sketchFittedSplines.add(coll)
+    s.isClosed = True
+    return s
+
+
+def box(comp, x0, x1, y0, y1, z0, z1, name=None):
+    """A new box body (model mm)."""
+    plane = plane_at(comp, z0)
+    sk = comp.sketches.add(plane)
+    if name:
+        sk.name = name
+    polygon(sk, [(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
+    b = extrude(comp, sk.profiles.item(0), z1 - z0, adsk.fusion.FeatureOperations.NewBodyFeatureOperation).bodies.item(0)
+    if name:
+        b.name = name
+    return b
+
+
+def edges_where(body, pred, tol=1e-3):
+    """Edges whose bounding box (mm: x0, y0, z0, x1, y1, z1) satisfies pred(bb, close) with close(a, b) = |a-b| < tol."""
+    def close(a, b):
+        return abs(a - b) < tol
+    out = []
+    for e in body.edges:
+        bb = e.boundingBox
+        v = (bb.minPoint.x * 10, bb.minPoint.y * 10, bb.minPoint.z * 10, bb.maxPoint.x * 10, bb.maxPoint.y * 10, bb.maxPoint.z * 10)
+        if pred(v, close):
+            out.append(e)
+    return out
+
+
+def rounded_box(comp, x0, x1, y0, y1, z0, z1, r, far_end, name=None):
+    """Box rounded to r on the two top edges along x, the top edge of the far end and the far end's two vertical
+    edges (far_end = -1: the end at x0, +1: at x1); the bottom and the other end stay sharp. make_case's
+    _dbox_rounded (a hull of spheres, posts and a flat slab), as fillets."""
+    b = box(comp, x0, x1, y0, y1, z0, z1, name)
+    xf = x0 if far_end < 0 else x1
+
+    def pick(v, close):
+        bx0, by0, bz0, bx1, by1, bz1 = v
+        along_x_top = close(bz0, z1) and close(bz1, z1) and close(by0, by1) and (close(by0, y0) or close(by0, y1))
+        far_top = close(bz0, z1) and close(bz1, z1) and close(bx0, xf) and close(bx1, xf)
+        far_vert = close(bx0, xf) and close(bx1, xf) and close(by0, by1) and (close(by0, y0) or close(by0, y1))
+        return along_x_top or far_top or far_vert
+    edges = edges_where(b, pick)
+    if len(edges) != 5:
+        raise RuntimeError(f'rounded_box {name}: {len(edges)} edges to round, expected 5')
+    feats = comp.features.filletFeatures
+    inp = feats.createInput()
+    coll = adsk.core.ObjectCollection.create()
+    for e in edges:
+        coll.add(e)
+    inp.edgeSetInputs.addConstantRadiusEdgeSet(coll, val(r), False)
+    feats.add(inp)
+    return b
+
+
+# --- user parameters (make_case's constants) and the input the design was built from -------------------
+COUNTS = {'WHEEL_KNURLS', 'N_FRAMES', 'DRUM_GROOVES'}     # plain numbers, not lengths
+ANGLES = {'DRUM_HELIX', 'STAND_ANGLES', 'CAP_KEY_SHIFT'}
+
+
+def parameter_values(params):
+    """input.json params -> {user parameter name: (value, unit)}; tuples become NAME_0, NAME_1, ..."""
+    out = {}
+    for name, v in params.items():
+        unit = '' if name in COUNTS else 'deg' if name in ANGLES else 'mm'
+        if isinstance(v, list):
+            for i, x in enumerate(v):
+                out[f'{name}_{i}'] = (x, unit)
+        else:
+            out[name] = (v, unit)
+    return out
+
+
+def store_input(design, inp):
+    """Keep the input the design now matches (NrskCaseSync compares the next input.json with it)."""
+    set_attr(design, 'input', json.dumps(inp, separators=(',', ':')))
+
+
+def stored_input(design):
+    v = get_attr(design, 'input')
+    if v is None:
+        raise RuntimeError('this design has no stored input: build it with NrskCaseBuild first')
+    return json.loads(v)

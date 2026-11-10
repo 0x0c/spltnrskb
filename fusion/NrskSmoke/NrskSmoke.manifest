@@ -1,0 +1,10 @@
+{
+	"autodeskProduct": "Fusion",
+	"type": "script",
+	"author": "nrsk",
+	"description": {
+		"": "nrsk: check that scripts run and can write into the repository (docs/specs/fusion-case.md step 1)"
+	},
+	"supportedOS": "windows|mac",
+	"editEnabled": true
+}

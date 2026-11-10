@@ -323,7 +323,8 @@ def case():
                            write_half)
 
     hf = Half(SIDE)
-    ref = Half(hf.d['source'])
+    ref = Half(hf.d['source'])                  # the keyboard half: its wheel, cap and drum parts come from Fusion
+    ref_code = Half(hf.d['source'], source='code')   # its tray and plate as the code builds them, as this case's are
     # case screws: the keyboard's wherever they fall in this case's walls (so the corner round the wheel is the
     # same), and this case's own only where none of those is near
     ring = hf.outer - hf.inner
@@ -365,14 +366,9 @@ def case():
         assert (body.offset(0.5, JoinType.Miter) ^ hf.bezel_ledge()).area() < 0.01, 'tact switch under the bezel'
         assert (body - hf.inner.offset(-0.5, JoinType.Miter)).area() < 0.01, 'tact switch at the wall'
         assert (body ^ hf.holes(hf.d['holes'], 4.0 + 1.0)).area() < 0.01, 'tact switch on a screw head'
-    # those parts must fit this case as they fit the keyboard: same shape at the same place
-    for name, a, b in (('wheel', hf.wheel3d(), ref.wheel3d()), ('wheel cap', hf.wheel_cap(), ref.wheel_cap()),
-                       ('drum', hf.drum3d(), ref.drum3d()), ('drum block', hf.drum_block3d(), ref.drum_block3d()),
-                       ('drum bezel', hf.drum_bezel3d(), ref.drum_bezel3d())):
-        assert str(a.status()) == str(b.status()) == 'Error.NoError' and a.volume() > 0, name
-        diff = (a - b).volume() + (b - a).volume()
-        assert diff < 1e-3, f'{name} differs from the keyboard ({diff:.4f} mm3)'
-    # the plate round the drum and the tray round the wheel, too: from the top wall down to where this case's own
+    # the wheel, its cap and the drum parts are the keyboard's own (from its Fusion design), so they fit this case
+    # when the plate round the drum and the tray round the wheel are the same as the keyboard's: from the top wall
+    # down to where this case's own
     # bottom corner starts, less the outer 0.1 mm, where the rounded corner of a smaller outline is split into
     # slightly different chords
     o = hf.d['outline']
@@ -398,7 +394,7 @@ def case():
     # and the keyboard's rubber-foot recesses under the floor (this board's tray has none)
     for x, y in ref.feet():
         box = box - Manifold.cylinder(30.0, FOOT_D / 2 + 0.5, FOOT_D / 2 + 0.5).translate((x, -y, -1.0))
-    for name, a, b in (('plate', hf.plate3d_printed(), ref.plate3d_printed()), ('tray', hf.tray(), ref.tray())):
+    for name, a, b in (('plate', hf.plate3d_printed(), ref_code.plate3d_printed()), ('tray', hf.tray(), ref_code.tray())):
         assert str(a.status()) == str(b.status()) == 'Error.NoError' and a.volume() > 0, name
         a, b = a ^ box, b ^ box
         diff = (a - b).volume() + (b - a).volume()
