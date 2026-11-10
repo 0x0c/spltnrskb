@@ -108,9 +108,9 @@ def steps(variant, n_screws, n_holes, n_cover):
                 ['plate_screw'], 'bottom', [f'M2 × 12 mm × {n_plate}'], 'bottom')
     else:
         add('底板とホイール',
-            '底板の角の穴に下から M3 × 8 mm のネジを通して軸にし、ホイールを差し込みます。'
+            '底板の角の穴（φ2.5、M3 のタップを立てておく）に下から M3 × 5 mm のネジをねじ込んで軸にし、ホイールを差し込みます。'
             '上面の六角ピンは、あとで基板を載せたときにエンコーダーの六角穴に入ります。',
-            ['bottom', 'axle', 'wheel'], 'corner', ['底板（マットクリア 3 mm）', 'M3 × 8 mm', 'ホイール（3D プリント）'])
+            ['bottom', 'axle', 'wheel'], 'corner', ['底板（マットクリア 3 mm）', 'M3 × 5 mm', 'ホイール（3D プリント）'])
         add('スペーサー',
             f'底板の下から M2 × 5 mm のネジで、長さ {STANDOFF:g} mm のスペーサーを {n_holes} 本立てます。',
             ['standoff', 'bottom_screw'], 'top', [f'M2 スペーサー {STANDOFF:g} mm × {n_holes}', f'M2 × 5 mm × {n_holes}'])
