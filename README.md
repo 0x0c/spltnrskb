@@ -217,6 +217,7 @@ Fusion のスクリプトは `fusion/` にあります。`fusion/link.sh` を 1 
 - `NrskCaseLayout`：Fusion の画面で、各部品を組み立てた位置に表示します（台座は 3° だけ）。部品は書き出す座標系で作ってあるので、そのままではホイールが床に、プレートがトレイにめり込んで見えます。配置を動かすだけなので、書き出す STL は変わりません。
 - `NrskCaseBuild` と `NrskCaseFreeze`：設計を最初に組み立てるときだけ使います。今の設計は凍結してあり、`NrskCaseBuild` は実行を拒みます。
 - `NrskEditCapLugs`、`NrskEditDrumPin`、`NrskEditWheelPin`、`NrskEditCapRelief`：凍結のあとに設計へ加えた編集の記録です。順に、キャップの回り止めの爪 2 つ、ドラムの六角ピン、ホイールの六角ピン、キャップのボスの逃がしです。設計ごとに 1 度だけ適用でき、2 度目は拒みます。
+- `NrskEditPinFillets`：ホイールとドラムのピンの根元にフィレットを足した編集の記録です。半径は、ホイールの六角ピンが 0.25 mm、ドラムの六角ピンが 0.6 mm、ドラムの丸ピンが 0.3 mm です。適用のあと、続けて書き出しも行います。設計ごとに 1 度だけ適用できます。
 - `NrskEdit2026Fixes`：同期、`NrskEditWheelPin`、`NrskEditCapRelief`、書き出しを 1 回の実行で続けて行います。
 
 基板を作り直したときは、次の順に筐体を更新します。
