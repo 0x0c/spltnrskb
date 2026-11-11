@@ -1,7 +1,7 @@
 """Test prints for the shape of the pin that drives an encoder's rotor (case/print/pin-test-*.stl).
 
 A pin made to slide into the rotor's hex hole (EC05E1220401: 1.72 A/F; EC10E1220505: 1.73 A/F) spins in it when
-the printer rounds its corners. These strips carry pins that are pressed in instead, in four shapes, each in
+the printer rounds its corners. These are pins that are pressed in instead, each on a small base of its own, in four shapes, each in
 several sizes, to find on the user's own printer the one that holds the rotor and still goes in:
 
   1x  straight   hex prism, across flats from the sliding size up to well over the hole
@@ -10,9 +10,10 @@ several sizes, to find on the user's own printer the one that holds the rotor an
   4x  round      cylinder over the hole's across-flats: presses on the six flats' middles
 
 Every pin stands as the wheel's does (NrskEditPinRecess): in a pocket POCKET_DEPTH deep with a fillet at its
-root, the tip's edges chamfered; but longer: HUB_CLEAR + ENGAGE above the strip's top, to reach through the
-EC05E's rotor. The raised number under each pin
-is its id (docs/thumbwheel-check.md has the table); the strips print pins up, like the wheel.
+root, the tip's edges chamfered; but longer: HUB_CLEAR + ENGAGE above the base's top, to reach through the
+EC05E's rotor. The number engraved under each pin
+is its id (docs/thumbwheel-check.md has the table); they print pins up, like the wheel. pin-test-all.stl and
+pin-test-<shape>.stl lay the separate pieces out side by side; case/print/pin-test/<id>.stl is one pin alone.
 
 Run with the project venv:  .venv/bin/python gen/pin_test.py
 """
@@ -32,10 +33,11 @@ ENGAGE = ENC_H                # pin length in the rotor: all of the EC05E's thro
                               # in the EC10E it runs on into the bore behind the 1.7 mm hex
 assert ENGAGE >= PIN_ENGAGE
 POCKET_DEPTH, POCKET_D, ROOT_R = 0.5, 4.0, 0.7     # = NrskEditPinRecess.WHEEL
-PITCH = 11.0                  # pin to pin: either encoder's body fits between neighbours
+TILE_W = 10.0                 # each pin stands on a base of its own, TILE_W x BASE_W
+GAP = 2.0                     # between the bases where several are laid out in one file
 BASE_T = 2.5
 BASE_W = 16.0
-PIN_Y = 4.0                   # pin row above the strip's centre line; labels below
+PIN_Y = 4.0                   # pin above the base's centre line; the id below
 FLAT_AF = 1.66                # lobed pins: across flats (clear of the hole)
 
 # id -> parameters, per shape
@@ -101,38 +103,39 @@ def pin(kind, v):
     return m
 
 
-def strip(kind, pins):
-    length = len(pins) * PITCH
-    out = Manifold.extrude(CrossSection.square((length, BASE_W)).translate((0, -BASE_W / 2)), BASE_T)
-    labels = CrossSection()
-    for i, (ident, v) in enumerate(sorted(pins.items())):
-        cx = PITCH * (i + 0.5)
-        out = out - Manifold.cylinder(POCKET_DEPTH + 0.01, POCKET_D / 2, POCKET_D / 2, 64).translate(
-            (cx, PIN_Y, BASE_T - POCKET_DEPTH))
-        out = out + pin(kind, v).translate((cx, PIN_Y, BASE_T - POCKET_DEPTH))
-        labels = labels + label(f'{ident:02d}', cx, -BASE_W / 2 + 1.2)
-    return out + Manifold.extrude(labels, LABEL_T).translate((0, 0, BASE_T))
+def tile(kind, ident, v):
+    """One pin on its own base, its id engraved below it; lower-left corner at the origin."""
+    out = Manifold.extrude(CrossSection.square((TILE_W, BASE_W)), BASE_T)
+    cx, cy = TILE_W / 2, BASE_W / 2 + PIN_Y
+    out = out - Manifold.cylinder(POCKET_DEPTH + 0.01, POCKET_D / 2, POCKET_D / 2, 64).translate(
+        (cx, cy, BASE_T - POCKET_DEPTH))
+    out = out + pin(kind, v).translate((cx, cy, BASE_T - POCKET_DEPTH))
+    return out - Manifold.extrude(label(f'{ident:02d}', cx, 1.2), LABEL_T + 0.01).translate((0, 0, BASE_T - LABEL_T))
 
 
 def main():
-    os.makedirs(os.path.join(OUT, 'print'), exist_ok=True)
+    single = os.path.join(OUT, 'print', 'pin-test')
+    os.makedirs(single, exist_ok=True)
     every = Manifold()
     for row, (kind, pins) in enumerate(FAMILIES):
-        m = strip(kind, pins)
+        fam = Manifold()
+        for i, (ident, v) in enumerate(sorted(pins.items())):
+            m = tile(kind, ident, v)
+            assert len(m.decompose()) == 1, f'{ident}: the tile is not one piece'
+            write_stl(os.path.join(single, f'{ident}.stl'), m)          # one pin alone
+            fam = fam + m.translate((i * (TILE_W + GAP), 0, 0))
         path = os.path.join(OUT, 'print', f'pin-test-{kind}.stl')
-        write_stl(path, m)
-        b = m.bounding_box()
-        print(f'{os.path.relpath(path)}: ids {min(pins)}..{max(pins)}, '
-              f'{b[3] - b[0]:.1f} x {b[4] - b[1]:.1f} x {b[5] - b[2]:.1f} mm, {m.status()}')
-        every = every + m.translate((0, -row * (BASE_W + 2.0), 0))
-    # one plate with the four strips, joined by a thin web so they print as one part
-    b = every.bounding_box()
-    web = Manifold.cube((10.0, b[4] - b[1], 1.0)).translate((b[0], b[1], 0))
+        write_stl(path, fam)                                              # the shape's pins, each a separate piece
+        b = fam.bounding_box()
+        print(f'{os.path.relpath(path)}: ids {min(pins)}..{max(pins)}, {len(fam.decompose())} pieces, '
+              f'{b[3] - b[0]:.1f} x {b[4] - b[1]:.1f} x {b[5] - b[2]:.1f} mm, {fam.status()}')
+        every = every + fam.translate((0, -row * (BASE_W + GAP), 0))
     path = os.path.join(OUT, 'print', 'pin-test-all.stl')
-    write_stl(path, every + web)
-    b = (every + web).bounding_box()
-    print(f'{os.path.relpath(path)}: {b[3] - b[0]:.1f} x {b[4] - b[1]:.1f} x {b[5] - b[2]:.1f} mm; '
-          f'hole {ENC_HEX_AF} A/F, pins {POCKET_DEPTH + HUB_CLEAR + ENGAGE} above the pocket floor')
+    write_stl(path, every)
+    b = every.bounding_box()
+    print(f'{os.path.relpath(path)}: {len(every.decompose())} pieces, {b[3] - b[0]:.1f} x {b[4] - b[1]:.1f} x '
+          f'{b[5] - b[2]:.1f} mm; hole {ENC_HEX_AF} A/F, pins {POCKET_DEPTH + HUB_CLEAR + ENGAGE} above the pocket '
+          f'floor; single pins in {os.path.relpath(single)}/')
 
 
 if __name__ == '__main__':
