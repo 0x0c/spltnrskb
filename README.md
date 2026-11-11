@@ -238,7 +238,7 @@ Fusion のスクリプトは `fusion/` にあります。`fusion/link.sh` を 1 
 
 線は拡大しても粗くならないベクトルです。日本語の文字には PDF 標準の日本語フォント（平成角ゴシック）を指定し、埋め込んでいません。表示するときは閲覧ソフトの日本語ゴシック体で置き換わります（macOS のプレビュー、Acrobat、Chrome、Firefox で表示できます）。
 
-STL を書き出すスクリプトは、`print/` に STL を書くたびに、同じ階層の `drawings/` の三面図を作り直します。該当するスクリプトは `make_case.py`、`foot_coupon.py`、`pin_coupon.py`、`make_enctest.py` です。検証基板の筐体の三面図は `enctest/case/drawings/` にあります。各 PDF には、元の STL、`gen/case_drawings.py`、オプションのハッシュを記録しています。どれも変わっていなければ描き直しを省くので、STL の中身が同じなら時間はかかりません。描くのは `gen/case_drawings.py` です（numpy だけで動きます）。メッシュの稜線（面どうしが 35° より大きく折れる辺）と輪郭を拾い、深度バッファで見える部分と隠れる部分に分けます。フィレットは細かい面の集まり（コードで作る部品では薄い段の積み重ね）なので、その間の辺は描かず、フィレットの両端の線だけを残します。STL を指定すると、その部品だけを描きます（`python3 gen/case_drawings.py case/print/left-tray.stl`）。かくれ線を描かないときは `--no-hidden`、変更がなくても描き直すときは `--force` を付けます。
+STL を書き出すスクリプトは、`print/` に STL を書くたびに、同じ階層の `drawings/` の三面図を作り直します。該当するスクリプトは `make_case.py`、`foot_coupon.py`、`pin_coupon.py`、`pin_test.py`、`make_enctest.py` です。検証基板の筐体の三面図は `enctest/case/drawings/` にあります。各 PDF には、元の STL、`gen/case_drawings.py`、オプションのハッシュを記録しています。どれも変わっていなければ描き直しを省くので、STL の中身が同じなら時間はかかりません。描くのは `gen/case_drawings.py` です（numpy だけで動きます）。メッシュの稜線（面どうしが 35° より大きく折れる辺）と輪郭を拾い、深度バッファで見える部分と隠れる部分に分けます。フィレットは細かい面の集まり（コードで作る部品では薄い段の積み重ね）なので、その間の辺は描かず、フィレットの両端の線だけを残します。STL を指定すると、その部品だけを描きます（`python3 gen/case_drawings.py case/print/left-tray.stl`）。かくれ線を描かないときは `--no-hidden`、変更がなくても描き直すときは `--force` を付けます。
 
 ### ゴム足と台座
 
@@ -272,7 +272,7 @@ LCSC で買えるものは、すべて LCSC を最初の購入先にしていま
 
 - **水晶振動子**：Raspberry Pi のリファレンスと同じ Abracon ABM8-272-T3（12 MHz、負荷容量 10 pF）を 15 pF のコンデンサと組み合わせます。安価な YXC X322512MSB4SI は負荷容量 20 pF なので、そのままでは合いません。
 - **QSPI Flash**：W25Q128JVSIQ は LCSC に 2 つの部品番号があり、よく使われる C97521 は確認時に在庫切れでした。BOM には在庫のある C113767 を載せています。
-- **ロータリーエンコーダー**：Alps EC05E1220401 は LCSC（C116648）で 1 個から買えます。ホイールの六角ピンのはめあいは印刷機によって変わるので、対辺を変えた 7 本のピンを並べた `case/print/pin-coupon.stl` を印刷して確かめてください（手順は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）。ピンの対辺を変えるときは、Fusion の設計でホイールとドラムの六角ピンのスケッチを直します。試し印刷の `pin_coupon.py` が使う `gen/make_case.py` の `PIN_AF` も合わせてください。
+- **ロータリーエンコーダー**：Alps EC05E1220401 は LCSC（C116648）で 1 個から買えます。ホイールの六角ピンは、穴にすき間をもって入る今の寸法では空回りします。穴へ圧入する形に変えるため、形と太さの違うピン 25 本を並べた `case/print/pin-test-all.stl` を印刷して、どれがよいかを確かめてください（手順は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）。選んだ形は、Fusion の設計でホイールとドラムのピンに反映します。
 - **ドラム式ダイヤルのエンコーダー**：Alps EC10E1220505 は LCSC（C160888）で 5 個単位です。基板の表に挿入実装する部品なので、JLCPCB の部品実装には含めず、手で半田付けします。ドラムの六角ピンのはめあいは、サムホイールと同じく試し印刷で確かめてください。2 つのエンコーダーの機構と信号は、キーボードを作る前に [検証基板](docs/encoder-test-board.md) で確かめられます。
 - **OLED**：LCSC の HS91L02W2C01 は、写真ではピン順が GND/VCC/SCL/SDA ですが、3.3 V で動くかとピンヘッダが付くかはページに書かれていません。遊舎工房の品も代替として BOM に載せています。どちらもピン順を現物で確認してください。
 
@@ -349,7 +349,7 @@ spltnrskb/
 │   │                            （<side>-plate、frame1〜4、bottom、oled-cover）
 │   ├── print/                   3D プリント用 STL
 │   │                            （<side>-tray、plate、wheel、wheel-cap、台座 stand-3〜9、
-│   │                             試し印刷 pin-coupon と foot-coupon、右だけ right-drum、drum-block、drum-bezel）
+│   │                             試し印刷 pin-test-*、pin-coupon、foot-coupon、右だけ right-drum、drum-block、drum-bezel）
 │   ├── drawings/                print/ の部品ごとの三面図（PDF、A3）
 │   ├── preview/                 確認用の出力
 │   │   ├── viewer.html          3D ビューア（GitHub Pages で公開）
@@ -409,7 +409,8 @@ spltnrskb/
 - 3D の確認ページ：`export_web3d.sh`、`render_details.sh`、`views_page.py`
 - A と B の比較画像、差込口、基板の差し込み手順の断面図：`render_compare.sh`、`compare_ab.py`、`port_slide.py`
 - OLED と開口の比較検討：`oled_variants.py`、`oled_study.sh`、`oled_sheet.py`、`port_variants.py`
-- 六角ピンの試し印刷：`pin_coupon.py`（`case/print/pin-coupon.stl`。使い方は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）
+- ピンの形を比べる試し印刷：`pin_test.py`（`case/print/pin-test-*.stl`。使い方は [docs/thumbwheel-check.md](docs/thumbwheel-check.md)）
+- すき間をもって入る六角ピンだけを並べた、以前の試し印刷：`pin_coupon.py`（`case/print/pin-coupon.stl`）
 - ゴム足のくぼみの試し印刷：`foot_coupon.py`（`case/print/foot-coupon.stl`。使い方は [docs/ordering.md](docs/ordering.md) の 7 章）
 - チルト脚と台座の比較検討：`tilt_variants.py`、`render_tilt.py`、`tilt_sheet.py`。台座そのものは Fusion の設計にあります。比較に使った全周の台座のモデル（`tilt_stands.py`）と一括の実行（`tilt_study.sh`）は、筐体を Fusion へ移した際に削除しました。どちらも、移す前のコミット `7e1b2cc` で動きます
 - Fusion の設計：`fusion_input.py`（Fusion への入力）、`fusion_diff.py`（Fusion の部品と `make_case.py` のトレイとプレートの比較）。手順は「Fusion の設計と、基板を変えたときの更新」の節
