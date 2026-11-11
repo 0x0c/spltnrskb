@@ -1,0 +1,142 @@
+"""Test prints for the shape of the pin that drives an encoder's rotor (case/print/pin-test-*.stl).
+
+A pin made to slide into the rotor's hex hole (EC05E1220401: 1.72 A/F; EC10E1220505: 1.73 A/F) spins in it when
+the printer rounds its corners. These are pins that are pressed in instead, each on a small base of its own, in four shapes, each in
+several sizes, to find on the user's own printer the one that holds the rotor and still goes in:
+
+  1x  straight   hex prism, across flats from the sliding size up to well over the hole
+  2x  tapered    hex that grows from the tip to the rotor's face: wedges at some depth
+  3x  lobed      hex with clearance on its flats and corners that stand proud: only the corners press
+  4x  round      cylinder over the hole's across-flats: presses on the six flats' middles
+
+Every pin stands as the wheel's does (NrskEditPinRecess): in a pocket POCKET_DEPTH deep with a fillet at its
+root, the tip's edges chamfered; but longer: HUB_CLEAR + ENGAGE above the base's top, to reach through the
+EC05E's rotor. The number engraved under each pin
+is its id (docs/thumbwheel-check.md has the table); they print pins up, like the wheel. pin-test-all.stl and
+pin-test-<shape>.stl lay the separate pieces out side by side; case/print/pin-test/<id>.stl is one pin alone.
+
+Run with the project venv:  .venv/bin/python gen/pin_test.py
+"""
+import math
+import os
+import sys
+
+from manifold3d import CrossSection, JoinType, Manifold
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from make_case import ENC_H, ENC_HEX_AF, HUB_CLEAR, OUT, PIN_ENGAGE, write_stl  # noqa: E402
+from pin_coupon import LABEL_T, label  # noqa: E402
+
+PIN_TIP = 0.2                 # chamfer on the tip's edges
+ENGAGE = ENC_H                # pin length in the rotor: all of the EC05E's through hole (2.7), where the wheel's
+                              # pin has PIN_ENGAGE (2.0). The longer pin is easier to judge and to pull out again;
+                              # in the EC10E it runs on into the bore behind the 1.7 mm hex
+assert ENGAGE >= PIN_ENGAGE
+POCKET_DEPTH, POCKET_D, ROOT_R = 0.5, 4.0, 0.7     # = NrskEditPinRecess.WHEEL
+TILE_W = 10.0                 # each pin stands on a base of its own, TILE_W x BASE_W
+GAP = 2.0                     # between the bases where several are laid out in one file
+BASE_T = 2.5
+BASE_W = 16.0
+PIN_Y = 4.0                   # pin above the base's centre line; the id below
+FLAT_AF = 1.66                # lobed pins: across flats (clear of the hole)
+
+# id -> parameters, per shape
+STRAIGHT = {11: 1.66, 12: 1.70, 13: 1.74, 14: 1.78, 15: 1.82, 16: 1.86, 17: 1.90}          # across flats
+TAPERED = {21: (1.60, 1.76), 22: (1.64, 1.80), 23: (1.68, 1.84), 24: (1.72, 1.88),         # A/F at the tip,
+           25: (1.60, 1.90), 26: (1.66, 1.96)}                                             # at the rotor's face
+LOBED = {31: 0.98, 32: 1.00, 33: 1.02, 34: 1.04, 35: 1.06, 36: 1.08}                       # corner radius
+ROUND = {41: 1.74, 42: 1.78, 43: 1.82, 44: 1.86, 45: 1.90, 46: 1.94}                       # diameter
+FAMILIES = (('straight', STRAIGHT), ('tapered', TAPERED), ('lobed', LOBED), ('round', ROUND))
+
+
+def hexagon(af):
+    return CrossSection.circle(af / math.sqrt(3), 6)
+
+
+def lobed(corner):
+    """Twelve corners: the hexagon's own at radius `corner`, and the middles of its flats at FLAT_AF / 2."""
+    pts = []
+    for i in range(6):
+        a = math.radians(60 * i)
+        pts.append((corner * math.cos(a), corner * math.sin(a)))
+        a += math.radians(30)
+        pts.append((FLAT_AF / 2 * math.cos(a), FLAT_AF / 2 * math.sin(a)))
+    return CrossSection([pts])
+
+
+def section(kind, v):
+    """The pin's section where it sits in the rotor (for the tapered pins: at the rotor's face)."""
+    if kind == 'straight':
+        return hexagon(v)
+    if kind == 'tapered':
+        return hexagon(v[1])
+    if kind == 'lobed':
+        return lobed(v)
+    return CrossSection.circle(v / 2)
+
+
+def pin(kind, v):
+    """One pin, z = 0 at the pocket's floor: root fillet, a straight part up to the rotor's face, the part in the
+    rotor (tapered or not) and the chamfered tip."""
+    cs = section(kind, v)
+    face = POCKET_DEPTH + HUB_CLEAR               # rotor's face above the pocket's floor
+    body = ENGAGE - PIN_TIP                   # in the rotor, below the tip's chamfer
+    size = v[1] if kind == 'tapered' else v if kind != 'lobed' else FLAT_AF      # across the section
+    m = Manifold.extrude(cs, face)
+    if kind == 'tapered':
+        tip_af = v[0]
+        s = tip_af / v[1]
+        s_body = 1 + (s - 1) * body / ENGAGE  # the taper runs on through the chamfer's height
+        m = m + Manifold.extrude(cs, body, scale_top=(s_body, s_body)).translate((0, 0, face))
+        top, size = cs.scale((s_body, s_body)), v[1] * s_body
+    else:
+        m = m + Manifold.extrude(cs, body).translate((0, 0, face))
+        top = cs
+    s = (size / 2 - PIN_TIP) / (size / 2)
+    m = m + Manifold.extrude(top, PIN_TIP, scale_top=(s, s)).translate((0, 0, face + body))
+    steps = 14                                    # the root fillet, as a stack of widened sections
+    for i in range(steps):
+        z0, z1 = ROOT_R * i / steps, ROOT_R * (i + 1) / steps
+        d = ROOT_R - math.sqrt(ROOT_R ** 2 - (ROOT_R - z0) ** 2)
+        if d > 1e-4:
+            m = m + Manifold.extrude(cs.offset(d, JoinType.Round), z1 - z0).translate((0, 0, z0))
+    return m
+
+
+def tile(kind, ident, v):
+    """One pin on its own base, its id engraved below it; lower-left corner at the origin."""
+    out = Manifold.extrude(CrossSection.square((TILE_W, BASE_W)), BASE_T)
+    cx, cy = TILE_W / 2, BASE_W / 2 + PIN_Y
+    out = out - Manifold.cylinder(POCKET_DEPTH + 0.01, POCKET_D / 2, POCKET_D / 2, 64).translate(
+        (cx, cy, BASE_T - POCKET_DEPTH))
+    out = out + pin(kind, v).translate((cx, cy, BASE_T - POCKET_DEPTH))
+    return out - Manifold.extrude(label(f'{ident:02d}', cx, 1.2), LABEL_T + 0.01).translate((0, 0, BASE_T - LABEL_T))
+
+
+def main():
+    single = os.path.join(OUT, 'print', 'pin-test')
+    os.makedirs(single, exist_ok=True)
+    every = Manifold()
+    for row, (kind, pins) in enumerate(FAMILIES):
+        fam = Manifold()
+        for i, (ident, v) in enumerate(sorted(pins.items())):
+            m = tile(kind, ident, v)
+            assert len(m.decompose()) == 1, f'{ident}: the tile is not one piece'
+            write_stl(os.path.join(single, f'{ident}.stl'), m)          # one pin alone
+            fam = fam + m.translate((i * (TILE_W + GAP), 0, 0))
+        path = os.path.join(OUT, 'print', f'pin-test-{kind}.stl')
+        write_stl(path, fam)                                              # the shape's pins, each a separate piece
+        b = fam.bounding_box()
+        print(f'{os.path.relpath(path)}: ids {min(pins)}..{max(pins)}, {len(fam.decompose())} pieces, '
+              f'{b[3] - b[0]:.1f} x {b[4] - b[1]:.1f} x {b[5] - b[2]:.1f} mm, {fam.status()}')
+        every = every + fam.translate((0, -row * (BASE_W + GAP), 0))
+    path = os.path.join(OUT, 'print', 'pin-test-all.stl')
+    write_stl(path, every)
+    b = every.bounding_box()
+    print(f'{os.path.relpath(path)}: {len(every.decompose())} pieces, {b[3] - b[0]:.1f} x {b[4] - b[1]:.1f} x '
+          f'{b[5] - b[2]:.1f} mm; hole {ENC_HEX_AF} A/F, pins {POCKET_DEPTH + HUB_CLEAR + ENGAGE} above the pocket '
+          f'floor; single pins in {os.path.relpath(single)}/')
+
+
+if __name__ == '__main__':
+    main()

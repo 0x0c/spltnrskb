@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 IMG = os.path.join(ROOT, 'docs', 'img')
-COLUMNS = [('A  トレイ + 透明アクリルのプレート（上からスリムヘッド）', '-top-acrylic-lowpan'),
+COLUMNS = [('A  トレイ + 透明アクリルのプレート（上からなべ小ねじ）', '-top-acrylic-lowpan'),
            ('B  全部 3D プリント（底からネジ止め）', '-top-print')]
 SHOTS = ('hero', 'oled', 'wheel-left')
 CELL_W, CELL_H = 1200, 800

@@ -27,8 +27,9 @@
   "FLOOR": 2.0,
   "BOSS_D": 4.6,
   "PILOT_D": 1.6,
-  "INSERT_D": 3.2,
+  "INSERT_D": 2.9,
   "INSERT_DEPTH": 4.0,
+  "INSERT_D_NOMINAL": 3.2,
   "SCREW_CB": [
    4.6,
    1.6
@@ -83,6 +84,8 @@
   "BED": 220.0,
   "PLATE_FILLET": 1.0,
   "SWITCH_CUT": 14.0,
+  "LASER_R": 0.3,
+  "LASER_MIN": 1.5,
   "OLED_WINDOW_CLEAR": 0.15,
   "COVER_T": 2.0,
   "COVER_FIT": 0.1,
@@ -103,7 +106,7 @@
   "BORE_D": 4.0,
   "BORE_DEPTH": 2.0,
   "POST_D": 3.6,
-  "AXLE_HOLE_D": 3.2,
+  "AXLE_HOLE_D": 2.5,
   "ENC_W": 5.7,
   "ENC_TAB_W": 7.6,
   "ENC_UP": 2.5,
@@ -155,7 +158,7 @@
   "BLOCK_SLOT_R": 1.1,
   "BLOCK_LIP": 1.8,
   "BLOCK_PEG": [
-   1.9,
+   1.8,
    1.4
   ],
   "PLATE_TOP_Z": 5.0,

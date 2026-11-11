@@ -1,0 +1,10 @@
+{
+	"autodeskProduct": "Fusion",
+	"type": "script",
+	"author": "nrsk",
+	"description": {
+		"": "nrsk: NrskEdit2026Fixes (sync, wheel pin, cap relief, export in one run)"
+	},
+	"supportedOS": "windows|mac",
+	"editEnabled": true
+}

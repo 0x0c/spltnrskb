@@ -24,7 +24,9 @@ CASE_WALL = 0.5 + 8.0          # PCB edge to case outer surface (make_case CLEAR
 PORT_SKIN = 0.8                # wall left in front of the connector mouth
 TONGUE_W = 12.0
 TONGUE_TIP_R = 2.5             # rounded tongue tips (they stick out of the board: no sharp corners)
-TONGUE_ROOT_R = 1.5            # fillet where each tongue leaves the top edge
+TONGUE_ROOT_R = 0.8            # fillet where each tongue leaves the top edge. Small enough to stay clear of the corner
+                               # between the case's inner wall (CLEAR from the edge) and the tunnel's side
+                               # (CHANNEL_CLR from the tongue): R1.5 ran 0.06 mm into it. JLCPCB mills R >= 0.5.
 # OLED half-mirror cover (make_case.py): COVER_FRAME of plate all round it, to the case outline and to the keycaps
 COVER_FRAME = 5.5              # = make_case COVER_FRAME (cover corners R = 12.5 - 5.5 = 7)
 KEYCAP_INSET = (U - 18.0) / 2  # 18 mm keycaps on the 19.05 mm grid
@@ -53,30 +55,38 @@ SIDES = {
     # way (header at the bottom), so one firmware rotation fits both.
     'left': dict(key_shift=0.0, width=LEFT_W, inner=+1, usb_x=LEFT_W - 35.0,
                  link_x=LEFT_W - 17.0, mcu=(LEFT_W - 12.5625, 45.0),
-                 oled=(LEFT_W + CASE_WALL - COVER_FRAME - OLED_COVER_W / 2, OLED_Y, 90), wheel='top-left'),
+                 oled=(LEFT_W + CASE_WALL - COVER_FRAME - OLED_COVER_W / 2, OLED_Y, 90), wheel='top-left',
+                 reset=(136.125, 35.95)),
     'right': dict(key_shift=RIGHT_SHIFT, width=8.5 * U + MARGIN + 12.6 + (10.75 * U - 12.6 - RIGHT_SHIFT), inner=-1,
                   usb_x=-MARGIN + 35.0,
                   link_x=-MARGIN + 17.0, mcu=(5.0, 45.0),
                   oled=(-MARGIN - CASE_WALL + COVER_FRAME + OLED_COVER_W / 2, OLED_Y, 90), wheel='top-right',
+                  reset=(9.2, 59.9375),
                   drum=dict(x_key='Backspace', y_key='F12', dx=-10.55)),   # encoder face as far left as the F12 web allows
 }
 
 # Support parts: (ref, list of (footprint ref, pad) the part should sit close to)
+# Decoupling capacitors of the RP2040: placed first and allowed closer to the chip than everything else
+# (DECOUPLE_FANOUT), each with its supply pad toward the pin it serves.
+DECOUPLE = [
+    ('C3', [('U1', '44')]), ('C4', [('U1', '45')]), ('C5', [('U1', '23')]), ('C6', [('U1', '50')]),
+    ('C7', [('U1', '1')]), ('C8', [('U1', '10')]), ('C11', [('U1', '22')]), ('C12', [('U1', '33')]),
+    ('C13', [('U1', '42')]), ('C14', [('U1', '49')]), ('C15', [('U1', '48')]), ('C18', [('U1', '43')]),
+]
 SUPPORT = [
-    ('U5', [('U1', '52'), ('U1', '56')]),                       # QSPI flash
+    ('U5', [('U1', '52'), ('U1', '56')]),                       # QSPI flash: first, right beside its six pins
+] + DECOUPLE + [
     ('Y1', [('U1', '20'), ('U1', '21')]),
     ('C1', [('Y1', '1')]), ('C2', [('Y1', '3')]), ('R10', [('U1', '21'), ('Y1', '3')]),
     ('R2', [('U1', '47'), ('J2', 'A6')]), ('R3', [('U1', '46'), ('J2', 'A7')]),
     ('U2', [('J2', 'A6'), ('J2', 'A7')]),
     ('R4', [('J2', 'A5')]), ('R5', [('J2', 'B5')]),
+    ('U3', [('J1', 'A6'), ('J1', 'B6')]),                       # ESD protection of the split link
     ('F1', [('J2', 'A4')]), ('D99', [('F1', '1')]),
     ('U4', [('D99', '1')]), ('C16', [('U4', '1')]), ('C17', [('U4', '5')]), ('C19', [('U4', '5')]),
-    ('C3', [('U1', '44')]), ('C4', [('U1', '45')]), ('C5', [('U1', '23')]), ('C6', [('U1', '50')]),
-    ('C7', [('U1', '1')]), ('C8', [('U1', '10')]), ('C11', [('U1', '22')]), ('C12', [('U1', '33')]),
-    ('C13', [('U1', '42')]), ('C14', [('U1', '49')]), ('C15', [('U1', '48')]), ('C18', [('U1', '43')]),
     ('C20', [('U5', '8')]),
     ('R8', [('U1', '5')]), ('R9', [('U1', '4')]),
-    ('R6', [('U1', '26')]), ('RSW1', [('U1', '26')]), ('R7', [('U5', '1')]), ('JP1', [('R7', '2')]),
+    ('R6', [('U1', '26')]), ('R7', [('U5', '1')]), ('JP1', [('R7', '2')]),
     ('R1', [('U1', '2')]),
 ]
 
@@ -266,9 +276,11 @@ def overlap(a, b):
 
 STUB = 1.2               # escape stub length from the MCU pad centre
 MCU_FANOUT = 2.5       # mm around the MCU courtyard kept clear of other parts
+DECOUPLE_FANOUT = MCU_FANOUT   # ... its decoupling capacitors too: closer in, they block the pin rows' fan-out (the right
+                               # half has only 4.6 mm between the chip and the first column of sockets)
 
 
-def obstacles(board, skip, back=True, socket_courtyards=True):
+def obstacles(board, skip, back=True, socket_courtyards=True, fanout=MCU_FANOUT):
     """Bounding boxes (absolute mm) that a back-side SMD part must not overlap."""
     layer = pcbnew.B_CrtYd if back else pcbnew.F_CrtYd
     cu = pcbnew.B_Cu if back else pcbnew.F_Cu
@@ -279,7 +291,7 @@ def obstacles(board, skip, back=True, socket_courtyards=True):
         cy = fp.GetCourtyard(layer)
         if cy.OutlineCount() and (socket_courtyards or not fp.GetReference().startswith('SW')):
             # keep a fan-out ring free around the RP2040's 0.4 mm-pitch pins for the escape tracks and vias
-            out.append(bbox_mm(cy.BBox(), MCU_FANOUT if fp.GetReference() == 'U1' else 0.0))
+            out.append(bbox_mm(cy.BBox(), fanout if fp.GetReference() == 'U1' else 0.0))
         for p in fp.Pads():
             if p.GetAttribute() in (pcbnew.PAD_ATTRIB_PTH, pcbnew.PAD_ATTRIB_NPTH) or p.IsOnLayer(cu):
                 out.append(bbox_mm(p.GetBoundingBox(), 0.25))
@@ -289,15 +301,17 @@ def obstacles(board, skip, back=True, socket_courtyards=True):
     return out
 
 
-def autoplace(board, fp, anchors, w, h):
-    """Put a back-side part at the free spot closest to its anchor pads."""
+def autoplace(board, fp, anchors, w, h, decouple=None):
+    """Put a back-side part at the free spot closest to its anchor pads. `decouple` = net name of a decoupling
+    capacitor: it may sit closer to the MCU, all four ways round, and only the distance from its pad on that net
+    to the pin counts."""
     tx = sum(a.x for a in anchors) / len(anchors)
     ty = sum(a.y for a in anchors) / len(anchors)
     if not fp.IsFlipped():
         fp.Flip(fp.GetPosition(), pcbnew.FLIP_DIRECTION_LEFT_RIGHT)
-    obs = obstacles(board, fp)
+    obs = obstacles(board, fp, fanout=DECOUPLE_FANOUT if decouple else MCU_FANOUT)
     lim = (ORIGIN[0] - MARGIN + 0.8, ORIGIN[1] - TOP + 0.8, ORIGIN[0] + w - 0.8, ORIGIN[1] + h - 0.8)
-    best = None
+    best = found = None
     step = pcbnew.FromMM(0.25)
     for r in range(0, 160):          # spiral-ish search on rings of growing radius
         ring = []
@@ -305,7 +319,7 @@ def autoplace(board, fp, anchors, w, h):
             for j in (-r, r):
                 ring += [(i, j), (j, i)]
         for i, j in set(ring):
-            for rot in (0, 90):
+            for rot in ((0, 90, 180, 270) if decouple else (0, 90)):
                 fp.SetOrientationDegrees(rot)
                 fp.SetPosition(pcbnew.VECTOR2I(int(tx + i * step), int(ty + j * step)))
                 cy = fp.GetCourtyard(pcbnew.B_CrtYd)
@@ -314,10 +328,16 @@ def autoplace(board, fp, anchors, w, h):
                     continue
                 if any(overlap(box, o) for o in obs):
                     continue
-                d = sum(dist(p.GetPosition(), a) for p in fp.Pads() for a in anchors)
+                # a decoupling capacitor: only its supply pad counts, so it ends up end-on to the chip (supply
+                # pad at the pin, ground pad behind it) and blocks the least of the pin row's fan-out
+                d = sum(dist(p.GetPosition(), a) for p in fp.Pads() for a in anchors
+                        if not decouple or p.GetNetname() == decouple)
                 if best is None or d < best[0]:
                     best = (d, rot, fp.GetPosition())
-        if best and r > 8:
+        if best and found is None:
+            found = r
+        # a decoupling capacitor: look a little further than the first ring with room, where it fits end-on
+        if best and r > max(8, found + 6 if decouple else 0):
             break
     assert best, f'no room for {fp.GetReference()}'
     fp.SetOrientationDegrees(best[1])
@@ -500,7 +520,8 @@ def build(side):
         anode_up = pad(d, '2').y < pad(d, '1').y
         if anode_up == flip:                # anode toward the socket
             d.SetOrientationDegrees(270)
-        d.Reference().SetTextSize(pcbnew.VECTOR2I(pcbnew.FromMM(0.8), pcbnew.FromMM(0.8)))
+        d.Reference().SetTextSize(pcbnew.VECTOR2I(pcbnew.FromMM(1.0), pcbnew.FromMM(1.0)))   # JLCPCB: >= 1 mm high,
+        d.Reference().SetTextThickness(pcbnew.FromMM(0.15))                                     # 0.15 mm strokes
         d.Reference().SetPosition(mm(x + dx - (1.8 if not flip else -1.8), y + dy))
         d.Reference().SetTextAngleDegrees(90)
         # fixed pre-route: socket pad 2 -> anode, cathode -> via on the row line
@@ -552,7 +573,7 @@ def build(side):
     # orientation: shortest total ratsnest from the MCU pins to the rest of their nets (USB pair weighted),
     # so the matrix pins face the keys instead of the board edge
     others = {}
-    unplaced = {r for r, _ in SUPPORT}
+    unplaced = {r for r, _ in SUPPORT} | {'RSW1'}
     for fp in board.GetFootprints():
         if fp.GetReference() == 'U1' or fp.GetReference() in unplaced:
             continue
@@ -599,8 +620,16 @@ def build(side):
         for dy in (-0.8, 0.8):
             via(board, pcbnew.VECTOR2I(c.x + pcbnew.FromMM(dx), c.y + pcbnew.FromMM(dy)), gnd)
 
+    # the reset switch stays where the tray has its hole (cfg['reset'], board-local): the printed tray is not
+    # regenerated from the board, so moving the switch means editing the Fusion design too
+    obs = obstacles(board, None)       # before placing it: the switch itself still lies outside the board
+    place('RSW1', *cfg['reset'], 0, back=True)
+    rb = bbox_mm(fps['RSW1'].GetCourtyard(pcbnew.B_CrtYd).BBox())
+    assert not any(overlap(rb, o) for o in obs), 'reset switch position is not free'
+    decoupling = {ref for ref, _ in DECOUPLE}
     for ref, anchors in SUPPORT:
-        autoplace(board, fps[ref], [pad(fps[r], p) for r, p in anchors], w, h)
+        net = padnet(fps[anchors[0][0]], anchors[0][1]).GetNetname() if ref in decoupling else None
+        autoplace(board, fps[ref], [pad(fps[r], p) for r, p in anchors], w, h, decouple=net)
     # dense MCU area: references go to the assembly (Fab) layer instead of silkscreen
     for ref in ['U1', 'J1', 'J2'] + [r for r, _ in SUPPORT]:
         f = fps[ref].Reference()
@@ -632,6 +661,37 @@ def build(side):
         fp.SetPosition(mm(x, y))
         fp.Reference().SetVisible(False)
         board.Add(fp)
+
+    # silkscreen labels on the back for the two things reached with a tool, and the place for JLCPCB's order
+    # number (choose "Specify a location" when ordering): each at the free spot nearest to its anchor
+    def label(text, ax, ay, size=1.0):
+        t = pcbnew.PCB_TEXT(board)
+        t.SetText(text)
+        t.SetLayer(pcbnew.B_SilkS)
+        t.SetTextSize(pcbnew.VECTOR2I(pcbnew.FromMM(size), pcbnew.FromMM(size)))
+        t.SetTextThickness(pcbnew.FromMM(0.15))
+        t.SetMirrored(True)
+        obs = obstacles(board, None, True) + [bbox_mm(d.GetBoundingBox(), 0.2) for d in board.GetDrawings()
+                                              if d.GetLayer() == pcbnew.B_SilkS]
+        obs += [bbox_mm(f.Reference().GetBoundingBox(), 0.2) for f in board.GetFootprints()
+                if f.Reference().IsVisible() and f.Reference().GetLayer() == pcbnew.B_SilkS]
+        best = None
+        for i in range(-60, 61):
+            for j in range(-60, 61):
+                t.SetPosition(mm(ax + i * 0.5, ay + j * 0.5))
+                tb = bbox_mm(t.GetBoundingBox(), 0.3)
+                if not (ORIGIN[0] - MARGIN + 1 < tb[0] and tb[2] < ORIGIN[0] + w - 1 and
+                        ORIGIN[1] - TOP + 1 < tb[1] and tb[3] < ORIGIN[1] + h - 1):
+                    continue
+                if (best is None or math.hypot(i, j) < best[0]) and not any(overlap(tb, o) for o in obs):
+                    best = (math.hypot(i, j), t.GetPosition())
+        assert best, f'no room for the label {text}'
+        t.SetPosition(best[1])
+        board.Add(t)
+
+    label('RESET', *[c - o for c, o in zip(bbox_mm(fps['RSW1'].GetBoundingBox())[:2], ORIGIN)])
+    label('BOOT', *[c - o for c, o in zip(bbox_mm(fps['JP1'].GetBoundingBox())[:2], ORIGIN)])
+    label('JLCJLCJLCJLC', w * 0.5, h - 4.0)
 
     # silkscreen title
     t = pcbnew.PCB_TEXT(board)

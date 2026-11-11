@@ -7,7 +7,7 @@
 | MCU | 　└ 代替 |  |  |  |  | Winbond W25Q16JVSSIQ（2 MB、同じ 208 mil） | LCSC C82317 | US$1.07 | [リンク](https://www.lcsc.com/product-detail/C82317.html) | 容量は小さいがキーボードには十分 |
 | 電源 | LDO 3.3 V | Diodes AP2112K-3.3TRG1（600 mA）、SOT-23-5 | 1 | 1 | 2 | Diodes AP2112K-3.3TRG1 | LCSC C51118 | US$0.17 | [リンク](https://www.lcsc.com/product-detail/C51118.html) |  |
 | コネクタ | USB-C レセプタクル | HRO TYPE-C-31-M-12（16 ピン、USB 2.0）。片側 2 個：PC 用（J2）と左右の接続用（J1） | 2 | 2 | 4 | Korean Hroparts TYPE-C-31-M-12 | LCSC C165948 | US$0.17 | [リンク](https://www.lcsc.com/product-detail/C165948.html) |  |
-| 保護 | USB ESD 保護 | STMicroelectronics USBLC6-2SC6, SOT-23-6 | 1 | 1 | 2 | STMicroelectronics USBLC6-2SC6 | LCSC C7519 | US$0.18 | [リンク](https://www.lcsc.com/product-detail/C7519.html) |  |
+| 保護 | USB ESD 保護 | STMicroelectronics USBLC6-2SC6, SOT-23-6 | 2 | 2 | 4 | STMicroelectronics USBLC6-2SC6 | LCSC C7519 | US$0.18 | [リンク](https://www.lcsc.com/product-detail/C7519.html) |  |
 | クロック | 水晶振動子 12 MHz | 3225 4 パッド、負荷容量 10 pF 前後（15 pF のコンデンサと組み合わせる） | 1 | 1 | 2 | Abracon ABM8-272-T3（CL 10 pF） | LCSC C20625731 | US$0.63 | [リンク](https://www.lcsc.com/product-detail/C20625731.html) | Raspberry Pi のリファレンスと同じ部品。安価な YXC X322512MSB4SI（C9002）は CL 20 pF なので 15 pF のコンデンサとは合わない |
 | 保護 | ポリスイッチ 500 mA | 1206（例: Bourns MF-NSMF050-2） | 1 | 1 | 2 | Bourns MF-NSMF050-2 | LCSC C75464 | US$0.04 | [リンク](https://www.lcsc.com/product-detail/C75464.html) |  |
 | 保護 | ショットキーダイオード | B5819W（40 V 1 A）, SOD-123 | 1 | 1 | 2 | JSCJ B5819W SL | LCSC C8598 | US$0.03 | [リンク](https://www.lcsc.com/product-detail/C8598.html) |  |
@@ -64,10 +64,10 @@
 | OLED カバー | 透明両面テープ 厚さ 0.5 mm | カバーと OLED のガラス面、カバーの縁が載る壁の上面に貼る |  |  |  | 3M スコッチ はがせる両面テープ 超透明 KRT-15（幅 15 × 1.5 m × 厚さ 0.5 mm） | カインズ |  | [リンク](https://www.cainz.com/g/4547452982974.html) | 少量；LCSC に該当品なし；はがせるタイプなので OLED を交換できる |
 | 3D プリント版 B | M2 ヒートセットインサート | 外径 3.2 mm × 長さ 3 mm、プレート裏のボスに入れる | 10 | 10 | 20 | XHHD SZTB1063（真鍮、両ローレット） | LCSC C51938879 | US$0.51 / 50 個（50 個単位） | [リンク](https://www.lcsc.com/product-detail/C51938879.html) | 2026-10-10 に確認（在庫 9,300）。寸法（M2、長さ 3 mm、外径 3.2 mm）は品名 M2*3*3.2 から読んだもの |
 | 3D プリント版 B | 　└ 代替 |  |  |  |  | Prusa Heat Set Inserts M2 short | Prusa Research | US$11.99 / 100 個 | [リンク](https://www.prusa3d.com/ja/product/heat-set-inserts-m2-short-100-pcs/) | 3D プリント用。寸法の記載なし |
-| 3D プリント版 A | M2 ナット（ナット受け用） | 壁上面のくぼみの下の六角穴に入れる | 10 | 10 | 20 | 大阪魂 六角ナット 1 種 M2（SUS304、対辺 4 × 厚さ 1.6） | MonotaRO | ¥164 / 20 個 | [リンク](https://www.monotaro.com/p/2876/3624/) | LCSC に該当品なし |
+| 3D プリント版 A | M2 ナット（ナット受け用） | トレイの底の座ぐり（φ4.6 × 1.6 mm）に押し込む | 10 | 10 | 20 | 大阪魂 六角ナット 1 種 M2（SUS304、対辺 4 × 厚さ 1.6） | MonotaRO | ¥164 / 20 個 | [リンク](https://www.monotaro.com/p/2876/3624/) | LCSC に該当品なし |
 | 3D プリント版 A | 　└ 代替 |  |  |  |  | エスコ EA949LT-720 六角ナット M2（真鍮、ニッケルめっき） | MonotaRO | ¥798 / 80 個 | [リンク](https://www.monotaro.com/p/5052/3646/) |  |
-| 3D プリント版 A | M2 × 6 mm スリムヘッド小ねじ | 頭 φ4.0 × 高さ 0.5 mm、透明アクリルのプレートを上から留める | 10 | 10 | 20 | 大阪魂 (+)スリムヘッド小ねじ ステンレス M2 × 6（φ4 × 0.5、注文コード 41746713） | MonotaRO | 7 本入り | [リンク](https://www.monotaro.com/p/4174/6713/) | LCSC に該当品なし（頭の低い M2 は皿ネジだけ） |
-| アクリル版 | M3 × 8 mm なべネジ | サムホイールの軸（底板の下から差し込む） | 1 | 1 | 2 | Shuntian PM3X8（ニッケルめっき） | LCSC C357544 | US$0.23 / 100 本（100 本単位） | [リンク](https://www.lcsc.com/product-detail/C357544.html) | 3D プリント版はトレイの軸を使う；2026-10-10 に確認（在庫 27,500） |
+| 3D プリント版 A | M2 × 16 mm なべネジ | 透明アクリルのプレートの上から底のナットまで通す（プレート上面から底まで 15.6 mm） | 10 | 10 | 20 |  |  |  |  | 上から締めるので、ナットはトレイの底で受ける。購入先は未確認（MonotaRO などで M2 × 16 のなべ小ねじを探す）；購入先未調査 |
+| アクリル版 | M3 × 5 mm なべネジ | サムホイールの軸（底板の φ2.5 の穴に M3 のタップを立て、下からねじ込む） | 1 | 1 | 2 | Shuntian PM3X5nie（ニッケルめっき） | LCSC C357398 | 100 本単位（価格は注文時に確認） | [リンク](https://www.lcsc.com/product-detail/C357398.html) | 3D プリント版はトレイの軸を使う。5 mm より長いとホイールを押し上げる；2026-11-10 に検索結果で品番と品名（PM3X5、ニッケルめっき）を確認。商品ページの在庫と価格は未確認 |
 | 3D プリント版 B | M2 × 12 mm なべネジ（底から） | トレイ底の座ぐりから壁を通してプレート裏のインサートへ | 10 | 10 | 20 | TRUSCO Y823-0212 ナベ頭小ねじ ステンレス M2 × 12 | MonotaRO | ¥395 / 20 本 | [リンク](https://www.monotaro.com/p/2498/0167/) | LCSC に該当品なし |
 | 3D プリント版 B | 　└ 代替 |  |  |  |  | エスコ EA949NF-212 鍋頭小ねじ ステンレス M2 × 12 | MonotaRO | ¥275 / 16 本 | [リンク](https://www.monotaro.com/g/02450718/) |  |
 | 3D プリント版 | M2 × 6 mm タッピングネジ | 基板をボス（下穴 φ1.6）へ固定 | 8 | 8 | 16 | Shuntian PA2X6nie（なべ、頭 φ3.5、ニッケルめっき） | LCSC C357360 | US$0.16 / 100 本（100 本単位） | [リンク](https://www.lcsc.com/product-detail/C357360.html) | 2026-10-10 に確認（在庫 2,900） |

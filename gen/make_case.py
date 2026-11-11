@@ -53,12 +53,16 @@ PORT_LIFT = 2.0              # tunnel headroom: the board slides in this high, c
 FLOOR = 2.0
 BOSS_D = 4.6         # stays clear of back-side pads (>= 2.75 mm from hole centre)
 PILOT_D = 1.6        # M2 self-tapping
-INSERT_D = 3.2       # M2 heat-set insert (in the printed plate's bosses)
+INSERT_D = 2.9       # hole for an M2 heat-set insert of 3.2 mm outer diameter (in the printed plate's bosses):
+                     # 0.3 mm under it, so the knurl melts into the wall and the screw cannot pull the insert out
 INSERT_DEPTH = 4.0
+INSERT_D_NOMINAL = 3.2   # the insert's own diameter: places the two screws beside the wheel (Half._screws)
 # plate screws (one tray for A and B):
 #   B (printed plate): M2 x 12 from the tray bottom (counterbored) up the wall into a heat-set insert in a boss under
 #     the plate, so the plate top shows no screws; the boss sits in a pocket at the wall top
-#   A (acrylic plate): M2 x 6 slim-head screw from the top into an M2 nut dropped into the hex trap under that pocket
+#   A (acrylic plate): M2 x 16 pan-head screw from the top through the plate and the whole wall into an M2 nut
+#     pressed into the counterbore under the tray. (Not into a nut in the hex trap under the pocket, as first
+#     planned: the trap opens upward, so a screw from the top only lifts the nut out of it. The trap stays unused.)
 #   acrylic stack: M2 x 20 from the top through everything into a nut under the bottom plate
 SCREW_CB = (4.6, 1.6)        # counterbore for the pan head under the tray (diameter, depth)
 PLATE_BOSS = (5.6, 3.0)      # boss under the printed plate (diameter, height)
@@ -102,6 +106,8 @@ STAND_FLOOR = 1.5     # thinnest stand under a pocket
 BED = 220.0           # printer bed, as for the tray (Ender-3, Bambu Lab A1 / P1 / X1, Prusa MK4)
 PLATE_FILLET = 1.0    # all-printed plate: rounded top outer edge (prints fine top-down: 1 mm reach on the bed side)
 SWITCH_CUT = 14.0
+LASER_R = 0.3         # laser-cut plate: radius of the cut-outs' corners
+LASER_MIN = 1.5       # laser-cut frames: nothing narrower than this is left standing
 # OLED: window in the switch plate, filled by a half-mirror acrylic cover flush with the plate top. Half-mirror
 # acrylic starts at 2 mm, so the cover reaches 0.5 mm below the 1.5 mm plate; it rests on the module's glass
 # (soldered low, glass top 2.5 mm above the PCB) and is held by 0.5 mm clear double-sided tape. No screws,
@@ -130,7 +136,9 @@ WHEEL_KNURLS = 32            # rounded teeth on the rim: the grip
 TOOTH_DEPTH = 0.5            # valley depth of the rim teeth
 BORE_D, BORE_DEPTH = 4.0, 2.0          # axle bore from below
 POST_D = 3.6                 # printed axle post (3D print variant): 0.2 mm radial play in the bore
-AXLE_HOLE_D = 3.2            # M3 axle screw through the bottom plate (acrylic variant)
+AXLE_HOLE_D = 2.5            # acrylic variant: the bottom plate's hole for the M3 axle screw, to be tapped M3 (a
+                             # clearance hole would let the screw drop out: nothing else holds it). The screw is
+                             # M3 x 5: BOTTOM_T + WHEEL_GAP + BORE_DEPTH = 5.3 mm is all the room there is.
 # Alps EC05E1220401 (catalog drawing No.3): body 5.7 wide (7.6 over the side tabs), 2.5 / 3.7 from the rotor
 # axis, 2.7 below the PCB back; hex hole 1.72 A/F through the rotor, entered from the wheel side
 ENC_W, ENC_TAB_W, ENC_UP, ENC_DOWN, ENC_H = 5.7, 7.6, 2.5, 3.7, 2.7
@@ -160,7 +168,7 @@ BLOCK_T, BLOCK_HALF_W = 3.0, 3.5      # bearing block: thickness along the axis,
 BLOCK_R = 1.0                         # bearing block: radius of the top corners (seen along the axis)
 BLOCK_TOP = EC10_AXIS + 1.5
 BLOCK_SLOT_R, BLOCK_LIP = 1.1, 1.8    # slot radius around the round pin, snap-in mouth width
-BLOCK_PEG = (1.9, 1.4)                # pegs into the 2.0 mm NPTH: diameter, length
+BLOCK_PEG = (1.8, 1.4)                # pegs into the 2.0 mm NPTH: diameter, length (0.1 mm radial play: printable)
 PLATE_TOP_Z = PLATE_GAP + PLATE_T     # plate top above the PCB top (5.0)
 DRUM_OPENING = (-7.1, -7.6, 2 * DRUM_GAP + DRUM_W + BLOCK_T + 0.6, 7.6, 1.0)   # plate opening: x0, y0, x1, y1, corner r
 # the bezel's flange sits in a plate hole of its own outline, flush with the plate top (like the OLED cover); a
@@ -514,7 +522,10 @@ class Half:
                 pts.append((inner_x, (a2 + b2) / 2))
         # the corner wheel takes the corner screw; put one on each face just past the wheel opening
         (wx, wy), wr = self.d['wheel']['center'], self.d['wheel']['r']
-        keep = wr + WHEEL_CUT + CAP_SHOULDER + INSERT_D / 2 + 0.8     # clear of the wheel cap's shoulder
+        # clear of the wheel cap's shoulder as far as the insert hole goes. The pocket in the wall top (and the
+        # printed plate's boss in it) reaches 0.25 mm into the cap's top tier: the cap is relieved there (Fusion
+        # edit NrskEditCapRelief). Moving these two screws out instead would push the feet and the stands along.
+        keep = wr + WHEEL_CUT + CAP_SHOULDER + INSERT_D_NOMINAL / 2 + 0.8
         pts = [p for p in pts if math.hypot(p[0] - wx, p[1] - wy) > keep]
         d = math.sqrt(keep ** 2 - (wy - Y0) ** 2)
         side_x = X0 if wx < (X0 + X1) / 2 else X1
@@ -546,23 +557,56 @@ class Half:
         cut = cut + self.extra_cuts()
         return self.outer - cut - self.cover_shape().offset(COVER_FIT, JoinType.Round) - self.holes(self.screws, SCREW_D)
 
+    def plate_laser(self):
+        """The plate as it is laser-cut from acrylic: beside plate(), no web is left between a stabilizer cut-out
+        and its switch cut-out (1.4 mm wide: too thin to cut and to last), and the cut-outs' corners get a small
+        radius (LASER_R: a sharp inside corner is where acrylic starts to crack; MX allows up to R0.3)."""
+        cut = CrossSection()
+        h = SWITCH_CUT / 2
+        for k in self.d['keys']:
+            cut = cut + rect(k['cx'] - h, k['cy'] - h, k['cx'] + h, k['cy'] + h)
+            if k['w'] >= 2:
+                w, hh, dy = STAB_CUT
+                for sx in (-1, 1):
+                    cx = k['cx'] + sx * STAB_X
+                    cut = cut + rect(cx - w / 2, k['cy'] + dy - hh / 2, cx + w / 2, k['cy'] + dy + hh / 2)
+                    cut = cut + rect(min(k['cx'], cx), k['cy'] - h, max(k['cx'], cx), k['cy'] + h)
+        cut = cut.offset(-LASER_R, JoinType.Miter).offset(LASER_R, JoinType.Round)
+        return self.plate() - cut
+
     def extra_cuts(self):
         """Encoder test board: holes for the tact switches' actuators."""
         return self.holes(self.d.get('buttons', []), BUTTON_HOLE)
 
     def frame(self, layer):
         cs = self.outer - self.inner - self.holes(self.screws, SCREW_D)
+        notched = False
         z0 = BOTTOM_T + layer * FRAME_T
         wz0 = BOTTOM_T + WHEEL_GAP
         if z0 < wz0 + WHEEL_T + 0.4 and z0 + FRAME_T > wz0 - 0.3:   # this frame is level with the wheel
             cs = cs - self.wheel_cut()
+            notched = True
         z_pcb = BOTTOM_T + STANDOFF
         for p in self.slots:       # notch for the tongue + connector, and the opening in front of the mouth
             zb, zc, hh = self.port_z(p, z_pcb)
+            if p['edge'] == 'top':
+                continue
             if z0 < z_pcb + PCB_T + 0.3 and z0 + FRAME_T > zb - 0.2:
                 cs = cs - p['chan']
             if z0 < zc + hh / 2 and z0 + FRAME_T > zc - hh / 2:
                 cs = cs - self.port_hole(p, z_pcb).project().offset(0.01, JoinType.Miter)
+        # ports on the top edge: one notch through the wall across all of them. Acrylic cannot keep the printed
+        # tray's 0.8 mm skin in front of the mouths, and separate notches would leave a loose block between
+        # two ports, so the frames level with the tongues and connectors are open rings there.
+        tops = [p for p in self.slots if p['edge'] == 'top']
+        if tops and any(z0 < z_pcb + PCB_T + 0.3 and z0 + FRAME_T > self.port_z(p, z_pcb)[0] - 0.2 for p in tops):
+            xs = [float(v) for p in tops for v in (p['chan'].bounds()[0], p['chan'].bounds()[2])]
+            cs = cs - rect(min(xs), self.outer_box[1] - 1, max(xs), self.pcb[1] - CLEAR + 0.01)
+            notched = True
+        if notched:
+            # drop the slivers a notch leaves where it runs out of the outline at a shallow angle (wheel opening)
+            # and round the notch corners
+            cs = cs.offset(-LASER_MIN / 2, JoinType.Round).offset(LASER_MIN / 2, JoinType.Round)
         return cs
 
     def bottom(self):
@@ -963,7 +1007,7 @@ def write_half(hf, out, parts=True, laser=True):
     side = hf.side
     for sub in ('laser', 'print', 'preview') if laser else ('print', 'preview'):
         os.makedirs(os.path.join(out, sub), exist_ok=True)
-    layers = {'plate': hf.plate(), 'bottom': hf.bottom()}
+    layers = {'plate': hf.plate_laser() if laser else hf.plate(), 'bottom': hf.bottom()}
     if hf.window_box is not None:
         layers['oled-cover'] = hf.cover()
     for i in range(N_FRAMES):
@@ -971,7 +1015,7 @@ def write_half(hf, out, parts=True, laser=True):
     for name, cs in layers.items() if laser else ():
         write_dxf(os.path.join(out, 'laser', f'{side}-{name}.dxf'), cs)
         write_svg(os.path.join(out, 'laser', f'{side}-{name}.svg'), cs, f'{side} {name}')
-    tray, plate = hf.tray(), hf.plate3d()
+    tray, plate = hf.tray(), Manifold.extrude(layers['plate'], PLATE_T)
     write_stl(os.path.join(out, 'print', f'{side}-tray.stl'), tray)
     write_stl(os.path.join(out, 'print', f'{side}-plate.stl'), hf.plate3d_printed())   # all-printed variant
     if parts:
@@ -1093,6 +1137,7 @@ def check(hf, layers):
     if hf.window_box is not None:
         check_oled(hf)
     check_wheel(hf)
+    check_plate_cap(hf)
     check_feet(hf)
     check_tilt(hf)
     if 'drum' in hf.d:
@@ -1153,6 +1198,17 @@ def check_wheel(hf):
     assert (hf.cap_key_footprint(0.8) ^ near).area() < 1e-6, 'cap lug slot within 0.8 mm of a case screw'
 
 
+def check_plate_cap(hf):
+    """All-printed variant: the plate's insert bosses beside the wheel must clear the wheel cap. Known to fail on
+    the current Fusion parts (docs/pre-order-checklist.md): reported, not asserted, until the design is fixed."""
+    if hf.source != 'fusion':
+        return
+    plate = hf.plate3d_printed().translate((0, 0, FLOOR + STANDOFF + PCB_T + PLATE_GAP))
+    v = (plate ^ hf.wheel_cap()).volume()
+    if v > 1e-3:
+        print(f'{hf.side}: WARNING: printed plate (B) and wheel cap overlap by {v:.2f} mm3 at the screws beside the wheel')
+
+
 def check_feet(hf):
     """Foot recesses: off the bottom fillet, clear of counterbores, pilot holes, the reset hole and the wheel, a floor
     left above them, and every key centre inside the feet (no key press lifts a corner)."""
@@ -1209,6 +1265,23 @@ def check_closed(hf, layers):
     slotted = [n for n in layers if n.startswith('frame') and
                abs(max(area(p) for p in polygons(layers[n])) - hf.outer.area()) > 0.5]
     print(hf.side, 'closed: plate,', f'frame{N_FRAMES};', 'opened for plugs:', ', '.join(slotted) or '-')
+    if 'source' in hf.d:      # the encoder test board's case is printed only: its layers are never cut
+        return
+    # laser-cut layers: every separate piece is held by at least two screws, and nothing thinner than 1 mm is
+    # left anywhere; webs under 3 mm are listed (some cutting services refuse them: see docs/ordering.md)
+    for name, cs in layers.items():
+        if name == 'oled-cover':
+            continue
+        for piece in cs.decompose():
+            n = sum(1 for p in hf.screws if inside(piece.offset(SCREW_D, JoinType.Round), p))
+            assert n >= 2, f'{hf.side} {name}: a piece of {piece.area():.0f} mm2 is held by {n} screw(s)'
+        thin = cs.area() - cs.offset(-0.5, JoinType.Round).offset(0.5, JoinType.Round).area()
+        assert thin < 0.5, f'{hf.side} {name}: {thin:.2f} mm2 of material thinner than 1 mm'
+        webs = (cs - cs.offset(-1.49, JoinType.Round).offset(1.5, JoinType.Round)).offset(-0.05, JoinType.Round)
+        spots = [(round(float((b := w.bounds())[0] + b[2]) / 2, 1), round(float(b[1] + b[3]) / 2, 1),
+                  round(float(w.area()), 1)) for w in webs.decompose() if w.area() > 1.0]
+        if spots:
+            print(f'{hf.side} {name}: narrower than 3 mm at (x, y, mm2):', spots)
     print(hf.side, 'checks ok;', len(hf.screws), 'case screws,', len(hf.d['holes']), 'PCB standoffs')
 
 

@@ -87,7 +87,7 @@
     "volume_cm3": 81.9
    }
   },
-  "plate_genus": 51,
+  "plate_genus": 49,
   "tray_status": "Error.NoError"
  },
  "right": {
@@ -178,7 +178,7 @@
     "volume_cm3": 89.7
    }
   },
-  "plate_genus": 58,
+  "plate_genus": 54,
   "tray_status": "Error.NoError"
  }
 }

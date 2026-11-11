@@ -26,12 +26,12 @@ def prop(name, value, at, layer, hide=False, size=1.0):
             f'    (effects (font (size {size} {size}) (thickness 0.15))))\n')
 
 
-def line(x1, y1, x2, y2, layer, w=0.12):
+def line(x1, y1, x2, y2, layer, w=0.15):     # 0.15 mm: JLCPCB's thinnest silkscreen line
     return (f'  (fp_line (start {x1:.3f} {y1:.3f}) (end {x2:.3f} {y2:.3f}) '
             f'(stroke (width {w}) (type solid)) (layer "{layer}") (uuid "{uid()}"))\n')
 
 
-def rect(x1, y1, x2, y2, layer, w=0.12):
+def rect(x1, y1, x2, y2, layer, w=0.15):
     return (f'  (fp_rect (start {x1:.3f} {y1:.3f}) (end {x2:.3f} {y2:.3f}) '
             f'(stroke (width {w}) (type solid)) (fill no) (layer "{layer}") (uuid "{uid()}"))\n')
 
@@ -74,10 +74,11 @@ def mx_hotswap(w):
     s += npth(5.08, 0, 1.75)
     s += npth(-3.81, -2.54, 3.0)
     s += npth(2.54, -5.08, 3.0)
-    # Kailh socket pads (back side)
+    # Kailh socket pads (back side). No solder paste: the sockets are soldered by hand after the board comes back
+    # from assembly, and reflowed paste would leave bumps that keep them from sitting flat.
     for num, (x, y) in (('1', (5.842, -5.08)), ('2', (-7.085, -2.54))):
         s += (f'  (pad "{num}" smd roundrect (at {x} {y}) (size 2.55 2.5) (roundrect_rratio 0.1) '
-              f'(layers "B.Cu" "B.Paste" "B.Mask") (uuid "{uid()}"))\n')
+              f'(layers "B.Cu" "B.Mask") (uuid "{uid()}"))\n')
     s += rect(-8.6, -7.4, 7.35, -0.6, 'B.CrtYd', 0.05)
     if w >= 2:
         for sx in (-11.9, 11.9):

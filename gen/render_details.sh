@@ -1,5 +1,5 @@
 #!/bin/bash
-# Close-ups for the design review page, for both case variants (A = clear acrylic plate + low-head screws, B = all printed):
+# Close-ups for the design review page, for both case variants (A = clear acrylic plate + pan-head screws, B = all printed):
 # docs/img/details/<shot>-<a|b>.jpg, then gen/views_page.py rewrites docs/views.html.
 # The whole board, OLED and left wheel come from gen/render_compare.sh (docs/img/render-*-top-*.png).
 # A shot written <name>:nocable is rendered without the cables (and their plugs) as <name>-nocable-<a|b>.jpg.
@@ -12,7 +12,7 @@ SHOTS=${SHOTS:-"user keys corner profile wheel-right drum detail ports back hero
 OUT=docs/img/details
 mkdir -p "$OUT"
 for variant in a b; do
-  if [ "$variant" = a ]; then case_args="--top acrylic --screws lowpan"; else case_args="--top print"; fi
+  if [ "$variant" = a ]; then case_args="--top acrylic --screws pan"; else case_args="--top print"; fi
   for entry in $SHOTS; do
     shot=${entry%%[:@]*} name=$shot extra=""
     case "$entry" in

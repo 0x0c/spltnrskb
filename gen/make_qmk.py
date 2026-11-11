@@ -55,6 +55,10 @@ KB_CONFIG = r'''#pragma once
 #define RP2040_BOOTLOADER_DOUBLE_TAP_RESET
 #define RP2040_BOOTLOADER_DOUBLE_TAP_RESET_TIMEOUT 500U
 
+// No VBUS sense pin: the half that enumerates on USB becomes the master. If the host is slow to enumerate
+// (BIOS, wake from sleep, KVM), a half that gave up waiting reboots and tries again instead of staying deaf.
+#define SPLIT_WATCHDOG_ENABLE
+
 // I2C1 on %s (SDA) / %s (SCL): OLED
 #define I2C_DRIVER I2CD1
 #define I2C1_SDA_PIN %s
@@ -145,6 +149,9 @@ def main():
             'encoder': {'right': {'rotary': [wheel, drum]}},
             'serial': {'driver': 'vendor', 'pin': SERIAL_PIN},
             'handedness': {'pin': HAND_PIN},
+            # Bootmagic on the right half when it is the one on USB: its own top-left key (the default [0, 0] is a
+            # left-half key, which the right half cannot read at power-up)
+            'bootmagic': {'matrix': [N_ROWS, 0]},
             'transport': {'sync': {'layer_state': True, 'indicators': True, 'wpm': True}},
         },
         'layouts': {'LAYOUT': {'layout': layout}},

@@ -52,10 +52,9 @@ def hardware(hf, variant):
         if variant == 'printtop':   # B: inserts in the bosses under the printed plate, M2 x 12 from the tray bottom
             add('insert', [Manifold.cylinder(3.0, 1.6, 1.6, 16).translate((x, -y, wall_top - 3.0)) for x, y in screws], brass)
             add('plate_screw', [screw(x, y, mc.SCREW_CB[1], 12, up=True) for x, y in screws], steel)
-        else:                       # A: nut in the hex trap, M2 x 6 slim head from the top
-            z_nut = wall_top - mc.BOSS_POCKET[1] - mc.NUT_TRAP[1]
-            add('insert', [hexagon(x, y, z_nut, 1.6, 4.0) for x, y in screws], steel)
-            add('plate_screw', [screw(x, y, z_plate_top, 6, head_d=4.0, head_h=0.5) for x, y in screws], steel)
+        else:                       # A: M2 x 16 pan head from the top, nut pressed into the counterbore under the tray
+            add('insert', [hexagon(x, y, 0, 1.6, 4.0) for x, y in screws], steel)
+            add('plate_screw', [screw(x, y, z_plate_top, 16) for x, y in screws], steel)
         add('pcb_screw', [screw(x, y, z_pcb + PCB_T, 6) for x, y in holes], steel)
     else:
         add('standoff', [hexagon(x, y, BOTTOM_T, STANDOFF, 3.5) for x, y in holes], brass)
@@ -169,7 +168,7 @@ def main():
         'print': dict(title='A：3D プリントのトレイ + 透明アクリルのプレート', rows=[
             ['外形 mm', size], ['高さ', f"{FLOOR + STANDOFF + PCB_T + PLATE_GAP + PLATE_T:g} mm（プレート上面まで）"],
             ['床 / 壁', f'{FLOOR:g} mm / 幅 8 mm'], ['基板の高さ', f'床から {STANDOFF:g} mm（ボス φ4.6）'],
-            ['プレート', '透明アクリル 1.5 mm、上からスリムヘッドの M2 小ねじと壁の中の M2 ナットで固定'], ['トレイの角', f'外周の下端 R{TRAY_FILLET:g}・上端 R{TRAY_TOP_FILLET:g} のフィレット'], ['コネクタ', '基板裏面。プレートは切り欠きなし'], ['ホイール', '角にサムホイール × 2（ロータリーエンコーダー Alps EC05E1220401）'],
+            ['プレート', '透明アクリル 1.5 mm、上から M2 × 16 mm のなべ小ねじと底の座ぐりの M2 ナットで固定'], ['トレイの角', f'外周の下端 R{TRAY_FILLET:g}・上端 R{TRAY_TOP_FILLET:g} のフィレット'], ['コネクタ', '基板裏面。プレートは切り欠きなし'], ['ホイール', '角にサムホイール × 2（ロータリーエンコーダー Alps EC05E1220401）'],
             ['OLED', f'ハーフミラーアクリル 2 mm、四隅 R{mc.CLEAR + mc.WALL + 4.0 - mc.COVER_FRAME:g}、周りの帯 {mc.COVER_FRAME:g} mm、両面テープで固定（プレートと面一）'],
             ['ドラム', '右上にドラム式ダイヤル（Alps EC10E1220505、24 クリック）、ベゼルはプレートの切り欠きにはめる'],
             STAND_ROW]),

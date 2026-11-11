@@ -14,7 +14,9 @@ import sys
 from manifold3d import CrossSection, Manifold
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from make_case import HUB_CLEAR, OUT, PIN_AF, PIN_CHAMFER, PIN_ENGAGE, hexagon, write_stl  # noqa: E402
+from make_case import HUB_CLEAR, OUT, PIN_AF, PIN_ENGAGE, write_stl  # noqa: E402
+
+PIN_TIP = 0.2                # chamfer on the tip's edges (= NrskEditWheelPin.WHEEL_PIN_TIP)
 
 STEP = 0.02
 SIZES = [round(PIN_AF + STEP * i, 2) for i in range(-3, 4)]   # 1.60 ... 1.72 around PIN_AF = 1.66
@@ -52,9 +54,13 @@ def label(text, cx, y):
 
 
 def pin(af):
-    """Same as the pin in Half.wheel3d: PIN_ENGAGE + HUB_CLEAR tall, tip chamfered by PIN_CHAMFER."""
+    """Same as the pin on the wheel after the Fusion edit NrskEditWheelPin: a hex prism PIN_ENGAGE + HUB_CLEAR
+    tall that keeps its across-flats to the top, with only the tip's edges chamfered by PIN_TIP. (A pin tapered
+    over its whole length, as it was before, is round where it sits in the rotor and cannot be judged for fit.)"""
     h = PIN_ENGAGE + HUB_CLEAR
-    return hexagon(af, h) ^ Manifold.cylinder(h, af / math.sqrt(3), af / 2 - PIN_CHAMFER, 24)
+    cs = CrossSection.circle(af / math.sqrt(3), 6)
+    s = (af / 2 - PIN_TIP) / (af / 2)
+    return Manifold.extrude(cs, h - PIN_TIP) + Manifold.extrude(cs, PIN_TIP, scale_top=(s, s)).translate((0, 0, h - PIN_TIP))
 
 
 def coupon():

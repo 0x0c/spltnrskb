@@ -314,13 +314,13 @@
    "note": "2026-10-10 に確認（在庫 2,900）"
   }
  ],
- "M3 × 8 mm なべネジ": [
+ "M3 × 5 mm なべネジ": [
   {
-   "mpn": "Shuntian PM3X8（ニッケルめっき）",
-   "shop": "LCSC C357544",
-   "url": "https://www.lcsc.com/product-detail/C357544.html",
-   "price": "US$0.23 / 100 本（100 本単位）",
-   "note": "2026-10-10 に確認（在庫 27,500）"
+   "mpn": "Shuntian PM3X5nie（ニッケルめっき）",
+   "shop": "LCSC C357398",
+   "url": "https://www.lcsc.com/product-detail/C357398.html",
+   "price": "100 本単位（価格は注文時に確認）",
+   "note": "2026-11-10 に検索結果で品番と品名（PM3X5、ニッケルめっき）を確認。商品ページの在庫と価格は未確認"
   }
  ],
  "ゴム足": [

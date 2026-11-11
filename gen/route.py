@@ -17,6 +17,9 @@ POUR_MIN_WIDTH = 0.25     # thinnest GND copper kept [mm]
 STITCH_PITCH = 5.0        # grid of the vias tying the two GND faces together [mm]
 STITCH_EDGE = 1.0         # a stitching via's copper this far from the board edge, clear of the outline's routing [mm]
 VIA_D, VIA_DRILL = 0.6, 0.3
+DEFAULT_CLEARANCE = 0.15  # the default net class's clearance (make_pro.py) [mm]
+ROUTER_MARGIN = 0.01      # Freerouting keeps this much more than that [mm]
+PAD_KEEP = 0.3            # a stitching via's copper this far from any SMD pad [mm]
 
 
 def remove_dangling_vias(board):
@@ -120,6 +123,15 @@ def pour(side):
     holes = [(p.GetPosition(), max(p.GetDrillSize().x, p.GetDrillSize().y) / 2)
              for fp in board.GetFootprints() for p in fp.Pads() if p.GetDrillSize().x > 0]
     holes += [(v.GetPosition(), v.GetDrillValue() / 2) for v in board.GetTracks() if v.Type() == pcbnew.PCB_VIA_T]
+    # no via in or next to a pad that gets soldered: its open hole would draw the solder away from the joint
+    # (GND pads join the pour solidly, so in_copper() alone does not keep the vias off them)
+    keep = pcbnew.FromMM(VIA_D / 2 + PAD_KEEP)
+    pads = [p.GetBoundingBox() for fp in board.GetFootprints() for p in fp.Pads()
+            if p.GetAttribute() == pcbnew.PAD_ATTRIB_SMD]
+    pads = [(b.GetLeft() - keep, b.GetTop() - keep, b.GetRight() + keep, b.GetBottom() + keep) for b in pads]
+
+    def on_pad(x, y):
+        return any(b[0] < x < b[2] and b[1] < y < b[3] for b in pads)
     gap = pcbnew.FromMM(0.5 + VIA_DRILL / 2)
     edges = pcbnew.SHAPE_POLY_SET()
     board.GetBoardPolygonOutlines(edges, False)
@@ -136,7 +148,7 @@ def pour(side):
                 if spacing and any(math.hypot(x - v.x, y - v.y) < spacing for v in stitch):
                     continue
                 if any(math.hypot(x - h.x, y - h.y) - hr < gap for h, hr in holes) or near_edge(x, y) or \
-                        not in_copper(x, y):
+                        on_pad(x, y) or not in_copper(x, y):
                     continue
                 stitch.append(pcbnew.VECTOR2I(x, y))
                 holes.append((stitch[-1], pcbnew.FromMM(VIA_DRILL / 2)))
@@ -167,6 +179,13 @@ def route(side, passes=100):
     dsn = os.path.join(WORK, f'{side}.dsn')
     ses = os.path.join(WORK, f'{side}.ses')
     assert pcbnew.ExportSpecctraDSN(board, dsn)
+    # Freerouting measures to a rounded pad's bounding shape a little differently from KiCad: beside the USB-C's
+    # 0.5 mm-pitch pins its tracks came out 0.14 mm from the next pad, under the 0.15 mm rule. Ask it for
+    # ROUTER_MARGIN more than the default class's clearance; KiCad's DRC still checks the real rule.
+    text = open(dsn).read()
+    old = f'(clearance {DEFAULT_CLEARANCE * 1000:g})'
+    assert old in text, 'default clearance not found in the DSN'
+    open(dsn, 'w').write(text.replace(old, f'(clearance {(DEFAULT_CLEARANCE + ROUTER_MARGIN) * 1000:g})'))
     if os.path.exists(ses):
         os.remove(ses)
     subprocess.run([JAVA, '-jar', JAR, '-de', dsn, '-do', ses, '-mp', str(passes), '--gui.enabled=false'],
@@ -206,3 +225,7 @@ if __name__ == '__main__':
     else:
         for s in sys.argv[1:] or ('left', 'right'):
             route(s)
+        # pcbnew now and then crashes while the interpreter shuts down, after the board is saved; the caller
+        # would take that for a failed routing try, so leave without the teardown
+        sys.stdout.flush()
+        os._exit(0)

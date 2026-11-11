@@ -1,0 +1,10 @@
+{
+	"autodeskProduct": "Fusion",
+	"type": "script",
+	"author": "nrsk",
+	"description": {
+		"": "nrsk: NrskEditPinRecess (pin roots sunk into the part for larger fillets, then export)"
+	},
+	"supportedOS": "windows|mac",
+	"editEnabled": true
+}
