@@ -10,7 +10,8 @@ several sizes, to find on the user's own printer the one that holds the rotor an
   4x  round      cylinder over the hole's across-flats: presses on the six flats' middles
 
 Every pin stands as the wheel's does (NrskEditPinRecess): in a pocket POCKET_DEPTH deep with a fillet at its
-root, HUB_CLEAR + PIN_ENGAGE above the strip's top, the tip's edges chamfered. The raised number under each pin
+root, the tip's edges chamfered; but longer: HUB_CLEAR + ENGAGE above the strip's top, to reach through the
+EC05E's rotor. The raised number under each pin
 is its id (docs/thumbwheel-check.md has the table); the strips print pins up, like the wheel.
 
 Run with the project venv:  .venv/bin/python gen/pin_test.py
@@ -22,10 +23,14 @@ import sys
 from manifold3d import CrossSection, JoinType, Manifold
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from make_case import ENC_HEX_AF, HUB_CLEAR, OUT, PIN_ENGAGE, write_stl  # noqa: E402
+from make_case import ENC_H, ENC_HEX_AF, HUB_CLEAR, OUT, PIN_ENGAGE, write_stl  # noqa: E402
 from pin_coupon import LABEL_T, label  # noqa: E402
 
 PIN_TIP = 0.2                 # chamfer on the tip's edges
+ENGAGE = ENC_H                # pin length in the rotor: all of the EC05E's through hole (2.7), where the wheel's
+                              # pin has PIN_ENGAGE (2.0). The longer pin is easier to judge and to pull out again;
+                              # in the EC10E it runs on into the bore behind the 1.7 mm hex
+assert ENGAGE >= PIN_ENGAGE
 POCKET_DEPTH, POCKET_D, ROOT_R = 0.5, 4.0, 0.7     # = NrskEditPinRecess.WHEEL
 PITCH = 11.0                  # pin to pin: either encoder's body fits between neighbours
 BASE_T = 2.5
@@ -73,13 +78,13 @@ def pin(kind, v):
     rotor (tapered or not) and the chamfered tip."""
     cs = section(kind, v)
     face = POCKET_DEPTH + HUB_CLEAR               # rotor's face above the pocket's floor
-    body = PIN_ENGAGE - PIN_TIP                   # in the rotor, below the tip's chamfer
+    body = ENGAGE - PIN_TIP                   # in the rotor, below the tip's chamfer
     size = v[1] if kind == 'tapered' else v if kind != 'lobed' else FLAT_AF      # across the section
     m = Manifold.extrude(cs, face)
     if kind == 'tapered':
         tip_af = v[0]
         s = tip_af / v[1]
-        s_body = 1 + (s - 1) * body / PIN_ENGAGE  # the taper runs on through the chamfer's height
+        s_body = 1 + (s - 1) * body / ENGAGE  # the taper runs on through the chamfer's height
         m = m + Manifold.extrude(cs, body, scale_top=(s_body, s_body)).translate((0, 0, face))
         top, size = cs.scale((s_body, s_body)), v[1] * s_body
     else:
@@ -127,7 +132,7 @@ def main():
     write_stl(path, every + web)
     b = (every + web).bounding_box()
     print(f'{os.path.relpath(path)}: {b[3] - b[0]:.1f} x {b[4] - b[1]:.1f} x {b[5] - b[2]:.1f} mm; '
-          f'hole {ENC_HEX_AF} A/F, pins {POCKET_DEPTH + HUB_CLEAR + PIN_ENGAGE} above the pocket floor')
+          f'hole {ENC_HEX_AF} A/F, pins {POCKET_DEPTH + HUB_CLEAR + ENGAGE} above the pocket floor')
 
 
 if __name__ == '__main__':
